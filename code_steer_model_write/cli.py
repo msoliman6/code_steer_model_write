@@ -185,6 +185,41 @@ def cmd_doctor(a: argparse.Namespace) -> int:
     return doctor_run(deep=a.deep)
 
 
+def cmd_dash(a: argparse.Namespace) -> int:
+    import sys as _sys
+
+    _sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    if a.dash_cmd == "selfcheck":
+        from dashboard.selfcheck import main as selfcheck
+
+        return selfcheck(a.run_dir)
+    if a.dash_cmd == "view":
+        from dashboard.selfcheck import to_json
+
+        print(to_json(a.run_dir))
+        return 0
+    import subprocess
+
+    root = Path(__file__).resolve().parent.parent
+    env = dict(__import__("os").environ)
+    env["CSMW_RUNS_DIR"] = str(Path(a.runs_dir).resolve())
+    print(f"serving the dashboard from {root} on 127.0.0.1:{a.port} (runs dir {env['CSMW_RUNS_DIR']})")
+    return subprocess.call(
+        [
+            _sys.executable,
+            "-m",
+            "reflex",
+            "run",
+            "--frontend-port",
+            str(a.port),
+            "--backend-port",
+            str(a.port + 1),
+        ],
+        cwd=root,
+        env=env,
+    )
+
+
 def cmd_figure(a: argparse.Namespace) -> int:
     from .figure import write_figure
 
@@ -225,6 +260,16 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("doctor", help="preflight; exit 0 ready, 1 warnings, 2 halt")
     p.add_argument("--deep", action="store_true")
     p.set_defaults(fn=cmd_doctor)
+    p = sub.add_parser("dash", help="the dashboard: serve, selfcheck a run, or dump its view model")
+    ps = p.add_subparsers(dest="dash_cmd", required=True)
+    q = ps.add_parser("serve")
+    q.add_argument("--port", type=int, default=3000)
+    q.add_argument("--runs-dir", default="runs")
+    q = ps.add_parser("selfcheck")
+    q.add_argument("run_dir")
+    q = ps.add_parser("view")
+    q.add_argument("run_dir")
+    p.set_defaults(fn=cmd_dash)
     p = sub.add_parser("figure", help="the workflow figure from a recipe")
     p.add_argument("recipe")
     p.add_argument("-o", "--out", default="docs/media/workflow.svg")
