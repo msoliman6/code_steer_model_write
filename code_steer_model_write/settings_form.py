@@ -12,6 +12,8 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 from .config import BackendName, Mode, RoleSpec, Settings
+from .providers import registry as providers
+from .providers.base import default_effort_for, efforts_for
 from .spec.task import TaskSpec
 
 AUTHOR_MODELS = ["default", "claude-fable-5-1", "claude-opus-5", "claude-sonnet-5", "claude-haiku-4-5"]
@@ -230,6 +232,52 @@ def defaults() -> dict[str, str]:
     return {f.key: f.default for f in FIELDS}
 
 
+MODEL_ROWS = {
+    "checker_model": "checker_backend",
+    "plan_model": "author_backend",
+    "contracts_model": "author_backend",
+    "verification_model": "author_backend",
+    "build_model": "author_backend",
+    "verify_author_model": "author_backend",
+    "verify_checker_model": "checker_backend",
+}
+EFFORT_ROWS = {
+    "checker_effort": "checker_model",
+    "plan_effort": "plan_model",
+    "contracts_effort": "contracts_model",
+    "verification_effort": "verification_model",
+    "build_effort": "build_model",
+    "verify_author_effort": "verify_author_model",
+    "verify_checker_effort": "verify_checker_model",
+}
+
+
+def _inherit_word(key: str) -> str | None:
+    f = BY_KEY[key]
+    return f.options[0] if f.options and f.options[0] in ("default", "as plan", "as checker") else None
+
+
+def options_for(key: str, values: dict[str, str]) -> list[str]:
+    """The chips a row shows now: model rows list the provider's catalogue for the chosen
+    backend; effort rows list what the row's resolved model supports (rule: never a flat
+    effort list). The inherit chip stays first."""
+    f = BY_KEY[key]
+    v = {**defaults(), **values}
+    if key in MODEL_ROWS:
+        prov = providers.for_backend(v[MODEL_ROWS[key]])
+        first = _inherit_word(key)
+        return ([first] if first else []) + [m.id for m in prov.list_models()]
+    if key in EFFORT_ROWS:
+        model_key = EFFORT_ROWS[key]
+        r = resolve(v)
+        prov = providers.for_backend(v[MODEL_ROWS[model_key]])
+        first = _inherit_word(key)
+        return ([first] if first else []) + efforts_for(
+            prov.list_models(), r[model_key], f.options[1:] if first else f.options
+        )
+    return list(f.options)
+
+
 def prefs_path(runs_dir: Path | str) -> Path:
     return (
         Path(runs_dir).parent / "prefs.json"
@@ -262,17 +310,29 @@ def resolve(values: dict[str, str]) -> dict[str, str]:
     out = {**defaults(), **{k: v for k, v in values.items() if k in BY_KEY}}
     s = Settings()
     if out["plan_model"] == "default":
-        out["plan_model"] = s.model_a
+        out["plan_model"] = (
+            s.model_a if s.model_a else providers.for_backend(out["author_backend"]).default_model()
+        )
     if out["checker_model"] == "default":
-        out["checker_model"] = s.model_b
+        out["checker_model"] = (
+            s.model_b if s.model_b else providers.for_backend(out["checker_backend"]).default_model()
+        )
     for f in FIELDS:
         if f.key.endswith("_model") and out[f.key] == "default":
             out[f.key] = out["checker_model"] if "checker" in f.key else out["plan_model"]
-        if f.key.endswith("_effort") and out[f.key] == "default":
-            out[f.key] = "medium"
     for f in FIELDS:
         if f.inherits and out[f.key] in ("as plan", "as checker"):
             out[f.key] = out[f.inherits]
+    for key, model_key in EFFORT_ROWS.items():
+        prov = providers.for_backend(out[MODEL_ROWS[model_key]])
+        models = prov.list_models()
+        if out[key] == "default":
+            out[key] = default_effort_for(models, out[model_key], "medium")
+        allowed = efforts_for(models, out[model_key], [out[key]])
+        if out[key] not in allowed:
+            out[key] = default_effort_for(
+                models, out[model_key], allowed[0]
+            )  # a model that lacks the level gets its default
     return out
 
 

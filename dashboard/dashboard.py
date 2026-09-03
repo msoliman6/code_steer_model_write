@@ -27,6 +27,40 @@ from .start import start_page
 RUNS_DIR = Path(os.environ.get("CSMW_RUNS_DIR", "runs"))
 
 
+def _settings_rows(run_dir: str) -> list["SettingRow"]:
+    """What the run was started with: the form's values when the run came from the start page,
+    else the task's roles, mode and rounds (rule 4: one record, rendered)."""
+    from code_steer_model_write import settings_form as sf
+
+    task = (
+        json.loads((Path(run_dir) / "task.json").read_text())
+        if (Path(run_dir) / "task.json").exists()
+        else {}
+    )
+    form = (task.get("metadata") or {}).get("form")
+    rows: list[SettingRow] = []
+    if form:
+        for f in sf.FIELDS:
+            v = form.get(f.key, "")
+            if v:
+                rows.append(SettingRow(name=f.name, value=str(v), group=f.group))
+        return rows
+    rows.append(
+        SettingRow(
+            name="request",
+            value=(task.get("inputs", {}).get("brief", {}) or {}).get("request", ""),
+            group="brief",
+        )
+    )
+    rows.append(SettingRow(name="running mode", value=str(task.get("mode", "")), group="settings"))
+    rows.append(SettingRow(name="attack rounds", value=str(task.get("rounds", "")), group="settings"))
+    for role, spec in (task.get("roles") or {}).items():
+        rows.append(SettingRow(name=f"{role} backend", value=spec.get("backend", ""), group="settings"))
+        rows.append(SettingRow(name=f"{role} model", value=spec.get("model", ""), group="settings"))
+        rows.append(SettingRow(name=f"{role} effort", value=spec.get("effort", ""), group="settings"))
+    return rows
+
+
 def _runs() -> list[dict[str, str]]:
     out = []
     if RUNS_DIR.exists():
@@ -160,6 +194,13 @@ class ModelRow:
     model: str = ""
 
 
+@dataclasses.dataclass
+class SettingRow:
+    name: str = ""
+    value: str = ""
+    group: str = ""
+
+
 def _gate_of(g: dict[str, Any] | None) -> GateView:
     if not g:
         return GateView()
@@ -259,6 +300,7 @@ class S(rx.State):
     token_rows: list[TokenRow] = []
     flagged: list[str] = []
     report_md: str = ""
+    settings_rows: list[SettingRow] = []
 
     # ---- loading -------------------------------------------------------------------------
 
@@ -321,6 +363,7 @@ class S(rx.State):
         self.artifact_md = {k: render_artifact(self.run_dir, k) for k in self.open_paths}
         self.flagged = d["flagged"]
         self.report_md = d.get("report_md") or ""
+        self.settings_rows = _settings_rows(self.run_dir)
         self.loaded = True
 
     @rx.event
@@ -594,6 +637,75 @@ def stage_box(s: Stage) -> rx.Component:
     )
 
 
+def start_box() -> rx.Component:
+    """The first box of the rail: the brief and the settings the run started with."""
+    selected = S.selected == "start"
+    return rx.vstack(
+        rx.text("· settings", **MONO, color=T.MUTED, font_size=SMALL, min_height="36px"),
+        rx.box(
+            rx.vstack(
+                rx.text("▸", color=T.MUTED),
+                rx.text("Start", font_weight="700", font_size=f"{T.SIZE['title']}px", color=T.TEXT),
+                rx.text("brief · settings", **MONO, color=T.MUTED, font_size=SMALL),
+                spacing="1",
+                align="center",
+            ),
+            border=rx.cond(
+                selected, f"1.5px solid {T.tint('slate', 0.95)}", f"1px solid {T.tint('slate', 0.55)}"
+            ),
+            background=rx.cond(selected, T.tint("slate", 0.22), T.tint("slate", 0.10)),
+            border_radius=T.RADIUS["box"],
+            padding=T.SPACE["md"],
+            width="100%",
+            cursor="pointer",
+            on_click=S.pick("start"),
+        ),
+        rx.text(
+            S.mode + " · rounds " + S.rounds.to_string(),
+            **MONO,
+            color=T.MUTED,
+            font_size=SMALL,
+            white_space="nowrap",
+            overflow="hidden",
+            text_overflow="ellipsis",
+            width="100%",
+        ),
+        spacing="1",
+        width="100%",
+        flex="0.8 1 0",
+        min_width="0",
+        overflow="hidden",
+    )
+
+
+def setting_row(r: SettingRow) -> rx.Component:
+    return rx.hstack(
+        rx.text(r.name, **MONO, color=T.MUTED, font_size=SMALL, min_width="190px"),
+        rx.text(r.value, **MONO, font_size=BODY),
+        width="100%",
+        align="start",
+    )
+
+
+def start_panel() -> rx.Component:
+    return rx.box(
+        eyebrow(
+            "START — WHAT THIS RUN WAS GIVEN",
+            rx.link("New run like this ▸", href="/new", **MONO, font_size=SMALL, color=T.LIVE),
+        ),
+        rx.text(
+            "The brief and every setting as chosen when the run started; a new run opens the form with the same picks.",
+            color=T.MUTED,
+            font_size=BODY,
+        ),
+        rx.vstack(
+            rx.foreach(S.settings_rows, setting_row), spacing="1", width="100%", margin_top=T.SPACE["md"]
+        ),
+        border_top=f"2px solid {T.tint('slate', 0.95)}",
+        **CARD,
+    )
+
+
 def header() -> rx.Component:
     return rx.box(
         rx.hstack(
@@ -619,6 +731,7 @@ def header() -> rx.Component:
             align="center",
         ),
         rx.hstack(
+            start_box(),
             rx.foreach(S.stages, stage_box),
             spacing="3",
             width="100%",
@@ -1065,12 +1178,16 @@ def view_tabs() -> rx.Component:
 
 
 def body() -> rx.Component:
-    return rx.match(
-        S.view_tab,
-        ("stage", rx.vstack(stage_panel(), spacing="4", width="100%")),
-        ("outputs", rx.vstack(artifacts_panel(), spacing="4", width="100%")),
-        ("evidence", rx.vstack(evidence(), spacing="4", width="100%")),
-        rx.vstack(stage_panel(), artifacts_panel(), evidence(), spacing="4", width="100%"),
+    return rx.cond(
+        S.selected == "start",
+        start_panel(),
+        rx.match(
+            S.view_tab,
+            ("stage", rx.vstack(stage_panel(), spacing="4", width="100%")),
+            ("outputs", rx.vstack(artifacts_panel(), spacing="4", width="100%")),
+            ("evidence", rx.vstack(evidence(), spacing="4", width="100%")),
+            rx.vstack(stage_panel(), artifacts_panel(), evidence(), spacing="4", width="100%"),
+        ),
     )
 
 

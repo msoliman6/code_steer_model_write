@@ -44,6 +44,7 @@ class Card:
     value: str = ""
     group: str = "settings"
     required: bool = False
+    discovery: str = ""
 
 
 @dataclasses.dataclass

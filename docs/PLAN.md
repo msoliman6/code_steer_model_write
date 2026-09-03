@@ -58,6 +58,11 @@ code-builder's live clean pass on `claude -p` + `codex exec` is the acceptance r
 - The status boxes' colours and shapes; the Start box back in the rail.
 - The opened markdown tables' styling in the Outputs view.
 - The verify step reported 0/8 while the tests pass 8/8 by hand (`checks/runtests.py`).
+- Claude model discovery: the Anthropic Models API (`client.models.list()`, capabilities) for the
+  API-backed sides once a valid key is present; Claude Code itself has no catalogue command, so
+  `claude_cli` keeps the table. Codex is dynamic via `codex debug models` (done).
+- The start page's settings as dropdowns (done) and the Start box in the rail showing what the run
+  was given (done); the user is still listing what else the start page needs.
 - Settle where the coding agent lives: the reference recipe inside the template, or its own repo.
 
 ## Step zero: save this plan before any code
@@ -550,7 +555,7 @@ CLI (`csmw run --set key=value`) and the saved preferences all read it (rule 4).
 6. The description explains the default's reasoning, not the option: `the default: adversarial
    reading is the job, and a weak review looks exactly like convergence`; `fastest; the saving
    usually returns as review rounds — codex finds what claude skipped`.
-7. Right: a single row of option chips, one row per setting, single-select. A chip is mono text
+7. (Revised 2026-09-03 by the user: a **dropdown** per setting, not a chip row; a model row's options are the provider's catalogue for the chosen backend, an effort row's options are the chosen model's supported efforts, discovered dynamically where the CLI can say — `codex debug models` — and from a maintained table where it cannot — Claude Code; the Anthropic Models API when an API key works. `code_steer_model_write/providers/`.) Original text: a single row of option chips, one row per setting, single-select. A chip is mono text
    in a small rounded rectangle (6px radius) with a dark fill and muted text; the selected chip
    has a 1.5px blue outline, blue text and a faint blue tint. No dropdowns, no free text except the
    brief and the run name: reacting to a chip beats authoring a value (RELIABILITY D5d).
