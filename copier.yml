@@ -1,0 +1,42 @@
+# copier copy gh:msoliman6/code_steer_model_write ../my-workflow
+# A project is a separate repo (README: "This is a template, not a project"); `copier update` pulls fixes.
+_min_copier_version: "9.0.0"
+_subdirectory: "."
+_exclude:
+  - ".git"
+  - ".venv"
+  - "runs"
+  - "mlflow.db"
+  - "monitor.db"
+  - ".web"
+  - "docs/PLAN.md"
+  - "docs/media/reference-*.svg"
+  - "copier.yml"
+_tasks:
+  - "python3 -m venv .venv && .venv/bin/pip install -q -e '.[dev]' && .venv/bin/python -m code_steer_model_write.cli doctor || true"
+
+project_name:
+  type: str
+  help: The project's name (folder and README title)
+  default: my-workflow
+first_recipe:
+  type: str
+  help: The recipe to start from
+  choices: [code_builder]
+  default: code_builder
+backend_a:
+  type: str
+  help: The author side's backend
+  choices: [anthropic, agent_sdk, claude_cli, litellm, fake]
+  default: claude_cli
+backend_b:
+  type: str
+  help: The checker side's backend (a different vendor, rule 3)
+  choices: [codex_cli, litellm, fake]
+  default: codex_cli
+model_a:
+  type: str
+  default: claude-sonnet-5
+model_b:
+  type: str
+  default: gpt-5.4-mini

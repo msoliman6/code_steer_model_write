@@ -46,6 +46,7 @@ Every module docstring, check and walk leg cites the rule number it enforces.
   belongs to every project (runtime, recipes, checks, docs) is committed here.
 
 - The design is `docs/PLAN.md`. Read the section you are touching before changing it.
+- The verbs are the `justfile`: `just doctor|walk|test|run|resume|dash|selfcheck|figure|new-recipe`.
 - `csmw walk --all` before any live run; `bash scripts/run.sh` is the full offline suite.
 - Never edit the package while a run lives — every step re-imports it.
 - Before any fix: classify the bug against the classes in `docs/BUG-LEDGER.md`; fix the

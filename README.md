@@ -76,18 +76,31 @@ the other → null run → verify → triage), **debate / evaluation**, **resear
 ## Install
 
 ```bash
-python3 -m pip install -e ".[dev]"
-cp .env.example .env          # one API key is enough to start
-csmw doctor                   # exit 0 = ready; every line it checked is printed
+python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
+cp .env.example .env          # one API key is enough to start; FAKE_MODELS=1 needs none
+just doctor                   # exit 0 = ready; every line it checked is printed (or: .venv/bin/csmw doctor)
 ```
 
 ## First run
 
 ```bash
-csmw walk code_builder        # the whole recipe on fake models, zero tokens, seconds
-csmw dash                     # the dashboard on 127.0.0.1
-csmw run examples/code_builder/task.json
+just walk code_builder        # the whole recipe on fake models: 10 legs, zero tokens, ~20 s
+just dash                     # the dashboard on 127.0.0.1:3000
+just run examples/code_builder/task.json
 ```
+
+`docs/QUICKSTART.md` lists every command; `docs/HACKATHON-30MIN.md` is the first half hour.
+
+## Settings you choose once
+
+The run's start page is one form: the brief, then one card per setting — the running mode,
+the rounds cap, the checker's model, effort and speed, then a model and an effort per stage
+for the author side, then the verification-run overrides — each a row of chips with the default
+pre-selected and a one-line reason for that default. The pre-selected setup is a one-round
+average task: the checker at high effort (a lazy review looks identical to a clean pass), the
+contract and verification rows carrying the judgment, the build on the cheapest model. Adjust
+per task; your picks are remembered for the next run. The form derives from one settings
+schema, which the CLI reads too. The layout is `docs/DASHBOARD-DESIGN.md` → *The start page*.
 
 ## Read more
 
