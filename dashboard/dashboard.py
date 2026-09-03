@@ -538,7 +538,9 @@ def stage_box(s: Stage) -> rx.Component:
             rx.spacer(),
             rx.foreach(
                 s.tokens,
-                lambda t: rx.text(f"{t.role} {t.label}", **MONO, color=T.MUTED, font_size=SMALL),
+                lambda t: rx.text(
+                    f"{t.role} {t.label}", **MONO, color=T.MUTED, font_size=SMALL, white_space="nowrap"
+                ),
             ),
             width="100%",
         ),
@@ -582,6 +584,9 @@ def stage_box(s: Stage) -> rx.Component:
         ),
         spacing="1",
         width="100%",
+        flex="1 1 0",
+        min_width="0",
+        overflow="hidden",
     )
 
 

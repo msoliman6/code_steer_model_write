@@ -50,6 +50,16 @@ Steps 0–12 built and pushed; step 13 has the debate recipe (walked offline); t
 tool-assistant recipes are deferred by the user's decision until the pipeline is proven. The
 code-builder's live clean pass on `claude -p` + `codex exec` is the acceptance run for `proven`.
 
+## Round two (the user's list, 2026-09-03)
+
+- Logos: one per agent side (Claude, Codex) on the page and the figures; a logo for the coding
+  agent itself, to be designed.
+- README: badges; the coding agent's logo; both block diagrams are in (done).
+- The status boxes' colours and shapes; the Start box back in the rail.
+- The opened markdown tables' styling in the Outputs view.
+- The verify step reported 0/8 while the tests pass 8/8 by hand (`checks/runtests.py`).
+- Settle where the coding agent lives: the reference recipe inside the template, or its own repo.
+
 ## Step zero: save this plan before any code
 
 Before anything else is executed, this plan is copied verbatim to
