@@ -545,6 +545,8 @@ def stage_box(s: Stage) -> rx.Component:
             width="100%",
             wrap="wrap",
             row_gap="0",
+            min_height="36px",
+            align="start",
         ),
         rx.box(
             rx.vstack(
