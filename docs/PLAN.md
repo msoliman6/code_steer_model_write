@@ -63,6 +63,12 @@ code-builder's live clean pass on `claude -p` + `codex exec` is the acceptance r
   `claude_cli` keeps the table. Codex is dynamic via `codex debug models` (done).
 - The start page's settings as dropdowns (done) and the Start box in the rail showing what the run
   was given (done); the user is still listing what else the start page needs.
+- The coding agent's logo: one glass ice cube (the frozen contract) with two curved arrows in the
+  author's orange and the checker's teal chasing each other around it (the swap); a colour mark and
+  a one-colour mark; 🧊🔁 as the placeholder. The agent-side logos: the user will paste them.
+- An end-to-end progress bar under the rail, tqdm-like, left-aligned at about a third of the
+  width: the stage hues as segments filling as stages complete, the running stage filling by its
+  steps done, a percentage beside it, elapsed, and the remaining estimate once history exists.
 - Settle where the coding agent lives: the reference recipe inside the template, or its own repo.
 
 ## Step zero: save this plan before any code
