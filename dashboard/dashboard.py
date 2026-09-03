@@ -21,7 +21,7 @@ from code_steer_model_write.state.lock import atomic_write_text
 from code_steer_model_write.state.run import RunPaths
 
 from . import theme as T
-from .model import build_view
+from .model import build_view, render_artifact
 from .start import start_page
 
 RUNS_DIR = Path(os.environ.get("CSMW_RUNS_DIR", "runs"))
@@ -46,6 +46,15 @@ def _runs() -> list[dict[str, str]]:
 class TokenRow:
     role: str = ""
     n: int = 0
+    label: str = ""  # K / M
+
+
+@dataclasses.dataclass
+class ArtRow:
+    stage: str = ""
+    label: str = ""
+    path: str = ""
+    kind: str = ""
 
 
 @dataclasses.dataclass
@@ -196,7 +205,7 @@ def _stage_of(s: dict[str, Any]) -> Stage:
         rounds=s.get("rounds", ""),
         note=s.get("note", ""),
         outcome=s.get("outcome", ""),
-        tokens=[TokenRow(role=k, n=v) for k, v in s.get("tokens", {}).items()],
+        tokens=[TokenRow(role=k, n=v, label=T.k(v)) for k, v in s.get("tokens", {}).items()],
         rows=[
             Row(
                 id=str(r.get("id", "")),
@@ -221,6 +230,10 @@ class S(rx.State):
     comments: dict[str, str] = {}
     detail_full: bool = False
     filter_phase: str = "all"
+    view_tab: str = rx.SessionStorage("full", name="csmw_view")
+    artifacts: list[ArtRow] = []
+    open_paths: list[str] = []
+    artifact_md: dict[str, str] = {}
     run_id: str = ""
     recipe: str = ""
     mode: str = ""
@@ -302,7 +315,10 @@ class S(rx.State):
             for c in d["carried"]
         ]
         self.model_rows = [ModelRow(role=k, model=m) for k, m in d["models"].items()]
-        self.token_rows = [TokenRow(role=k, n=n) for k, n in d["tokens"].items()]
+        self.token_rows = [TokenRow(role=k, n=n, label=T.k(n)) for k, n in d["tokens"].items()]
+        self.artifacts = [ArtRow(**a) for a in d["artifacts"]]
+        self.runs = _runs()
+        self.artifact_md = {k: render_artifact(self.run_dir, k) for k in self.open_paths}
         self.flagged = d["flagged"]
         self.report_md = d.get("report_md") or ""
         self.loaded = True
@@ -347,6 +363,22 @@ class S(rx.State):
     @rx.event
     def set_filter(self, phase: str):
         self.filter_phase = phase
+
+    @rx.event
+    def set_view(self, tab: str):
+        self.view_tab = tab
+
+    @rx.event
+    def toggle_artifact(self, path: str):
+        if path in self.open_paths:
+            self.open_paths = [p for p in self.open_paths if p != path]
+        else:
+            self.open_paths = [*self.open_paths, path]
+            self.artifact_md = {**self.artifact_md, path: render_artifact(self.run_dir, path)}
+
+    @rx.var
+    def stage_artifacts(self) -> list[ArtRow]:
+        return [a for a in self.artifacts if a.stage == self.selected]
 
     @rx.var
     def selected(self) -> str:
@@ -486,7 +518,15 @@ def chip(c: ChipRow) -> rx.Component:
     )
 
 
+GLASS_FILL = [(k, T.tint(k, 0.10)) for k in T.STAGE_HUES]
+GLASS_FILL_SEL = [(k, T.tint(k, 0.22)) for k in T.STAGE_HUES]
+GLASS_STROKE = [(k, f"1px solid {T.tint(k, 0.55)}") for k in T.STAGE_HUES]
+GLASS_STROKE_SEL = [(k, f"1.5px solid {T.tint(k, 0.95)}") for k in T.STAGE_HUES]
+
+
 def stage_box(s: Stage) -> rx.Component:
+    """A glass box (§7b): a translucent fill in the stage's hue with a tinted stroke; the
+    selected one is the darker glass, as two panes overlapping."""
     hue = rx.match(s.hue, *HUE_MATCH, T.MUTED)
     selected = S.selected == s.id
     glyph = rx.match(s.state, ("done", "✓"), ("now", "●"), ("halted", "■"), "○")
@@ -498,7 +538,7 @@ def stage_box(s: Stage) -> rx.Component:
             rx.spacer(),
             rx.foreach(
                 s.tokens,
-                lambda t: rx.text(f"{t.role} {t.n}", **MONO, color=T.MUTED, font_size=SMALL),
+                lambda t: rx.text(f"{t.role} {t.label}", **MONO, color=T.MUTED, font_size=SMALL),
             ),
             width="100%",
         ),
@@ -515,9 +555,15 @@ def stage_box(s: Stage) -> rx.Component:
                 spacing="1",
                 align="center",
             ),
-            border=rx.cond(selected, f"2px solid {T.BORDER_STRONG}", f"1px solid {T.BORDER}"),
-            border_top=f"2px solid {hue}",
-            opacity=rx.cond(s.state == "pending", "0.6", "1"),
+            border=rx.cond(
+                selected,
+                rx.match(s.hue, *GLASS_STROKE_SEL, f"1.5px solid {T.BORDER_STRONG}"),
+                rx.match(s.hue, *GLASS_STROKE, f"1px solid {T.BORDER}"),
+            ),
+            background=rx.cond(
+                selected, rx.match(s.hue, *GLASS_FILL_SEL, T.CARD), rx.match(s.hue, *GLASS_FILL, T.CARD)
+            ),
+            opacity=rx.cond(s.state == "pending", "0.55", "1"),
             border_radius=T.RADIUS["box"],
             padding=T.SPACE["md"],
             width="100%",
@@ -590,7 +636,7 @@ def header() -> rx.Component:
                 S.token_rows,
                 lambda t: rx.hstack(
                     rx.text(t.role, **MONO, color=T.MUTED),
-                    rx.text(f"{t.n} tok", **MONO, font_weight="700"),
+                    rx.text(f"{t.label} tok", **MONO, font_weight="700"),
                     spacing="1",
                 ),
             ),
@@ -730,6 +776,60 @@ def agent_row(r: AgentRow) -> rx.Component:
         ),
         width="100%",
         font_size=SMALL,
+    )
+
+
+def artifact_row(a: ArtRow) -> rx.Component:
+    is_open = S.open_paths.contains(a.path)
+    return rx.vstack(
+        rx.hstack(
+            rx.text(
+                rx.cond(is_open, "▾", "▸"),
+                **MONO,
+                color=T.LIVE,
+                cursor="pointer",
+                on_click=S.toggle_artifact(a.path),
+                width="16px",
+            ),
+            rx.text(a.label, **MONO, font_size=BODY, cursor="pointer", on_click=S.toggle_artifact(a.path)),
+            rx.text(a.kind, **MONO, color=T.DIM, font_size=SMALL),
+            rx.spacer(),
+            rx.text(a.path, **MONO, color=T.DIM, font_size=SMALL),
+            width="100%",
+            align="center",
+        ),
+        rx.cond(
+            is_open,
+            rx.box(
+                rx.markdown(S.artifact_md[a.path]),
+                padding=T.SPACE["md"],
+                border_left=f"2px solid {T.BORDER_STRONG}",
+                margin_left="8px",
+                width="100%",
+                overflow_x="auto",
+            ),
+            rx.fragment(),
+        ),
+        spacing="1",
+        width="100%",
+    )
+
+
+def artifacts_panel() -> rx.Component:
+    return rx.box(
+        eyebrow(
+            "OUTPUTS OF THIS STAGE",
+            rx.text(
+                f"{S.stage_artifacts.length()} records · ▸ reads one as markdown",
+                **MONO,
+                color=T.MUTED,
+                font_size=SMALL,
+            ),
+        ),
+        rx.vstack(
+            rx.foreach(S.stage_artifacts, artifact_row), spacing="2", width="100%", margin_top=T.SPACE["sm"]
+        ),
+        **CARD,
     )
 
 
@@ -882,43 +982,102 @@ def evidence() -> rx.Component:
     )
 
 
-def runs_list() -> rx.Component:
+def status_dot(dot, ring) -> rx.Component:
+    color = rx.match(dot, ("running", T.OK), ("waiting", T.WARN), ("halted", T.BAD), T.DIM)
+    ring_css = rx.match(ring, ("ok", f"0 0 0 2px {T.OK}55"), ("warn", f"0 0 0 2px {T.WARN}66"), "none")
     return rx.box(
-        eyebrow("RUNS"),
-        rx.foreach(
-            S.runs,
-            lambda r: rx.hstack(
-                rx.button(
-                    r["id"],
-                    size="1",
-                    variant=rx.cond(S.run_dir == r["dir"], "solid", "soft"),
-                    on_click=S.open_run(r["dir"]),
-                ),
-                rx.text(r["recipe"], **MONO, color=T.MUTED),
-                rx.text(r["status"], **MONO, color=T.MUTED),
-                spacing="2",
-            ),
+        width="9px", height="9px", border_radius="50%", background=color, box_shadow=ring_css, flex_shrink="0"
+    )
+
+
+def run_tab(r) -> rx.Component:
+    active = S.run_dir == r["dir"]
+    return rx.hstack(
+        status_dot(r["dot"], r["ring"]),
+        rx.text(
+            r["id"],
+            **MONO,
+            font_size=BODY,
+            color=rx.cond(active, T.TEXT, T.MUTED),
+            font_weight=rx.cond(active, "700", "400"),
         ),
-        **CARD,
+        rx.text(r["recipe"], **MONO, font_size=SMALL, color=T.DIM),
+        spacing="2",
+        align="center",
+        padding="8px 14px",
+        cursor="pointer",
+        on_click=S.open_run(r["dir"]),
+        border_bottom=rx.cond(active, f"2px solid {T.LIVE}", "2px solid transparent"),
+    )
+
+
+def runs_tabs() -> rx.Component:
+    """Browser-like tabs, no card: a dot per run (green running · amber waiting for you · red halted
+    or broke · grey done, with a green ring for a clean verdict and an amber ring for carried items)."""
+    return rx.hstack(
+        rx.foreach(S.runs, run_tab),
+        rx.spacer(),
+        rx.link("New run ▸", href="/new", **MONO, font_size=SMALL, color=T.LIVE, padding="8px 14px"),
+        width="100%",
+        border_bottom=f"1px solid {T.BORDER}",
+        align="end",
+        spacing="0",
+    )
+
+
+VIEW_TABS = [("full", "Full"), ("stage", "Stage"), ("outputs", "Outputs"), ("evidence", "Evidence")]
+
+
+def view_tab(key: str, label: str) -> rx.Component:
+    active = S.view_tab == key
+    return rx.box(
+        rx.text(
+            label,
+            **MONO,
+            font_size=BODY,
+            color=rx.cond(active, T.TEXT, T.MUTED),
+            font_weight=rx.cond(active, "700", "400"),
+        ),
+        padding="8px 12px",
+        cursor="pointer",
+        on_click=S.set_view(key),
+        border_left=rx.cond(active, f"2px solid {T.LIVE}", "2px solid transparent"),
+    )
+
+
+def view_tabs() -> rx.Component:
+    return rx.vstack(
+        *[view_tab(k, v) for k, v in VIEW_TABS],
+        spacing="0",
+        align="start",
+        min_width="110px",
+        padding_top=T.SPACE["sm"],
+    )
+
+
+def body() -> rx.Component:
+    return rx.match(
+        S.view_tab,
+        ("stage", rx.vstack(stage_panel(), spacing="4", width="100%")),
+        ("outputs", rx.vstack(artifacts_panel(), spacing="4", width="100%")),
+        ("evidence", rx.vstack(evidence(), spacing="4", width="100%")),
+        rx.vstack(stage_panel(), artifacts_panel(), evidence(), spacing="4", width="100%"),
     )
 
 
 def index() -> rx.Component:
     return rx.box(
         rx.vstack(
-            rx.hstack(
-                rx.text("CODE STEERS · MODELS WRITE", **EYEBROW),
-                rx.spacer(),
-                rx.link("New run ▸", href="/new", **MONO, font_size=SMALL, color=T.LIVE),
-                width="100%",
-            ),
-            rx.text(
-                rx.cond(S.loaded, S.run_id, "no run"), font_size=f"{T.SIZE['page']}px", font_weight="700"
-            ),
-            runs_list(),
+            rx.text("CODE STEERS · MODELS WRITE", **EYEBROW),
+            runs_tabs(),
             rx.cond(
                 S.loaded,
-                rx.vstack(header(), stage_panel(), evidence(), spacing="4", width="100%"),
+                rx.vstack(
+                    header(),
+                    rx.hstack(view_tabs(), body(), spacing="4", width="100%", align="start"),
+                    spacing="4",
+                    width="100%",
+                ),
                 rx.text("Pick a run.", color=T.MUTED),
             ),
             spacing="4",

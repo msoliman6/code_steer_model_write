@@ -40,14 +40,34 @@ MONO = "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
 SANS = "Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif"
 
 # the five-step type scale (px); CSMW_BASE shifts all of them
-BASE = 13
-SIZE = {"eyebrow": 11, "body": 13, "title": 15, "headline": 18, "page": 28}
+BASE = 14
+SIZE = {"eyebrow": 12, "body": 14, "title": 16, "headline": 20, "page": 28}
 LETTER_SPACING_EYEBROW = "0.08em"
 
 SPACE = {"xs": "4px", "sm": "8px", "md": "12px", "lg": "20px", "xl": "32px"}
 RADIUS = {"card": "12px", "box": "10px", "chip": "999px"}
 PAGE_WIDTH = "1140px"
 POLL_SECONDS = 3
+
+
+# run status dot (the runs tabs): one colour per state
+STATUS_DOT: dict[str, str] = {
+    "running": OK,  # green: working
+    "waiting": WARN,  # amber: a gate is waiting for you
+    "halted": BAD,  # red: halted honestly (resumable) or broke
+    "done": DIM,  # grey: finished; a clean verdict gets a green ring, carried items an amber ring
+    "queued": DIM,
+}
+
+
+def k(n: int | float) -> str:
+    """Tokens in K and M: 25.2K, 1.3M; under a thousand as is."""
+    n = float(n)
+    if n >= 1_000_000:
+        return f"{n / 1_000_000:.1f}M"
+    if n >= 1_000:
+        return f"{n / 1_000:.1f}K" if n < 100_000 else f"{n / 1_000:.0f}K"
+    return f"{int(n)}"
 
 
 def tint(hue: str, alpha: float) -> str:

@@ -70,9 +70,21 @@ the other → null run → verify → triage; walked offline on 10 legs, proven 
 on a rubric; walked offline, unproven live). The research and tool-assistant recipes are
 designed in `docs/PLAN.md` §5.2 and not built yet; `just new-recipe` is the way in.
 
+Two diagrams, both generated from the code so they cannot drift from it (`just figure`):
+
+**The system** — how a workflow operates, stage by stage, who writes and who checks:
+
 <p align="center"><picture>
 <source media="(prefers-color-scheme: dark)" srcset="docs/media/workflow-dark.svg">
 <img src="docs/media/workflow.svg" alt="How the code-builder workflow operates" width="820">
+</picture></p>
+
+**The harness** — how the runtime is wired: the driver, the two sides, `ask()`, the one owner of
+every fact, the sinks and views, the page:
+
+<p align="center"><picture>
+<source media="(prefers-color-scheme: dark)" srcset="docs/media/harness-dark.svg">
+<img src="docs/media/harness.svg" alt="How the runtime is wired" width="820">
 </picture></p>
 
 ## Install

@@ -91,6 +91,13 @@ class Segment(BaseModel):
     kind: str = "call"
 
 
+class ArtifactRef(BaseModel):
+    stage: str
+    label: str  # "contract v3", "review r1 · findings", "gate blocks.r1 · decision"
+    path: str  # run-dir relative
+    kind: str  # artifact | findings | arbitration | gate | ruling | results | report
+
+
 class RunView(BaseModel):
     run_id: str
     recipe: str
@@ -125,6 +132,9 @@ class RunView(BaseModel):
     report_md: str | None
     refresh_hash: str
     live_files: list[str]
+    artifacts: list[ArtifactRef] = Field(default_factory=list)
+    dot: str = "queued"  # running | waiting | halted | done | queued
+    dot_ring: str = ""  # "" | ok | warn  (for done: clean verdict, or carried items)
 
 
 def refresh_hash(paths: RunPaths) -> tuple[str, list[str]]:
@@ -402,6 +412,8 @@ def build_view(run_dir: Path | str) -> RunView:
         fl = [d["id"] for d in json.loads(paths.decisions.read_text()) if d.get("flagged")]
     rh, live = refresh_hash(paths)
     rmd = (paths.run_dir / "REPORT.md").read_text() if (paths.run_dir / "REPORT.md").exists() else None
+    dot, ring = run_dot(st, halt, any(s.gate for s in stages), bool(carried) or failing > 0)
+    arts = list_artifacts(paths, spec, step_phase)
     return RunView(
         run_id=st.run_id,
         recipe=st.recipe,
@@ -436,7 +448,208 @@ def build_view(run_dir: Path | str) -> RunView:
         report_md=rmd,
         refresh_hash=rh,
         live_files=live,
+        artifacts=arts,
+        dot=dot,
+        dot_ring=ring,
     )
+
+
+def run_dot(st: RunState, halt: Halt | None, gated: bool, unclean: bool) -> tuple[str, str]:
+    """The runs-tab dot: green running, amber waiting for you, red halted or broke, grey done."""
+    if st.status.value in ("PAUSED", "FAILED", "CANCELLED") or halt is not None:
+        return "halted", ""
+    if st.status.value == "COMPLETED":
+        return "done", ("warn" if unclean else "ok")
+    if gated:
+        return "waiting", ""
+    if st.status.value == "RUNNING":
+        return "running", ""
+    return "queued", ""
+
+
+def list_artifacts(paths: RunPaths, spec, step_phase: dict[str, str]) -> list[ArtifactRef]:
+    """Every record a stage produced, in order, as a clickable reference; the page renders it
+    as markdown on demand with the same renderer the models read (rule 2)."""
+    run = paths.run_dir
+    out: list[ArtifactRef] = []
+    stage_of_key = {
+        "brief": "plan",
+        "ledger": "plan",
+        "plan": "plan",
+        "contract": "contracts",
+        "vspec": "verification",
+        "tasks": "verification",
+        "results": "verify",
+        "report": "verify",
+        "hypotheses": "hypotheses",
+        "support": "cases",
+        "challenge": "cases",
+        "rebuttal": "rebuttal",
+        "ruling": "judgment",
+    }
+    loop_stage = {
+        "plan": "plan",
+        "contract": "contracts",
+        "contract_audit": "contracts",
+        "vspec": "verification",
+        "hypotheses": "hypotheses",
+    }
+    stages = {s.id for s in spec.stages}
+    if paths.artifacts.exists():
+        for d in sorted(paths.artifacts.iterdir()):
+            st = stage_of_key.get(d.name, spec.stages[0].id)
+            if st not in stages:
+                st = spec.stages[0].id
+            for v in sorted(d.glob("v*.json")):
+                out.append(
+                    ArtifactRef(
+                        stage=st, label=f"{d.name} {v.stem}", path=str(v.relative_to(run)), kind="artifact"
+                    )
+                )
+    rev = run / "review"
+    if rev.exists():
+        for loop in sorted(rev.iterdir()):
+            st = loop_stage.get(loop.name, spec.stages[0].id)
+            for f in sorted(loop.glob("round-*.findings.json")):
+                n = f.name.split("-")[1].split(".")[0]
+                out.append(
+                    ArtifactRef(
+                        stage=st,
+                        label=f"{loop.name} r{n} · findings",
+                        path=str(f.relative_to(run)),
+                        kind="findings",
+                    )
+                )
+                a = loop / f"round-{n}.arbitration.json"
+                if a.exists():
+                    out.append(
+                        ArtifactRef(
+                            stage=st,
+                            label=f"{loop.name} r{n} · arbitration",
+                            path=str(a.relative_to(run)),
+                            kind="arbitration",
+                        )
+                    )
+    if paths.gates.exists():
+        for g in sorted(paths.gates.glob("*.ask.json")):
+            gid = g.name[: -len(".ask.json")]
+            stg = next(
+                (s.id for s in spec.stages for x in s.gates_after if gid.startswith(x)), spec.stages[0].id
+            )
+            out.append(
+                ArtifactRef(stage=stg, label=f"gate {gid} · ask", path=str(g.relative_to(run)), kind="gate")
+            )
+            d = paths.gates / f"{gid}.decision.json"
+            if d.exists():
+                out.append(
+                    ArtifactRef(
+                        stage=stg, label=f"gate {gid} · decision", path=str(d.relative_to(run)), kind="gate"
+                    )
+                )
+    tri = run / "triage"
+    if tri.exists():
+        for f in sorted(tri.glob("*.json")):
+            out.append(
+                ArtifactRef(
+                    stage="verify", label=f"ruling {f.stem}", path=str(f.relative_to(run)), kind="ruling"
+                )
+            )
+    for name in ("freeze.json", "coverage.json", "evals.json"):
+        p = run / name
+        if p.exists():
+            out.append(
+                ArtifactRef(
+                    stage={
+                        "freeze.json": "contracts",
+                        "coverage.json": "verification",
+                        "evals.json": "verify",
+                    }.get(name, spec.stages[0].id),
+                    label=name,
+                    path=name,
+                    kind="artifact",
+                )
+            )
+    return out
+
+
+def render_artifact(run_dir: Path | str, rel: str) -> str:
+    """The record at `rel`, as the markdown a model would read (rule 2). Lists of findings and
+    plain JSON records get a table; an Artifact gets its own renderer."""
+    from code_steer_model_write.artifacts.render import render as _render
+    from code_steer_model_write.review.rounds import ReviewLoop
+    from code_steer_model_write.spec.findings import Finding
+
+    p = Path(run_dir) / rel
+    if not p.exists():
+        return "(gone)"
+    data = json.loads(p.read_text())
+    if isinstance(data, list) and data and isinstance(data[0], dict) and "severity" in data[0]:
+        return ReviewLoop.render_findings([Finding.model_validate(x) for x in data], audience="human")
+    model = _model_for(rel)
+    if model is not None:
+        try:
+            return _render(model.model_validate(data), "human")
+        except Exception:  # noqa: BLE001 -- fall through to the generic table
+            pass
+    return _generic_md(data)
+
+
+def _model_for(rel: str):
+    from code_steer_model_write.artifacts.brief import Brief
+    from code_steer_model_write.artifacts.contract import Contract
+    from code_steer_model_write.artifacts.ledger import AssumptionsLedger
+    from code_steer_model_write.artifacts.plan import Plan
+    from code_steer_model_write.artifacts.report import Report
+    from code_steer_model_write.artifacts.results import Results, Ruling
+    from code_steer_model_write.artifacts.tasks import Tasks
+    from code_steer_model_write.artifacts.vspec import VerificationSpec
+
+    parts = Path(rel).parts
+    if parts[0] == "artifacts":
+        return {
+            "brief": Brief,
+            "ledger": AssumptionsLedger,
+            "plan": Plan,
+            "contract": Contract,
+            "vspec": VerificationSpec,
+            "tasks": Tasks,
+            "results": Results,
+            "report": Report,
+        }.get(parts[1])
+    if parts[0] == "triage":
+        return Ruling
+    return None
+
+
+def _generic_md(data: Any, level: int = 3) -> str:
+    if isinstance(data, dict):
+        rows = []
+        nested = []
+        for k, v in data.items():
+            if isinstance(v, (dict, list)) and v:
+                nested.append((k, v))
+            else:
+                rows.append(
+                    f"| {k} | {json.dumps(v, ensure_ascii=False) if not isinstance(v, str) else v.replace(chr(10), ' ')} |"
+                )
+        out = ["| field | value |", "|---|---|", *rows] if rows else []
+        for k, v in nested:
+            out.append(f"\n{'#' * level} {k}\n")
+            out.append(_generic_md(v, level + 1))
+        return "\n".join(out)
+    if isinstance(data, list):
+        if data and all(isinstance(x, dict) for x in data):
+            cols = list(dict.fromkeys(k for x in data for k in x))
+            lines = ["| " + " | ".join(cols) + " |", "|" + "---|" * len(cols)]
+            for x in data:
+                lines.append(
+                    "| "
+                    + " | ".join(str(x.get(c, "")).replace("|", "/").replace("\n", " ")[:200] for c in cols)
+                    + " |"
+                )
+            return "\n".join(lines)
+        return "\n".join(f"- {x}" for x in data) or "(empty)"
+    return str(data)
 
 
 def _stage_of(phase: str, spec) -> str:

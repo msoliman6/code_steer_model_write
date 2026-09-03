@@ -257,6 +257,12 @@ def cmd_dash(a: argparse.Namespace) -> int:
 def cmd_figure(a: argparse.Namespace) -> int:
     from .figure import write_figure
 
+    if a.recipe == "harness":
+        from .figure_harness import write
+
+        out = write(Path(a.out), theme=a.theme)
+        print(f"wrote {out}")
+        return 0
     out = write_figure(a.recipe, Path(a.out), theme=a.theme)
     print(f"wrote {out}")
     return 0

@@ -45,6 +45,8 @@ smoke *backends="anthropic":
 figure recipe="code_builder":
     {{py}} -m code_steer_model_write.cli figure {{recipe}} -o docs/media/workflow-dark.svg --theme dark
     {{py}} -m code_steer_model_write.cli figure {{recipe}} -o docs/media/workflow.svg --theme light
+    {{py}} -m code_steer_model_write.cli figure harness -o docs/media/harness-dark.svg --theme dark
+    {{py}} -m code_steer_model_write.cli figure harness -o docs/media/harness.svg --theme light
 
 # scaffold a new recipe from the skeleton
 new-recipe name:
