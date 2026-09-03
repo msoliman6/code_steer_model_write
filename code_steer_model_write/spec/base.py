@@ -77,6 +77,12 @@ def _strict(node: Any) -> Any:
         return [_strict(n) for n in node]
     if not isinstance(node, dict):
         return node
+    if "allOf" in node and len(node["allOf"]) == 1 and "$ref" in node["allOf"][0]:
+        node = {**{k: v for k, v in node.items() if k != "allOf"}, "$ref": node["allOf"][0]["$ref"]}
+    if "$ref" in node:
+        return {
+            "$ref": node["$ref"]
+        }  # a $ref stands alone: no description, no default beside it (codex/OpenAI strict)
     out: dict[str, Any] = {}
     for k, v in node.items():
         if k in _STRIPPED:

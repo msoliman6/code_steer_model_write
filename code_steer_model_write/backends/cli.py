@@ -67,6 +67,14 @@ def _claude_parse(obj: dict[str, Any]) -> list[Fact]:
         return out or [Fact(kind="turn", text="assistant")]
     if t == "result":
         u = obj.get("usage", {}) or {}
+        if obj.get("is_error"):
+            return [
+                Fact(
+                    kind="error",
+                    text=str(obj.get("result") or obj.get("terminal_reason") or "is_error")[:200],
+                    data={"subtype": obj.get("subtype")},
+                )
+            ]
         return [
             Fact(
                 kind="usage",
@@ -125,11 +133,14 @@ class ClaudeCliBackend:
         ]
         if call.effort:
             cmd += ["--effort", call.effort]
+        env = {**os.environ, "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1"}
+        if os.environ.get("CSMW_CLI_USE_LOGIN", "") not in ("", "0", "false"):
+            env.pop("ANTHROPIC_API_KEY", None)  # the subscription login, not the key in the shell
         with tempfile.TemporaryDirectory() as empty:
             run = run_jsonl(
                 cmd,
                 cwd=Path(empty),
-                env={**os.environ, "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1"},
+                env=env,
                 stdin_text=call.user,
                 parse=_claude_parse,
                 stream_path=call.stream_path,
@@ -149,6 +160,13 @@ class ClaudeCliBackend:
                 facts=run.tail,
             )
         last = run.last_json or {}
+        if last.get("type") == "result" and last.get("is_error"):
+            return CallResult(
+                status="error",
+                reason=str(last.get("result") or last.get("terminal_reason"))[:300],
+                usage=usage,
+                facts=run.tail,
+            )
         if (
             last.get("type") == "result"
             and last.get("subtype") == "success"

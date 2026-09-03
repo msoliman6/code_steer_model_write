@@ -251,3 +251,33 @@ def test_every_backend_refuses_tools_in_v1():
     for b in (AnthropicBackend(client=object()), LiteLLMBackend(completion=lambda **k: None)):
         r = b.complete(_call(tools=[t]), lambda f: None)
         assert r.status == "error" and "tool-less" in r.reason
+
+
+def test_claude_cli_is_error_beats_subtype_success(tmp_path, monkeypatch):
+    """A result line with is_error is an error whatever its subtype says (ledger: an exit code that lies)."""
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    line = json.dumps(
+        {
+            "type": "result",
+            "subtype": "success",
+            "is_error": True,
+            "result": "Failed to authenticate",
+            "usage": {},
+        }
+    )
+    _exe(bin_dir / "claude", f"cat > /dev/null\necho '{line}'\n")
+    monkeypatch.setenv("PATH", f"{bin_dir}:{os.environ['PATH']}")
+    r = ClaudeCliBackend().complete(_call(), lambda f: None)
+    assert r.status == "error" and "authenticate" in r.reason
+
+
+def test_wire_schema_ref_stands_alone(finding_models):
+    """codex/OpenAI strict mode rejects a description beside a $ref."""
+    from code_steer_model_write.spec.findings import Findings as RealFindings
+
+    s = RealFindings.wire_schema()
+    for node in s["$defs"]["Finding"]["properties"].values():
+        if "$ref" in node:
+            assert list(node) == ["$ref"], node
+    assert "allOf" not in json.dumps(s)
