@@ -65,8 +65,10 @@ the Anthropic SDK, the Claude Agent SDK, LiteLLM, and the `claude` / `codex` CLI
 fake backend that walks the whole pipeline offline with zero tokens.
 
 Recipes in the box: **code-builder** (plan → contract → freeze → tests by one model, source by
-the other → null run → verify → triage), **debate / evaluation**, **research / analysis**,
-**tool-using assistant**.
+the other → null run → verify → triage; walked offline on 10 legs, proven live on `claude -p` +
+`codex exec`) and **debate** (hypotheses → support vs challenge → rebuttal by id → a fresh judge
+on a rubric; walked offline, unproven live). The research and tool-assistant recipes are
+designed in `docs/PLAN.md` §5.2 and not built yet; `just new-recipe` is the way in.
 
 <p align="center"><picture>
 <source media="(prefers-color-scheme: dark)" srcset="docs/media/workflow-dark.svg">

@@ -44,6 +44,12 @@ Rule 2's tool clause in code: a step with `needs_tools=True` gets `scope_root = 
 folder`; `streams.py` kills the call on any write outside it; a tool-less step passes
 `tools=()` by construction.
 
+## Status (2026-09-03)
+
+Steps 0–12 built and pushed; step 13 has the debate recipe (walked offline); the research and
+tool-assistant recipes are deferred by the user's decision until the pipeline is proven. The
+code-builder's live clean pass on `claude -p` + `codex exec` is the acceptance run for `proven`.
+
 ## Step zero: save this plan before any code
 
 Before anything else is executed, this plan is copied verbatim to
