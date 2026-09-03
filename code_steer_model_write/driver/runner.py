@@ -179,9 +179,14 @@ class Runner:
 
         checks = [_check(n) for n in step.checks]
         known = set(ctx.extra.get("known_ids", [])) | _known_ids(ctx)
+        role_spec = self.roles[step.role]
+        if step.model or step.effort:
+            role_spec = role_spec.model_copy(
+                update={k: v for k, v in (("model", step.model), ("effort", step.effort)) if v}
+            )
         cctx = CallContext(
-            backend=self.backends[self.roles[step.role].backend.value],
-            role_spec=self.roles[step.role],
+            backend=self.backends[role_spec.backend.value],
+            role_spec=role_spec,
             events=self.events,
             step=step.key,
             streams_dir=self.paths.streams,

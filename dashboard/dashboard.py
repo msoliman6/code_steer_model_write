@@ -22,6 +22,7 @@ from code_steer_model_write.state.run import RunPaths
 
 from . import theme as T
 from .model import build_view
+from .start import start_page
 
 RUNS_DIR = Path(os.environ.get("CSMW_RUNS_DIR", "runs"))
 
@@ -905,7 +906,12 @@ def runs_list() -> rx.Component:
 def index() -> rx.Component:
     return rx.box(
         rx.vstack(
-            rx.text("CODE STEERS · MODELS WRITE", **EYEBROW),
+            rx.hstack(
+                rx.text("CODE STEERS · MODELS WRITE", **EYEBROW),
+                rx.spacer(),
+                rx.link("New run ▸", href="/new", **MONO, font_size=SMALL, color=T.LIVE),
+                width="100%",
+            ),
             rx.text(
                 rx.cond(S.loaded, S.run_id, "no run"), font_size=f"{T.SIZE['page']}px", font_weight="700"
             ),
@@ -932,3 +938,4 @@ def index() -> rx.Component:
 
 app = rx.App(theme=rx.theme(appearance="dark"))
 app.add_page(index, route="/", title="csmw")
+app.add_page(start_page, route="/new", title="csmw · new run")

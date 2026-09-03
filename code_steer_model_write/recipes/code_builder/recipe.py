@@ -324,6 +324,19 @@ class CodeBuilder(Recipe):
     # ---- the generator (rule 1: derived from the files) -------------------------------------
 
     def steps(self, state: RunState, paths: RunPaths, store: Store) -> list[Step]:
+        return self._with_stage_roles(self._steps(state, paths, store), state)
+
+    def _with_stage_roles(self, steps: list[Step], state: RunState) -> list[Step]:
+        from ...settings_form import stage_role
+
+        phase_stage = {str(st.n): st.id for st in self.spec.stages}
+        for s in steps:
+            if s.kind is StepKind.AUTHOR and s.role and s.phase in phase_stage:
+                rs = stage_role(state.task, phase_stage[s.phase], s.role)
+                s.model, s.effort = rs.model, rs.effort
+        return steps
+
+    def _steps(self, state: RunState, paths: RunPaths, store: Store) -> list[Step]:
         run = paths.run_dir
         loops = self._loops(state)
         out: list[Step] = []

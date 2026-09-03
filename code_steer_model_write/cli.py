@@ -128,6 +128,40 @@ def cmd_run(a: argparse.Namespace) -> int:
     return _report_outcome(paths, outcome)
 
 
+def cmd_start(a: argparse.Namespace) -> int:
+    """The start page from the terminal: the form's defaults, prefs.json, then --set key=value."""
+    from . import settings_form as sf
+
+    runs_dir = Path(Settings().runs_dir)
+    values = {**sf.load_prefs(runs_dir)}
+    for kv in a.set or []:
+        k, _, v = kv.partition("=")
+        if k not in sf.BY_KEY:
+            print(f"refused: no setting named {k!r}; the fields are {list(sf.BY_KEY)}")
+            return 2
+        values[k] = v
+    missing = sf.missing_required(values)
+    if missing:
+        print(f"refused: fill {missing} (--set run_name=... --set request=...)")
+        return 2
+    task = sf.build_task(values)
+    sf.save_prefs(runs_dir, values)
+    run_dir = runs_dir / task.task_id
+    if RunPaths(run_dir=run_dir).state.exists():
+        print(f"refused: a run already lives at {run_dir}")
+        return 2
+    print(
+        f"run {task.task_id} at {run_dir}: {task.mode} · rounds {task.rounds} · author {task.roles['author'].backend.value}/{task.roles['author'].model} · checker {task.roles['checker'].backend.value}/{task.roles['checker'].model}"
+    )
+    if a.dry:
+        print(task.model_dump_json(indent=2)[:1200])
+        return 0
+    RunState.create(RunPaths(run_dir=run_dir), task)
+    runner = runner_for(run_dir, gate_timeout=a.gate_timeout)
+    _attach_mirrors(runner, a)
+    return _report_outcome(runner.paths, _drive(runner, a))
+
+
 def cmd_resume(a: argparse.Namespace) -> int:
     runner = runner_for(Path(a.run_dir), gate_timeout=a.gate_timeout)
     _attach_mirrors(runner, a)
@@ -242,6 +276,16 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--no-mlflow", action="store_true")
     p.add_argument("--monitor-db", default=None)
     p.set_defaults(fn=cmd_run)
+    p = sub.add_parser(
+        "start", help="build a task from the settings form (defaults, prefs.json, --set key=value) and run it"
+    )
+    p.add_argument("--set", action="append", metavar="KEY=VALUE")
+    p.add_argument("--dry", action="store_true", help="print the task, do not run")
+    p.add_argument("--gate-timeout", type=float)
+    p.add_argument("--prefect", action="store_true")
+    p.add_argument("--no-mlflow", action="store_true")
+    p.add_argument("--monitor-db", default=None)
+    p.set_defaults(fn=cmd_start)
     p = sub.add_parser("resume", help="continue a halted or gated run")
     p.add_argument("run_dir")
     p.add_argument("--gate-timeout", type=float)

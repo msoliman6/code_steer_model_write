@@ -32,6 +32,8 @@ class Step(BaseModel):
     prompt: str | None = None
     schema_name: str | None = None
     role: str | None = None
+    model: str | None = None  # a per-stage override of the role's model (settings_form.stage_role)
+    effort: str | None = None
     sets: dict[str, str] = Field(default_factory=dict)  # already-rendered markdown values
     rendered_keys: list[str] = Field(default_factory=list)
     checks: list[str] = Field(default_factory=list)
