@@ -1,0 +1,26 @@
+{
+  "task_id": "slug-demo",
+  "objective": "Build slug: a tiny library that turns any string into a URL slug.",
+  "recipe": "code_builder",
+  "inputs": {
+    "brief": {
+      "request": "Build slug: a tiny library that turns any string into a URL slug: lowercase ascii words joined by single hyphens.",
+      "context": "A standalone Python module, no dependencies.",
+      "surface": "one function, slugify(text: str) -> str, in module slug",
+      "must_be_true": ["only a-z, 0-9 and '-' appear in a slug", "words keep their order", "None raises TypeError"],
+      "constraints": ["python 3.11", "no third-party packages"],
+      "out_of_scope": ["transliteration of non-ascii letters", "a CLI"],
+      "known_reference": "",
+      "language": "python",
+      "module": "slug"
+    },
+    "fix_rounds": 1
+  },
+  "roles": {
+    "author": {"backend": "anthropic", "model": "claude-sonnet-5", "effort": "low"},
+    "checker": {"backend": "codex_cli", "model": "gpt-5.4-mini", "effort": "low"}
+  },
+  "swaps": [["author", "checker"]],
+  "mode": "light",
+  "rounds": 1
+}

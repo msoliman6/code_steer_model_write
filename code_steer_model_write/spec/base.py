@@ -136,6 +136,11 @@ class Artifact(BaseModel):
         (artifacts/render.py). `drop` names top-level fields a role must not see."""
         return None
 
+    def wire_dump(self) -> dict[str, Any]:
+        """The instance as a model would have returned it: only the wire schema's fields
+        (code-assigned ids and statuses removed), recursively. The fake backend re-emits with it."""
+        return _prune(self.model_dump(mode="json"), self.wire_schema(), self.wire_schema().get("$defs", {}))
+
     # ---- checks a schema cannot say (rule 7) ---------------------------------------------
 
     def semantic_problems(self, ctx: CheckContext) -> list[Problem]:
@@ -162,6 +167,27 @@ def _collect_cites(node: Any, out: list[str]) -> None:
     elif isinstance(node, list):
         for v in node:
             _collect_cites(v, out)
+
+
+def _prune(value: Any, node: dict[str, Any], defs: dict[str, Any]) -> Any:
+    node = _deref(node, defs)
+    if "anyOf" in node:
+        opts = [_deref(o, defs) for o in node["anyOf"]]
+        if value is None:
+            return None
+        objs = [o for o in opts if o.get("type") == "object"]
+        arrs = [o for o in opts if o.get("type") == "array"]
+        if isinstance(value, dict) and objs:
+            return _prune(value, objs[0], defs)
+        if isinstance(value, list) and arrs:
+            return _prune(value, arrs[0], defs)
+        return value
+    if node.get("type") == "object" and isinstance(value, dict):
+        props = node.get("properties", {})
+        return {k: _prune(v, props[k], defs) for k, v in value.items() if k in props}
+    if node.get("type") == "array" and isinstance(value, list):
+        return [_prune(v, node.get("items", {}), defs) for v in value]
+    return value
 
 
 def problems_of(items: list[Problem]) -> str:

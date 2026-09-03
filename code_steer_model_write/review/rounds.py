@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Callable, Literal
 
 from pydantic import BaseModel
 
@@ -28,6 +28,17 @@ from ..ids import Prefix, assign
 from ..spec.base import Artifact
 from ..spec.findings import Arbitrated, Finding, Findings, FindingStatus, Klass, Severity, Verdict
 from ..state.lock import atomic_write_text
+
+
+def all_run_findings(run_dir: Path) -> list[Finding]:
+    """Every finding of every loop in the run, so an id is never reused across loops."""
+    out: list[Finding] = []
+    root = run_dir / "review"
+    if not root.exists():
+        return out
+    for p in sorted(root.glob("*/round-*.findings.json")):
+        out += [Finding.model_validate(x) for x in json.loads(p.read_text(encoding="utf-8"))]
+    return out
 
 
 class LoopStatus(BaseModel):
@@ -56,6 +67,9 @@ class ReviewLoop:
         after: list[str] | None = None,
         fixture_prefix: str | None = None,
         extra_sets: dict[str, str] | None = None,
+        transform: Callable[[Artifact, Artifact], Artifact] | None = None,
+        review_checks: list[str] | None = None,
+        arbitrate_checks: list[str] | None = None,
     ) -> None:
         self.key = key
         self.artifact_key = artifact_key
@@ -71,6 +85,9 @@ class ReviewLoop:
         self.after = after or []
         self.fixture_prefix = fixture_prefix
         self.extra_sets = extra_sets or {}
+        self.transform = transform  # (previous, re-emitted) -> the version to store (e.g. ids kept by key)
+        self.review_checks = review_checks or []
+        self.arbitrate_checks = arbitrate_checks or []
 
     # ---- files -------------------------------------------------------------------------
 
@@ -185,6 +202,7 @@ class ReviewLoop:
             sets=self.packet(n, store, run_dir),
             rendered_keys=[self.artifact_key],
             fixture=f"{self.fixture_prefix}.review-r{n}" if self.fixture_prefix else None,
+            checks=list(self.review_checks),
             land=f"review:{self.key}:findings:{n}",
             deliverables=[str(self.findings_path(run_dir, n).relative_to(run_dir))],
             note=(
@@ -211,6 +229,7 @@ class ReviewLoop:
             rendered_keys=[self.artifact_key],
             fixture=f"{self.fixture_prefix}.arbitrate-r{n}" if self.fixture_prefix else None,
             check_extra={"finding_ids": [f.id for f in fs if f.status is FindingStatus.OPEN]},
+            checks=list(self.arbitrate_checks),
             land=f"review:{self.key}:arbitration:{n}",
             deliverables=[str(self.arbitration_path(run_dir, n).relative_to(run_dir))],
             note=f"round {n}: the author arbitrates {len(fs)} finding(s) and re-emits the {self.artifact_key}",
@@ -290,7 +309,7 @@ class ReviewLoop:
 
     def _land_findings(self, n: int, value: Findings, ctx: ProgramContext) -> list[str]:
         run_dir = ctx.paths.run_dir
-        taken = [f.id for f in self.all_findings(run_dir) if f.id]
+        taken = [f.id for f in all_run_findings(run_dir) if f.id]  # F- ids are run-wide (rule 5)
         ids = assign(Prefix.FINDING, len(value.findings), taken)
         closing = review_round_open(n, self.cap) == "closing"
         items: list[Finding] = []
@@ -365,7 +384,10 @@ class ReviewLoop:
             f.arbitration = d.arbitration
             ctx.events.append("finding.decided", step=ctx.step.key, id=f.id, status=f.status.value)
         self._write_findings(run_dir, n, fs)
-        v = ctx.store.write(self.artifact_key, value.artifact)
+        new = value.artifact
+        if self.transform is not None:
+            new = self.transform(ctx.store.read(self.artifact_key, self.schema), new)
+        v = ctx.store.write(self.artifact_key, new)
         atomic_write_text(
             self.arbitration_path(run_dir, n),
             json.dumps(

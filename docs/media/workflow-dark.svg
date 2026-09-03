@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1454" width="1000" height="1454" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+<defs>
+<marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c9d1d9"/></marker>
+<marker id="ah-rev" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M10,0 L0,5 L10,10 z" fill="#c9d1d9"/></marker>
+</defs>
+<!-- transparent canvas: the host page's dark ground shows through -->
+<rect x="650" y="24" width="26" height="18" rx="6" fill="rgba(219,109,40,0.22)" stroke="rgba(219,109,40,0.75)" stroke-width="1.2"/>
+<text x="686" y="33" dominant-baseline="central" font-size="15" fill="#9aa4ae">Claude</text>
+<rect x="650" y="50" width="26" height="18" rx="6" fill="rgba(47,163,154,0.22)" stroke="rgba(47,163,154,0.75)" stroke-width="1.2"/>
+<text x="686" y="59" dominant-baseline="central" font-size="15" fill="#9aa4ae">Codex</text>
+<rect x="650" y="76" width="26" height="18" rx="6" fill="rgba(212,167,44,0.22)" stroke="rgba(212,167,44,0.75)" stroke-width="1.2"/>
+<text x="686" y="85" dominant-baseline="central" font-size="15" fill="#9aa4ae">You</text>
+<rect x="770" y="24" width="26" height="18" rx="6" fill="rgba(163,113,247,0.22)" stroke="rgba(163,113,247,0.75)" stroke-width="1.2"/>
+<text x="806" y="33" dominant-baseline="central" font-size="15" fill="#9aa4ae">Both</text>
+<rect x="770" y="50" width="26" height="18" rx="6" fill="rgba(139,148,158,0.16)" stroke="rgba(139,148,158,0.6)" stroke-width="1.2"/>
+<text x="806" y="59" dominant-baseline="central" font-size="15" fill="#9aa4ae">Code — no model</text>
+<line x1="770" y1="85" x2="804" y2="85" stroke="#c9d1d9" stroke-width="2" stroke-linecap="round"/>
+<text x="814" y="85" dominant-baseline="central" font-size="15" fill="#9aa4ae">a step</text>
+<line x1="770" y1="111" x2="804" y2="111" stroke="#c9d1d9" stroke-width="2" stroke-linecap="round" stroke-dasharray="7 6"/>
+<text x="814" y="111" dominant-baseline="central" font-size="15" fill="#9aa4ae">review rounds</text>
+<!-- 🗺 0 · PLAN — stage hue blue -->
+<rect x="60" y="120" width="880" height="118" rx="18" fill="rgba(77,143,220,0.07)" stroke="rgba(77,143,220,0.5)" stroke-width="1.5"/>
+<text x="82" y="148" font-size="15" font-weight="600" letter-spacing="1.5" fill="#6ea6e8">🗺 0 · PLAN</text>
+<!-- 📜 1 · CONTRACTS — stage hue gold -->
+<rect x="60" y="274" width="880" height="118" rx="18" fill="rgba(187,128,9,0.07)" stroke="rgba(187,128,9,0.5)" stroke-width="1.5"/>
+<text x="82" y="302" font-size="15" font-weight="600" letter-spacing="1.5" fill="#d69a26">📜 1 · CONTRACTS</text>
+<!-- 🧪 2 · VERIFICATION DESIGN — stage hue violet -->
+<rect x="60" y="608" width="880" height="118" rx="18" fill="rgba(154,110,224,0.07)" stroke="rgba(154,110,224,0.5)" stroke-width="1.5"/>
+<text x="82" y="636" font-size="15" font-weight="600" letter-spacing="1.5" fill="#b28ae8">🧪 2 · VERIFICATION DESIGN</text>
+<!-- 🔨 3 · BUILD — TWO ISOLATED AUTHORS — stage hue teal -->
+<rect x="60" y="852" width="880" height="214" rx="18" fill="rgba(47,163,154,0.06)" stroke="rgba(47,163,154,0.5)" stroke-width="1.5"/>
+<text x="82" y="880" font-size="15" font-weight="600" letter-spacing="1.5" fill="#43bdb2">🔨 3 · BUILD — TWO ISOLATED AUTHORS</text>
+<!-- 🚑 4 · VERIFICATION RUN — stage hue red -->
+<rect x="60" y="1102" width="880" height="130" rx="18" fill="rgba(208,74,69,0.06)" stroke="rgba(208,74,69,0.5)" stroke-width="1.5"/>
+<text x="82" y="1130" font-size="15" font-weight="600" letter-spacing="1.5" fill="#e06661">🚑 4 · VERIFICATION RUN</text>
+<rect x="390" y="34" width="220" height="50" rx="14" fill="rgba(139,148,158,0.12)" stroke="rgba(139,148,158,0.55)" stroke-width="1.5"/>
+<text x="500" y="59.0" text-anchor="middle" dominant-baseline="central" font-size="19" font-weight="600" fill="#e6edf3">Your brief</text>
+<rect x="130" y="160" width="280" height="58" rx="14" fill="rgba(219,109,40,0.14)" stroke="rgba(219,109,40,0.7)" stroke-width="1.5"/>
+<text x="270" y="189.0" text-anchor="middle" dominant-baseline="central" font-size="19" font-weight="600" fill="#e6edf3"><tspan fill="#db6d28">✳ </tspan>Claude writes the plan</text>
+<rect x="590" y="160" width="280" height="58" rx="14" fill="rgba(47,163,154,0.14)" stroke="rgba(47,163,154,0.7)" stroke-width="1.5"/>
+<text x="730" y="189.0" text-anchor="middle" dominant-baseline="central" font-size="19" font-weight="600" fill="#e6edf3"><tspan fill="#2fa39a">☘ </tspan>Codex attacks it</text>
+<rect x="130" y="314" width="280" height="58" rx="14" fill="rgba(219,109,40,0.14)" stroke="rgba(219,109,40,0.7)" stroke-width="1.5"/>
+<text x="270" y="343.0" text-anchor="middle" dominant-baseline="central" font-size="19" font-weight="600" fill="#e6edf3"><tspan fill="#db6d28">✳ </tspan>Claude writes the contract</text>
+<rect x="590" y="314" width="280" height="58" rx="14" fill="rgba(47,163,154,0.14)" stroke="rgba(47,163,154,0.7)" stroke-width="1.5"/>
+<text x="730" y="343.0" text-anchor="middle" dominant-baseline="central" font-size="19" font-weight="600" fill="#e6edf3"><tspan fill="#2fa39a">☘ </tspan>Codex attacks it</text>
+<rect x="360" y="428" width="280" height="54" rx="14" fill="rgba(212,167,44,0.14)" stroke="rgba(212,167,44,0.7)" stroke-width="1.5"/>
+<text x="500" y="455.0" text-anchor="middle" dominant-baseline="central" font-size="19" font-weight="600" fill="#e6edf3">You confirm the blocks</text>
+<rect x="300" y="518" width="400" height="54" rx="14" fill="rgba(139,148,158,0.14)" stroke="rgba(201,209,217,0.8)" stroke-width="1.8"/>
+<text x="500" y="545.0" text-anchor="middle" dominant-baseline="central" font-size="19" font-weight="700" fill="#ffffff">Freeze — the contract is hashed</text>
+<rect x="88" y="648" width="258" height="58" rx="14" fill="rgba(47,163,154,0.14)" stroke="rgba(47,163,154,0.7)" stroke-width="1.5"/>
+<text x="217" y="677.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="600" fill="#e6edf3"><tspan fill="#2fa39a">☘ </tspan>Codex writes the properties</text>
+<rect x="371" y="648" width="258" height="58" rx="14" fill="rgba(219,109,40,0.14)" stroke="rgba(219,109,40,0.7)" stroke-width="1.5"/>
+<text x="500" y="677.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="600" fill="#e6edf3"><tspan fill="#db6d28">✳ </tspan>Claude reviews coverage</text>
+<rect x="654" y="648" width="258" height="58" rx="14" fill="rgba(47,163,154,0.14)" stroke="rgba(47,163,154,0.7)" stroke-width="1.5"/>
+<text x="783" y="677.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="600" fill="#e6edf3"><tspan fill="#2fa39a">☘ </tspan>Codex arbitrates</text>
+<rect x="340" y="762" width="320" height="54" rx="14" fill="rgba(212,167,44,0.14)" stroke="rgba(212,167,44,0.7)" stroke-width="1.5"/>
+<text x="500" y="789.0" text-anchor="middle" dominant-baseline="central" font-size="19" font-weight="600" fill="#e6edf3">You confirm the verification</text>
+<rect x="100" y="892" width="340" height="72" rx="14" fill="rgba(47,163,154,0.14)" stroke="rgba(47,163,154,0.7)" stroke-width="1.5"/>
+<text x="270" y="915.6" text-anchor="middle" dominant-baseline="central" font-size="19" font-weight="600" fill="#e6edf3"><tspan fill="#2fa39a">☘ </tspan>Codex writes the tests</text>
+<text x="270" y="940.4" text-anchor="middle" dominant-baseline="central" font-size="19" font-weight="600" fill="#e6edf3">without the source</text>
+<rect x="560" y="892" width="340" height="72" rx="14" fill="rgba(219,109,40,0.14)" stroke="rgba(219,109,40,0.7)" stroke-width="1.5"/>
+<text x="730" y="915.6" text-anchor="middle" dominant-baseline="central" font-size="19" font-weight="600" fill="#e6edf3"><tspan fill="#db6d28">✳ </tspan>Claude writes the source</text>
+<text x="730" y="940.4" text-anchor="middle" dominant-baseline="central" font-size="19" font-weight="600" fill="#e6edf3">without the tests</text>
+<rect x="330" y="1000" width="340" height="54" rx="14" fill="rgba(139,148,158,0.14)" stroke="rgba(139,148,158,0.6)" stroke-width="1.5"/>
+<text x="500" y="1027.0" text-anchor="middle" dominant-baseline="central" font-size="19" font-weight="600" fill="#e6edf3">merge · null run · real run</text>
+<rect x="150" y="1142" width="700" height="72" rx="14" fill="rgba(163,113,247,0.13)" stroke="rgba(163,113,247,0.65)" stroke-width="1.5"/>
+<text x="500" y="1165.6" text-anchor="middle" dominant-baseline="central" font-size="19" font-weight="600" fill="#e6edf3">Each failure is ruled on by the side that did not write it</text>
+<text x="500" y="1190.4" text-anchor="middle" dominant-baseline="central" font-size="19" font-weight="600" fill="#e6edf3">fix · re-run</text>
+<rect x="290" y="1268" width="420" height="50" rx="14" fill="rgba(139,148,158,0.12)" stroke="rgba(139,148,158,0.55)" stroke-width="1.5"/>
+<text x="500" y="1293.0" text-anchor="middle" dominant-baseline="central" font-size="19" font-weight="500" fill="#e6edf3">src · tests · REPORT.md · PAGE.html</text>
+<line x1="500" y1="84" x2="500" y2="118" stroke="#c9d1d9" stroke-width="2" stroke-linecap="round" marker-end="url(#ah)"/>
+<line x1="420" y1="189" x2="580" y2="189" stroke="#c9d1d9" stroke-width="2" stroke-linecap="round" marker-end="url(#ah)" marker-start="url(#ah-rev)" stroke-dasharray="7 6"/>
+<line x1="500" y1="238" x2="500" y2="272" stroke="#c9d1d9" stroke-width="2" stroke-linecap="round" marker-end="url(#ah)"/>
+<line x1="420" y1="343" x2="580" y2="343" stroke="#c9d1d9" stroke-width="2" stroke-linecap="round" marker-end="url(#ah)" marker-start="url(#ah-rev)" stroke-dasharray="7 6"/>
+<line x1="500" y1="392" x2="500" y2="426" stroke="#c9d1d9" stroke-width="2" stroke-linecap="round" marker-end="url(#ah)"/>
+<line x1="500" y1="482" x2="500" y2="516" stroke="#c9d1d9" stroke-width="2" stroke-linecap="round" marker-end="url(#ah)"/>
+<line x1="500" y1="572" x2="500" y2="606" stroke="#c9d1d9" stroke-width="2" stroke-linecap="round" marker-end="url(#ah)"/>
+<line x1="350" y1="675" x2="367" y2="675" stroke="#c9d1d9" stroke-width="2" stroke-linecap="round" marker-end="url(#ah)"/>
+<line x1="633" y1="675" x2="650" y2="675" stroke="#c9d1d9" stroke-width="2" stroke-linecap="round" marker-end="url(#ah)"/>
+<line x1="500" y1="726" x2="500" y2="760" stroke="#c9d1d9" stroke-width="2" stroke-linecap="round" marker-end="url(#ah)"/>
+<line x1="500" y1="816" x2="500" y2="850" stroke="#c9d1d9" stroke-width="2" stroke-linecap="round" marker-end="url(#ah)"/>
+<line x1="270" y1="964" x2="412" y2="996" stroke="#c9d1d9" stroke-width="2" stroke-linecap="round" marker-end="url(#ah)"/>
+<line x1="730" y1="964" x2="588" y2="996" stroke="#c9d1d9" stroke-width="2" stroke-linecap="round" marker-end="url(#ah)"/>
+<line x1="500" y1="1066" x2="500" y2="1100" stroke="#c9d1d9" stroke-width="2" stroke-linecap="round" marker-end="url(#ah)"/>
+<line x1="500" y1="1232" x2="500" y2="1266" stroke="#c9d1d9" stroke-width="2" stroke-linecap="round" marker-end="url(#ah)"/>
+<text x="500" y="168" text-anchor="middle" dominant-baseline="central" font-size="15" font-style="italic" fill="#9aa4ae">rounds</text>
+<text x="500" y="322" text-anchor="middle" dominant-baseline="central" font-size="15" font-style="italic" fill="#9aa4ae">rounds + a fresh audit</text>
+<text x="500" y="1332" text-anchor="middle" dominant-baseline="central" font-size="16" font-style="italic" fill="#8b949e">Every model box is a fresh agent — a new, independent context given only the markdown code rendered for it;</text>
+<text x="500" y="1356" text-anchor="middle" dominant-baseline="central" font-size="16" font-style="italic" fill="#8b949e">every review round is handed the whole trajectory by code — the record is on disk, never in a thread.</text>
+<text x="500" y="1380" text-anchor="middle" dominant-baseline="central" font-size="16" font-style="italic" fill="#8b949e">Slate boxes and every arrow are code: the driver sequences the run — a workflow enforced by code, not by agents.</text>
+<text x="500" y="1404" text-anchor="middle" dominant-baseline="central" font-size="16" font-style="italic" fill="#8b949e">An agent's only power is filling in a JSON schema, enforced at generation by constrained decoding —</text>
+<text x="500" y="1428" text-anchor="middle" dominant-baseline="central" font-size="16" font-style="italic" fill="#8b949e">no file reads, no shell, no edits, no tools: the agent answers; code writes every file and decides every step.</text>
+</svg>

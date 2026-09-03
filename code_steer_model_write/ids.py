@@ -23,6 +23,7 @@ class Prefix(StrEnum):
     RULING = "R"  # a triage ruling
     TASK = "T"  # a build task row
     ASSUMPTION = "L"  # an assumptions-ledger row
+    BLOCK = "K"  # a plan block
     GAP = "G"  # a contract gap raised by the verification author
 
 

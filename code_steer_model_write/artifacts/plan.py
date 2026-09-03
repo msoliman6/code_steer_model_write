@@ -4,11 +4,14 @@
 from __future__ import annotations
 
 from pydantic import Field
+from pydantic.json_schema import SkipJsonSchema
 
+from ..ids import Prefix, next_id
 from ..spec.base import Artifact, CheckContext, Problem
 
 
 class Block(Artifact):
+    id: SkipJsonSchema[str | None] = None  # K-NNNN, by code, kept by name
     name: str = Field(description="a short slug, unique in the plan; the contract is keyed by it")
     boundary: str = Field(min_length=10, description="what is inside and what is not, in one sentence")
     inputs: list[str] = Field(description="what enters, by name and type")
@@ -34,6 +37,15 @@ class Plan(Artifact):
     not_decided: list[str] = Field(
         default_factory=list, description="what this plan leaves to the contract or the human"
     )
+
+    def with_ids(self, previous: "Plan | None") -> "Plan":
+        prev = {b.name: b.id for b in previous.blocks if b.id} if previous else {}
+        taken = list(prev.values())
+        p = self.model_copy(deep=True)
+        for b in p.blocks:
+            b.id = prev.get(b.name) or next_id(Prefix.BLOCK, taken)
+            taken.append(b.id)
+        return p
 
     def semantic_problems(self, ctx: CheckContext) -> list[Problem]:
         out: list[Problem] = []

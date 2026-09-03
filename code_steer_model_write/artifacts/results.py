@@ -35,7 +35,11 @@ class Results(Artifact):
         return [p for p in self.properties if p.null == "pass"]
 
 
-RulingVerdict = Literal["test_bug", "implementation_bug", "algorithm_defect", "contract_ambiguity"]
+RulingVerdict = Literal[
+    "test_bug", "test_stands", "implementation_bug", "algorithm_defect", "contract_ambiguity"
+]
+Q1_VERDICTS = {"test_bug", "test_stands"}
+Q2_VERDICTS = {"implementation_bug", "algorithm_defect", "contract_ambiguity"}
 
 
 class Ruling(Artifact):
@@ -44,10 +48,33 @@ class Ruling(Artifact):
     question: Literal[1, 2] = Field(
         description="1: is the test wrong? 2: contract, algorithm or implementation?"
     )
-    verdict: RulingVerdict
+    verdict: RulingVerdict = Field(
+        description="question 1: test_bug | test_stands; question 2: implementation_bug | algorithm_defect | contract_ambiguity"
+    )
     argument: str = Field(
         min_length=40, description="engaging the clause, the test and the observed assertion"
     )
     readings: list[str] = Field(default_factory=list, description="for contract_ambiguity: the two readings")
     consequence: str = Field(description="what changes: which file, which row")
     cites: list[str] = Field(min_length=1)
+
+    def semantic_problems(self, ctx):
+        from ..spec.base import Problem
+
+        allowed = Q1_VERDICTS if self.question == 1 else Q2_VERDICTS
+        out = []
+        if self.verdict not in allowed:
+            out.append(
+                Problem(
+                    code="verdict_for_other_question",
+                    message=f"question {self.question} answers with one of {sorted(allowed)}",
+                )
+            )
+        if self.verdict == "contract_ambiguity" and len(self.readings) < 2:
+            out.append(
+                Problem(code="ambiguity_needs_readings", message="a contract ambiguity names both readings")
+            )
+        want_q = ctx.extra.get("question")
+        if want_q and self.question != want_q:
+            out.append(Problem(code="wrong_question", message=f"you were asked question {want_q}"))
+        return out

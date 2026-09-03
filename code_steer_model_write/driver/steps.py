@@ -77,4 +77,5 @@ class ProgramContext(BaseModel):
     store: Store
     step: Step
     events: Any
+    answer: Any = None  # the artifact under check, for an AUTHOR step's checks
     extra: dict[str, Any] = Field(default_factory=dict)

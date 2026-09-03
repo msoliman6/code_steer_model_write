@@ -60,8 +60,9 @@ def generic_instance(schema: dict[str, Any], defs: dict[str, Any] | None = None,
 class FakeBackend:
     name = "fake"
 
-    def __init__(self, fixtures_root: Path | None = None) -> None:
+    def __init__(self, fixtures_root: Path | None = None, fakers: dict[str, Faker] | None = None) -> None:
         self.fixtures_root = fixtures_root
+        self.fakers = dict(fakers or {})  # a recipe binds these to the run (they may read the store)
         self._attempts: dict[tuple[str, str], int] = {}
 
     def capabilities(self) -> Capabilities:
@@ -72,6 +73,8 @@ class FakeBackend:
             p = self.fixtures_root / f"{call.fixture}.json"
             if p.exists():
                 return json.loads(p.read_text(encoding="utf-8"))
+        if call.schema_name in self.fakers:
+            return self.fakers[call.schema_name](call)
         if call.schema_name in _FAKERS:
             return _FAKERS[call.schema_name](call)
         # the wire schema has examples stripped; fakers and fixtures carry the shape's intent

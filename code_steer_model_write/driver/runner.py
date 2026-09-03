@@ -159,10 +159,15 @@ class Runner:
         prompt = fill(
             t, step.sets, schema=schema, rendered_keys=step.rendered_keys, needs_tools=step.needs_tools
         )
-        checks = [
-            FnCheck(n, lambda a, c, n=n: [self._problem(p) for p in self.program.checks[n](ctx)])
-            for n in step.checks
-        ]
+
+        def _check(n: str):
+            def run(a, c):
+                ctx.answer = a  # the artifact under check (rule 7)
+                return [self._problem(p) for p in self.program.checks[n](ctx)]
+
+            return FnCheck(n, run)
+
+        checks = [_check(n) for n in step.checks]
         known = set(ctx.extra.get("known_ids", [])) | _known_ids(ctx)
         cctx = CallContext(
             backend=self.backends[self.roles[step.role].backend.value],
