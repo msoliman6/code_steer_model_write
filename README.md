@@ -40,6 +40,20 @@ projects — that is versatile, reliable and fast to start.
 14. **Cost is a design axis.** No unused tools, thinking off where a check catches every
     mistake, calls batched, tokens as the honest measure.
 
+## This is a template, not a project
+
+Do not build a specific workflow inside this repository. It holds the runtime, the recipes and
+the rules; a project is a **separate repo** scaffolded from it:
+
+```bash
+copier copy gh:<you>/code_steer_model_write ../my-workflow    # a new repo outside this one
+cd ../my-workflow && csmw doctor
+```
+
+Your workflow's brief, task specs, prompts, fixtures and runs live there. Changes that belong
+to everyone -- a new recipe, a fixed check, a better renderer -- come back here as a commit;
+`copier update` carries them into every project.
+
 ## What it is
 
 A Python package (`code_steer_model_write`, CLI `csmw`) plus recipes. A **recipe** declares a

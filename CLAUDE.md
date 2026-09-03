@@ -41,6 +41,10 @@ Every module docstring, check and walk leg cites the rule number it enforces.
 
 ## Working rules in this repo
 
+- **This repository is the template.** Never create a specific workflow or project inside it.
+  A project is scaffolded into its own repo outside this one (`copier copy`); only what
+  belongs to every project (runtime, recipes, checks, docs) is committed here.
+
 - The design is `docs/PLAN.md`. Read the section you are touching before changing it.
 - `csmw walk --all` before any live run; `bash scripts/run.sh` is the full offline suite.
 - Never edit the package while a run lives — every step re-imports it.
