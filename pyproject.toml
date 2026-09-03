@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "code_steer_model_write"
+version = "0.1.0"
+description = "Code steers, models write: a template for reliable agentic AI workflows."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+dependencies = [
+    "pydantic>=2.5",
+    "pydantic-settings>=2.2",
+    "jinja2>=3.1",
+    "prefect>=3.0",
+    "mlflow>=2.16",
+    "reflex>=0.6",
+    "anthropic>=0.40",
+    "litellm>=1.50",
+]
+
+[project.optional-dependencies]
+agent-sdk = ["claude-agent-sdk>=0.1"]
+checks = ["ruff>=0.5", "pyright>=1.1", "pytest>=8", "pytest-json-report>=1.5", "jsonschema>=4"]
+dev = [
+    "ruff>=0.5", "pyright>=1.1", "pytest>=8", "pytest-json-report>=1.5", "jsonschema>=4",
+    "copier>=9",
+]
+
+[project.scripts]
+csmw = "code_steer_model_write.cli:main"
+code_steer_model_write = "code_steer_model_write.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["code_steer_model_write*"]
+
+# The template's own lint and format. The pipeline's checks over agent-built code do NOT read
+# this file: code_steer_model_write/config.py owns their rule set (rule 4), so a project's own
+# ruff config never changes what a run accepts.
+[tool.ruff]
+target-version = "py311"
+line-length = 110
+extend-exclude = ["examples/", "runs/", "fixtures/", "docs/"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "B"]
+ignore = ["E741", "E731"]
+
+[tool.ruff.format]
+quote-style = "preserve"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
