@@ -66,33 +66,43 @@ class Runner:
             "run.status", status=status.value, outcome=outcome.value if outcome else None, **extra
         )
 
-    def drive(self) -> Outcome:
+    def begin(self) -> Outcome | None:
+        """Clear a halt (resume), mark RUNNING. Returns an outcome only if the run cannot start."""
         st = self.driver.state
-        if Halt.read(self.paths) is not None:
-            h = Halt.read(self.paths)
+        h = Halt.read(self.paths)
+        if h is not None:
             Halt.clear(self.paths)
             st.resumed_count += 1
-            st.last_halt = h.line() if h else None
+            st.last_halt = h.line()
             st.save(self.paths)
-            self.events.append("run.status", status="RESUMED", from_step=h.step if h else None)
+            self.events.append("run.status", status="RESUMED", from_step=h.step)
         self._set(RunStatus.RUNNING)
+        return None
+
+    def finish(self) -> Outcome:
+        """Nothing is ready: complete, or report a blocked program."""
+        if self.driver.is_complete():
+            self._set(RunStatus.COMPLETED, Outcome.COMPLETED)
+            return Outcome.COMPLETED
+        pend = [s.key for s in self.driver.all_pending()]
+        return self._halt(
+            Halt(
+                step=pend[0],
+                reason=HaltReason.BROKE,
+                resumable=False,
+                message=f"pending steps with no ready step: {pend} (a dependency cycle or a missing after)",
+            )
+        )
+
+    def drive(self) -> Outcome:
         try:
+            out = self.begin()
+            if out is not None:
+                return out
             while True:
                 ready = self.driver.next()
                 if not ready:
-                    if self.driver.is_complete():
-                        self._set(RunStatus.COMPLETED, Outcome.COMPLETED)
-                        return Outcome.COMPLETED
-                    # pending but nothing ready: the program is blocked; that is a program bug
-                    pend = [s.key for s in self.driver.all_pending()]
-                    return self._halt(
-                        Halt(
-                            step=pend[0],
-                            reason=HaltReason.BROKE,
-                            resumable=False,
-                            message=f"pending steps with no ready step: {pend} (a dependency cycle or a missing after)",
-                        )
-                    )
+                    return self.finish()
                 for step in ready:
                     outcome = self._execute(step)
                     if outcome is not None:

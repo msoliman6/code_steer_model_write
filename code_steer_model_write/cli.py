@@ -53,10 +53,55 @@ def _backends(task: TaskSpec, recipe, paths: RunPaths):
     return out
 
 
-def cmd_run(a: argparse.Namespace) -> int:
-    from .backends import knobs
+def runner_for(run_dir: Path, *, gate_timeout: float | None = None):
     from .driver.runner import Runner
     from .gates.gate import make_waiter
+    from .recipes import registry
+
+    paths = RunPaths(run_dir=run_dir)
+    st = RunState.load(paths)
+    recipe = registry.get(st.recipe)
+    return Runner(
+        paths,
+        recipe,
+        _backends(st.task, recipe, paths),
+        st.task.roles,
+        make_waiter(st.task.mode, recipe.gate_builders()),
+        gate_timeout=gate_timeout,
+    )
+
+
+def _attach_mirrors(runner, a: argparse.Namespace) -> None:
+    """MLflow and monitor.db are sinks (rule 4); either failing to attach is a warning, never a halt."""
+    s = Settings()
+    if not getattr(a, "no_mlflow", False):
+        try:
+            from .observability.mlflow_bridge import MlflowMirror
+
+            st = runner.driver.state
+            MlflowMirror(s.mlflow_tracking_uri, st.run_id, st.recipe, runner.paths.run_dir).attach(
+                runner.events
+            )
+        except Exception as e:  # noqa: BLE001
+            print(f"warn: mlflow mirror not attached: {e}")
+    try:
+        from .observability.monitor_db import MonitorDb
+
+        MonitorDb(getattr(a, "monitor_db", None) or "monitor.db").register(runner.paths)
+    except Exception as e:  # noqa: BLE001
+        print(f"warn: monitor.db not updated: {e}")
+
+
+def _drive(runner, a: argparse.Namespace):
+    if getattr(a, "prefect", False):
+        from .workflow.flows import drive_with_prefect
+
+        return drive_with_prefect(runner)
+    return runner.drive()
+
+
+def cmd_run(a: argparse.Namespace) -> int:
+    from .backends import knobs
     from .recipes import registry
 
     task = _load_task(a.task)
@@ -77,35 +122,16 @@ def cmd_run(a: argparse.Namespace) -> int:
         )
     RunState.create(paths, task)
     print(f"run {task.task_id} at {run_dir} (mode {task.mode}, rounds {task.rounds}, fake={knobs.enabled()})")
-    runner = Runner(
-        paths,
-        recipe,
-        _backends(task, recipe, paths),
-        task.roles,
-        make_waiter(task.mode, recipe.gate_builders()),
-        gate_timeout=a.gate_timeout,
-    )
-    outcome = runner.drive()
+    runner = runner_for(run_dir, gate_timeout=a.gate_timeout)
+    _attach_mirrors(runner, a)
+    outcome = _drive(runner, a)
     return _report_outcome(paths, outcome)
 
 
 def cmd_resume(a: argparse.Namespace) -> int:
-    from .driver.runner import Runner
-    from .gates.gate import make_waiter
-    from .recipes import registry
-
-    paths = RunPaths(run_dir=Path(a.run_dir))
-    st = RunState.load(paths)
-    recipe = registry.get(st.recipe)
-    runner = Runner(
-        paths,
-        recipe,
-        _backends(st.task, recipe, paths),
-        st.task.roles,
-        make_waiter(st.task.mode, recipe.gate_builders()),
-        gate_timeout=a.gate_timeout,
-    )
-    return _report_outcome(paths, runner.drive())
+    runner = runner_for(Path(a.run_dir), gate_timeout=a.gate_timeout)
+    _attach_mirrors(runner, a)
+    return _report_outcome(runner.paths, _drive(runner, a))
 
 
 def _report_outcome(paths: RunPaths, outcome) -> int:
@@ -177,10 +203,16 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("task")
     p.add_argument("--run-dir")
     p.add_argument("--gate-timeout", type=float)
+    p.add_argument("--prefect", action="store_true", help="run the loop as a Prefect flow (a task per step)")
+    p.add_argument("--no-mlflow", action="store_true")
+    p.add_argument("--monitor-db", default=None)
     p.set_defaults(fn=cmd_run)
     p = sub.add_parser("resume", help="continue a halted or gated run")
     p.add_argument("run_dir")
     p.add_argument("--gate-timeout", type=float)
+    p.add_argument("--prefect", action="store_true")
+    p.add_argument("--no-mlflow", action="store_true")
+    p.add_argument("--monitor-db", default=None)
     p.set_defaults(fn=cmd_resume)
     p = sub.add_parser("status", help="where a run is")
     p.add_argument("run_dir")
