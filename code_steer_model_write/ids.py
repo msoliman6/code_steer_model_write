@@ -25,6 +25,8 @@ class Prefix(StrEnum):
     ASSUMPTION = "L"  # an assumptions-ledger row
     BLOCK = "K"  # a plan block
     GAP = "G"  # a contract gap raised by the verification author
+    HYPOTHESIS = "H"  # a debate hypothesis
+    ARGUMENT = "X"  # a debate argument (support or challenge)
 
 
 ID_RE = re.compile(r"^([A-Z])-(\d{4})$")

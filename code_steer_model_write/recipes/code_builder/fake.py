@@ -208,6 +208,7 @@ def fakers(paths: RunPaths, store: Store) -> dict[str, Callable[[Any], dict[str,
             _ids_of_kind(call.user, "C")
             or _ids_of_kind(call.user, "P")
             or _ids_of_kind(call.user, "K")
+            or _ids_of_kind(call.user, "H")
             or ["C-0001"]
         )
         items = [

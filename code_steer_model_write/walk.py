@@ -271,7 +271,74 @@ def leg_light_mode_waits_then_human(tmp: Path) -> str:
     return f"light: human answered {answered}; auto-answered {len(auto)} safe gate(s); never silent"
 
 
+def leg_debate_happy(tmp: Path) -> str:
+    paths, recipe, task = start("debate", tmp / "run")
+    out = make_runner(paths, recipe, task).drive()
+    assert out is Outcome.COMPLETED, Halt.read(paths)
+    ks = kinds(paths)
+    assert "halt" not in ks and "step.refused" not in ks
+    verdicts = [e for e in events(paths) if e.kind == "judge.verdict"]
+    assert verdicts and verdicts[0].data["verdict"] == "supported" and verdicts[0].data["total"] > 0
+    rep = json.loads((paths.artifacts / "report" / "v001.json").read_text())
+    assert "supported" in rep["verdict"] and (paths.run_dir / "evals.json").exists()
+    keys = list(RunState.load(paths).steps)
+    assert "p1-support" in keys and "p1-challenge" in keys and "p2-rebuttal" in keys and "p3-judge" in keys
+    return f"{len(keys)} steps · {rep['verdict']}"
+
+
+def leg_debate_undecided_to_human(tmp: Path) -> str:
+    with env(FAKE_VERDICT="checker:undecided"):
+        paths, recipe, task = start("debate", tmp / "run", mode=Mode.LIGHT)
+        out = make_runner(paths, recipe, task, gate_timeout=0.3).drive()
+        assert out is Outcome.HALTED_HONESTLY and Halt.read(paths).step == "p0-gate-rubric", Halt.read(paths)
+        gate = json.loads((paths.gates / "rubric.r1.ask.json").read_text())
+        write_decision(
+            paths,
+            GateDecision(
+                gate="rubric.r1",
+                action="proceed",
+                source="human",
+                decisions=[
+                    Decision(question_id=q["id"], answer=q["default"], answered_by="human")
+                    for q in gate["questions"]
+                ],
+            ),
+        )
+        out = make_runner(paths, recipe, task, gate_timeout=0.3).drive()
+        assert out is Outcome.HALTED_HONESTLY and Halt.read(paths).step == "p3-gate-verdict", Halt.read(paths)
+        asked = [e for e in events(paths) if e.kind == "gate.asked" and e.data.get("gate") == "verdict.r1"]
+        assert asked and asked[0].data["needs_human"] is True
+        write_decision(
+            paths,
+            GateDecision(
+                gate="verdict.r1",
+                action="proceed",
+                source="human",
+                decisions=[Decision(question_id="Q-0001", answer="refuted", answered_by="human")],
+            ),
+        )
+        out = make_runner(paths, recipe, task, gate_timeout=0.3).drive()
+    assert out is Outcome.COMPLETED, Halt.read(paths)
+    rep = json.loads((paths.artifacts / "report" / "v001.json").read_text())
+    assert rep["verdict"].startswith("refuted") and any(c["kind"] == "ambiguity" for c in rep["carried"])
+    return "judge undecided -> the human ruled refuted -> carried as an ambiguity"
+
+
+def leg_debate_findings_rounds(tmp: Path) -> str:
+    with env(FAKE_FINDINGS="checker:1:major"):
+        paths, recipe, task = start("debate", tmp / "run", rounds=1)
+        out = make_runner(paths, recipe, task).drive()
+    assert out is Outcome.COMPLETED, Halt.read(paths)
+    assert any(e.kind == "finding.decided" for e in events(paths))
+    return "one finding on the hypotheses, arbitrated, closing read"
+
+
 LEGS: dict[str, dict[str, Leg]] = {
+    "debate": {
+        "happy": leg_debate_happy,
+        "undecided-to-human": leg_debate_undecided_to_human,
+        "findings-rounds": leg_debate_findings_rounds,
+    },
     "code_builder": {
         "happy": leg_happy,
         "refuse-recover": leg_refuse_recover,
@@ -283,7 +350,7 @@ LEGS: dict[str, dict[str, Leg]] = {
         "ambiguity-carried": leg_ambiguity_carried,
         "gate-revise": leg_gate_revise,
         "light-mode-human": leg_light_mode_waits_then_human,
-    }
+    },
 }
 
 

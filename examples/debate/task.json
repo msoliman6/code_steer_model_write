@@ -1,0 +1,21 @@
+{
+  "task_id": "debate-demo",
+  "objective": "Does prompt caching cut the cost of a review round by more than half?",
+  "recipe": "debate",
+  "inputs": {
+    "brief": {
+      "request": "Decide whether prompt caching cuts the cost of a review round by more than half when the packet is stable, using the reference run report's token columns as evidence.",
+      "context": "The review loop hands every round the current artifact, the prior rounds verbatim and a computed diff.",
+      "must_be_true": ["the ruling cites arguments by id", "every argument cites the hypothesis"],
+      "out_of_scope": ["searching the web"]
+    },
+    "rubric": {"evidence_quality": 1.0, "novelty": 0.5, "feasibility": 1.0, "challenge_survival": 1.5}
+  },
+  "roles": {
+    "author": {"backend": "claude_cli", "model": "claude-sonnet-5", "effort": "low"},
+    "checker": {"backend": "codex_cli", "model": "gpt-5.4-mini", "effort": "high"}
+  },
+  "swaps": [["author", "checker"]],
+  "mode": "light",
+  "rounds": 1
+}
