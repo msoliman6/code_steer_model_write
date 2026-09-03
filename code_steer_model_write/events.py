@@ -30,12 +30,15 @@ class EventLog:
     def append(
         self,
         kind: EventKind,
+        /,
         *,
         step: str | None = None,
         role: str | None = None,
         attempt: int | None = None,
         **data: Any,
     ) -> Event:
+        """`kind` is positional-only so a data key named `kind` can never collide with it
+        (ledger class: a name shadowed; found twice on 2026-09-03)."""
         with locked(self.path):
             seq = self._last_seq() + 1
             ev = Event(
