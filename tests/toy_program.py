@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Literal
 
 from pydantic import Field
 
@@ -22,9 +21,7 @@ class Plan(Artifact):
     summary: str = Field(min_length=10, description="one paragraph")
 
 
-class Findings(Artifact):
-    findings: list[dict] = Field(default_factory=list)
-    verdict: Literal["APPROVED", "REVISE"]
+from code_steer_model_write.spec.findings import Findings  # noqa: E402
 
 
 PROMPTS = Path(__file__).parent / "toy_prompts"
@@ -108,3 +105,66 @@ class ToyProgram:
         v = ctx.store.write(step.land, value)  # type: ignore[arg-type]
         (ctx.paths.run_dir / f"{step.land}.md").write_text(render(value))
         return [f"artifacts/{step.land}/v{v:03d}.json", f"{step.land}.md"]
+
+
+from code_steer_model_write.review.rounds import ReviewLoop  # noqa: E402
+
+
+class ToyReviewProgram(ToyProgram):
+    """The toy with a review loop on the plan between plan and freeze."""
+
+    def __init__(self, cap: int = 2, **kw) -> None:
+        super().__init__(**kw)
+        self.loop = ReviewLoop(
+            key="plan",
+            artifact_key="plan",
+            schema=Plan,
+            reviewer_role="checker",
+            author_role="author",
+            cap=cap,
+            phase="0",
+            review_prompt="review",
+            arbitrate_prompt="arbitrate",
+            after=["p0-plan"],
+        )
+        self.schemas = {
+            "Plan": Plan,
+            "Findings": Findings,
+            self.loop.arb_schema.schema_name(): self.loop.arb_schema,
+        }
+
+    def steps(self, state, paths, store):
+        out = [
+            Step(
+                key="p0-plan",
+                kind=StepKind.AUTHOR,
+                phase="0",
+                prompt="plan",
+                schema_name="Plan",
+                role="author",
+                sets={"BRIEF_MD": "## Brief\n\n- **request**: a slug library\n"},
+                rendered_keys=["brief"],
+                land="plan",
+                deliverables=["artifacts/plan/v001.json"],
+                note="Claude writes the plan",
+            )
+        ]
+        out += self.loop.steps(store, paths.run_dir)
+        if self.loop.is_done(paths.run_dir):
+            out.append(
+                Step(
+                    key="p0-freeze",
+                    kind=StepKind.CODE,
+                    phase="0",
+                    after=[self.loop.last_step_key(paths.run_dir)],
+                    fn="freeze",
+                    deliverables=["freeze.json"],
+                    note="Freeze: the plan is hashed",
+                )
+            )
+        return out
+
+    def land(self, step, value, ctx):
+        if step.land and step.land.startswith("review:"):
+            return self.loop.land(step, value, ctx)
+        return super().land(step, value, ctx)

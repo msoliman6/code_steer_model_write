@@ -26,6 +26,21 @@ class Severity(StrEnum):
 SEVERITY_ORDER = {Severity.BLOCKING: 0, Severity.MAJOR: 1, Severity.MINOR: 2}
 
 
+class Klass(StrEnum):
+    """The reconcile class (after addyosmani's agent-skills): what kind of thing a finding is.
+    Precedence when a finding could be two: contract_misread > actionable > tradeoff > noise."""
+
+    CONTRACT_MISREAD = (
+        "contract_misread"  # the reviewer read the input wrong; the author answers by citing it
+    )
+    ACTIONABLE = "actionable"  # a defect with a change that fixes it
+    TRADEOFF = "tradeoff"  # a real tension with no free fix; a human may weigh it
+    NOISE = "noise"  # style, taste, restatement
+
+
+KLASS_ORDER = {Klass.CONTRACT_MISREAD: 0, Klass.ACTIONABLE: 1, Klass.TRADEOFF: 2, Klass.NOISE: 3}
+
+
 class FindingStatus(StrEnum):
     OPEN = "open"
     ACCEPTED = "accepted"
@@ -43,10 +58,21 @@ class Finding(Artifact):
     kind: Literal["finding", "gap"] = Field(
         default="finding", description="gap: the input itself is silent on this; routes to the human"
     )
+    klass: Klass = Field(
+        default=Klass.ACTIONABLE,
+        description="contract_misread: the input says otherwise, cite it; actionable: a defect with a fix; "
+        "tradeoff: a tension with no free fix; noise: style or restatement",
+    )
     argument: str = Field(min_length=40, description="why, engaging the cited text; a reader can check it")
     status: SkipJsonSchema[FindingStatus] = FindingStatus.OPEN
     arbitration: SkipJsonSchema[str | None] = None
     round: SkipJsonSchema[int | None] = None
+
+    @property
+    def required(self) -> bool:
+        """Required to address (blocking, major) or optional (minor) -- the label on every
+        review comment a human or an author reads."""
+        return self.severity is not Severity.MINOR
 
 
 class Findings(Artifact):

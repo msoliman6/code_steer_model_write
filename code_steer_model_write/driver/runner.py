@@ -171,7 +171,7 @@ class Runner:
             step=step.key,
             streams_dir=self.paths.streams,
             scope_root=self.paths.resolve(step.cwd) if step.needs_tools and step.cwd else None,
-            check_ctx=CheckContext(known_ids=known, step=step.key),
+            check_ctx=CheckContext(known_ids=known, step=step.key, extra=dict(step.check_extra)),
             fixture=step.fixture,
         )
         r = ask(prompt, schema, role=step.role, ctx=cctx, checks=checks)

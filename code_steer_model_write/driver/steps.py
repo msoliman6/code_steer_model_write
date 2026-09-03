@@ -37,6 +37,7 @@ class Step(BaseModel):
     checks: list[str] = Field(default_factory=list)
     needs_tools: bool = False
     fixture: str | None = None
+    check_extra: dict[str, Any] = Field(default_factory=dict)  # handed to CheckContext.extra
     land: str | None = None  # the artifact key the accepted answer is written to
     # RUN
     command: list[str] | None = None
