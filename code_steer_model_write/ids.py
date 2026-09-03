@@ -22,6 +22,8 @@ class Prefix(StrEnum):
     VERSION = "V"  # an artifact version
     RULING = "R"  # a triage ruling
     TASK = "T"  # a build task row
+    ASSUMPTION = "L"  # an assumptions-ledger row
+    GAP = "G"  # a contract gap raised by the verification author
 
 
 ID_RE = re.compile(r"^([A-Z])-(\d{4})$")
