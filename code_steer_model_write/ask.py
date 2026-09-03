@@ -138,7 +138,7 @@ def ask(
         )
         recent: list[Fact] = []
 
-        def on_fact(f: Fact) -> None:
+        def on_fact(f: Fact, recent: list[Fact] = recent, attempt: int = attempt) -> None:
             recent.append(f)
             del recent[:-6]
             if f.kind == "usage":

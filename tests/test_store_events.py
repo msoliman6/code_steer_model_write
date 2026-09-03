@@ -2,6 +2,7 @@ import os
 import threading
 
 import pytest
+from pydantic import ValidationError
 
 from code_steer_model_write.artifacts.store import Store
 from code_steer_model_write.events import EventLog
@@ -57,5 +58,5 @@ def test_events_append_read_and_parallel_seq(tmp_path):
     assert log.last("run.status").seq == 1
     # strict parse: a corrupt line halts, never "the last line"
     (tmp_path / "events.jsonl").open("a").write("not json\n")
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         log.all()

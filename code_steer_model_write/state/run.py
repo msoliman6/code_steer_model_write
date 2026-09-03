@@ -1,0 +1,157 @@
+"""state.json -- the one owner of run and step status (rules 1, 4, 10).
+
+Written only under the lock. A step is done when its record says so AND its deliverables
+exist; a missing deliverable reopens the step on the next `next()` (resume from disk).
+"""
+
+from __future__ import annotations
+
+from datetime import datetime
+from enum import StrEnum
+from pathlib import Path
+from typing import Any
+
+from pydantic import BaseModel, Field
+
+from ..spec.events import now
+from ..spec.task import TaskSpec
+from .lock import atomic_write_text, locked
+
+
+class RunStatus(StrEnum):
+    DRAFT = "DRAFT"
+    VALIDATED = "VALIDATED"
+    QUEUED = "QUEUED"
+    RUNNING = "RUNNING"
+    PAUSED = "PAUSED"  # halted honestly, resumable
+    FAILED = "FAILED"  # broke
+    CANCELLED = "CANCELLED"
+    EVALUATING = "EVALUATING"
+    COMPLETED = "COMPLETED"
+
+
+class Outcome(StrEnum):
+    COMPLETED = "completed"
+    HALTED_HONESTLY = "halted_honestly"
+    BROKE = "broke"
+
+
+class StepRecord(BaseModel):
+    key: str
+    kind: str
+    issued_at: datetime = Field(default_factory=now)
+    started_at: datetime | None = None
+    done_at: datetime | None = None
+    attempts: int = 0
+    deliverables: list[str] = Field(default_factory=list)
+
+
+class CarriedRecord(BaseModel):
+    kind: str  # finding | property | gap | ambiguity
+    id: str
+    summary: str
+    from_step: str
+
+
+class RunPaths(BaseModel):
+    run_dir: Path
+
+    @property
+    def state(self) -> Path:
+        return self.run_dir / "state.json"
+
+    @property
+    def events(self) -> Path:
+        return self.run_dir / "events.jsonl"
+
+    @property
+    def halt(self) -> Path:
+        return self.run_dir / "halt.json"
+
+    @property
+    def task(self) -> Path:
+        return self.run_dir / "task.json"
+
+    @property
+    def decisions(self) -> Path:
+        return self.run_dir / "decisions.json"
+
+    @property
+    def artifacts(self) -> Path:
+        return self.run_dir / "artifacts"
+
+    @property
+    def review(self) -> Path:
+        return self.run_dir / "review"
+
+    @property
+    def gates(self) -> Path:
+        return self.run_dir / "gates"
+
+    @property
+    def streams(self) -> Path:
+        return self.run_dir / "streams"
+
+    @property
+    def worktrees(self) -> Path:
+        return self.run_dir / "worktrees"
+
+    @property
+    def undone(self) -> Path:
+        return self.run_dir / "_undone"
+
+    @property
+    def report(self) -> Path:
+        return self.run_dir / "report.json"
+
+    def resolve(self, rel: str) -> Path:
+        """One normaliser at the edge: every deliverable path is run-dir relative."""
+        p = Path(rel)
+        if p.is_absolute():
+            try:
+                p = p.relative_to(self.run_dir)
+            except ValueError as e:
+                raise ValueError(f"path outside the run dir: {rel}") from e
+        return self.run_dir / p
+
+
+class RunState(BaseModel):
+    run_id: str
+    recipe: str
+    task: TaskSpec
+    status: RunStatus = RunStatus.QUEUED
+    outcome: Outcome | None = None
+    steps: dict[str, StepRecord] = Field(default_factory=dict)
+    carried: list[CarriedRecord] = Field(default_factory=list)
+    created_at: datetime = Field(default_factory=now)
+    updated_at: datetime = Field(default_factory=now)
+    resumed_count: int = 0
+    last_halt: str | None = None
+    completed_at: datetime | None = None
+    extra: dict[str, Any] = Field(default_factory=dict)
+
+    # ---- persistence: only through these two ------------------------------------------
+
+    @classmethod
+    def load(cls, paths: RunPaths) -> "RunState":
+        return cls.model_validate_json(paths.state.read_text(encoding="utf-8"))
+
+    def save(self, paths: RunPaths) -> None:
+        self.updated_at = now()
+        with locked(paths.state):
+            atomic_write_text(paths.state, self.model_dump_json(indent=2))
+
+    @classmethod
+    def create(cls, paths: RunPaths, task: TaskSpec) -> "RunState":
+        if paths.state.exists():
+            raise FileExistsError(
+                f"a run already lives at {paths.run_dir} (ledger: state left by an earlier run)"
+            )
+        st = cls(run_id=task.task_id, recipe=task.recipe, task=task)
+        paths.run_dir.mkdir(parents=True, exist_ok=True)
+        atomic_write_text(paths.task, task.model_dump_json(indent=2))
+        st.save(paths)
+        return st
+
+    def done_keys(self) -> set[str]:
+        return {k for k, r in self.steps.items() if r.done_at is not None}
