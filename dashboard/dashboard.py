@@ -1413,11 +1413,12 @@ NAV = [
     ("settings", "Settings"),
     ("providers", "Providers"),
 ]
+NAV_LINKS = [("new", "New run", "/new")]
 
 
-def nav_row(key: str, label: str) -> rx.Component:
-    active = S.view_tab == key
-    return rx.box(
+def nav_row(key: str, label: str, *, active_key=None, href: str | None = None) -> rx.Component:
+    active = (S.view_tab == key) if active_key is None else (active_key == key)
+    row = rx.box(
         rx.text(
             label,
             font_size=BODY,
@@ -1430,8 +1431,9 @@ def nav_row(key: str, label: str) -> rx.Component:
         width="100%",
         background=rx.cond(active, T.SEL_FILL, "transparent"),
         border=rx.cond(active, f"1px solid {T.SEL_BORDER}", "1px solid transparent"),
-        on_click=S.set_view(key),
+        on_click=None if href else S.set_view(key),
     )
+    return rx.link(row, href=href, width="100%", underline="none") if href else row
 
 
 def brand() -> rx.Component:
@@ -1460,10 +1462,13 @@ def brand() -> rx.Component:
     )
 
 
-def sidebar() -> rx.Component:
+def sidebar(active: str | None = None) -> rx.Component:
+    """The shell's left column: the brand, the views of a run, then the links (New run)."""
+    rows = [nav_row(k, v, active_key=active) if active else nav_row(k, v) for k, v in NAV]
+    rows += [nav_row(k, v, active_key=active or "", href=h) for k, v, h in NAV_LINKS]
     return rx.vstack(
         brand(),
-        *[nav_row(k, v) for k, v in NAV],
+        *rows,
         spacing="1",
         align="start",
         width=T.SIDEBAR_W,

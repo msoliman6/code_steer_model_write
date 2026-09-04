@@ -110,16 +110,22 @@ class Start(rx.State):
         return rx.redirect("/")
 
 
-def chip(card: Card, opt: str) -> rx.Component:
-    sel = card.value == opt
-    return rx.box(
-        rx.text(opt, **MONO, font_size=BODY, color=rx.cond(sel, T.LIVE, T.MUTED)),
-        border=rx.cond(sel, f"1.5px solid {T.LIVE}", f"1px solid {T.BORDER}"),
-        background=rx.cond(sel, "rgba(88,166,255,0.10)", T.SURFACE),
-        border_radius="6px",
-        padding="3px 10px",
-        cursor="pointer",
-        on_click=Start.set_value(card.key, opt),
+def dropdown(card: Card) -> rx.Component:
+    """One dropdown per setting (§7c): a model row lists the provider's catalogue for the chosen
+    backend; an effort row lists the chosen model's efforts; the value is what is sent."""
+    return rx.hstack(
+        rx.select(
+            card.options,
+            value=card.value,
+            on_change=lambda v: Start.set_value(card.key, v),
+            size="2",
+            width="280px",
+        ),
+        rx.cond(
+            card.discovery != "", rx.text(card.discovery, **MONO, color=T.DIM, font_size=SMALL), rx.fragment()
+        ),
+        spacing="3",
+        align="center",
     )
 
 
@@ -156,9 +162,7 @@ def card_view(card: Card) -> rx.Component:
                 rows="3",
             ),
         ),
-        rx.hstack(
-            rx.foreach(card.options, lambda o: chip(card, o)), spacing="2", wrap="wrap", align="center"
-        ),
+        dropdown(card),
     )
     return rx.hstack(
         rx.vstack(
@@ -178,6 +182,22 @@ def card_view(card: Card) -> rx.Component:
 
 
 def start_page() -> rx.Component:
+    from .dashboard import sidebar
+
+    return rx.hstack(
+        sidebar(active="new"),
+        rx.box(start_form(), flex="1", width="100%", overflow_y="auto", min_height="100vh"),
+        spacing="0",
+        align="start",
+        width="100%",
+        background=T.SURFACE,
+        color=T.TEXT,
+        font_family=T.SANS,
+        on_mount=Start.load,
+    )
+
+
+def start_form() -> rx.Component:
     return rx.box(
         rx.vstack(
             rx.hstack(
