@@ -236,13 +236,28 @@ def side_row(model: Card, effort: Card) -> rx.Component:
     return rx.vstack(
         rx.hstack(
             rx.text(glyph, color=color, font_size=BODY),
-            rx.text(model.func, font_weight="700", font_size=SMALL, text_align="center"),
+            rx.text(
+                model.func,
+                font_weight="700",
+                font_size=BODY,
+                text_align="center",
+                text_transform="uppercase",
+                letter_spacing="0.06em",
+            ),
             spacing="2",
             align="center",
             justify="center",
             width="100%",
         ),
-        rx.text("Name", **MONO, color=T.MUTED, font_size=SMALL, text_align="center", width="100%"),
+        rx.text(
+            "NAME",
+            **MONO,
+            color=T.MUTED,
+            font_size="12px",
+            letter_spacing="0.08em",
+            text_align="center",
+            width="100%",
+        ),
         centered_select(model.options, model.value, lambda v: Start.set_value(model.key, v)),
         rx.text(
             "Effort",
