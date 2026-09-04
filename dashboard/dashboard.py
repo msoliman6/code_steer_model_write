@@ -974,7 +974,7 @@ def progress_bar() -> rx.Component:
     """tqdm, with better graphics: segments per stage and the percentage on the left, the
     wrong-ness chips on the right of the same row."""
     return rx.hstack(
-        rx.hstack(rx.foreach(S.prog_rows, progress_segment), spacing="1", width="30%", align="center"),
+        rx.hstack(rx.foreach(S.prog_rows, progress_segment), spacing="1", width="44%", align="center"),
         rx.text(S.percent, **MONO, font_weight="700", font_size=BODY, min_width="44px"),
         rx.spacer(),
         rx.foreach(S.chips, chip),
@@ -993,8 +993,8 @@ def token_line() -> rx.Component:
             S.token_rows,
             lambda t: rx.hstack(
                 side_mark(t.role == "author", "14px"),
-                rx.text(f"{t.label} tok", **MONO, font_weight="700", font_size=BODY),
-                rx.text(t.cost, **MONO, color=T.MUTED, font_size=SMALL),
+                rx.text(f"{t.label} tok", **MONO, font_weight="700", font_size=BODY, white_space="nowrap"),
+                rx.text(t.cost, **MONO, color=T.MUTED, font_size=SMALL, white_space="nowrap"),
                 spacing="1",
                 align="center",
             ),
@@ -1016,7 +1016,8 @@ def token_line() -> rx.Component:
         spacing="3",
         justify="center",
         align="center",
-        width="calc(30% + 56px)",
+        width="calc(44% + 56px)",
+        white_space="nowrap",
         margin_top=T.SPACE["md"],
     )
 
