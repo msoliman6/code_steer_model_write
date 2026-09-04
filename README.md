@@ -12,19 +12,19 @@
 <img alt="dashboard: reflex" src="https://img.shields.io/badge/dashboard-reflex-5646ED?style=for-the-badge">
 </p>
 <p align="center">
-<img alt="author: Claude" src="https://img.shields.io/badge/author-Claude-db6d28?style=for-the-badge">
-<img alt="checker: Codex" src="https://img.shields.io/badge/checker-Codex-2fa39a?style=for-the-badge">
+<img alt="Claude Code: author" src="https://img.shields.io/badge/Claude_Code-author-d97757?style=for-the-badge">
+<img alt="OpenAI Codex: adversarial checker" src="https://img.shields.io/badge/OpenAI_Codex-adversarial%20checker-10a37f?style=for-the-badge">
 <img alt="code check: ruff" src="https://img.shields.io/badge/code%20check-ruff-D7FF64?style=for-the-badge&logo=ruff&logoColor=black">
 <img alt="code check: pyright" src="https://img.shields.io/badge/code%20check-pyright-1E90FF?style=for-the-badge">
 <img alt="verification: pytest" src="https://img.shields.io/badge/verification-pytest-0A9EDC?style=for-the-badge&logo=pytest&logoColor=white">
 <img alt="ui state: sqlite" src="https://img.shields.io/badge/ui%20state-sqlite-003B57?style=for-the-badge&logo=sqlite&logoColor=white">
 </p>
 <p align="center">
-<img alt="sdk: anthropic" src="https://img.shields.io/badge/sdk-anthropic-db6d28?style=for-the-badge">
-<img alt="sdk: claude agent" src="https://img.shields.io/badge/sdk-claude%20agent-db6d28?style=for-the-badge">
-<img alt="sdk: litellm" src="https://img.shields.io/badge/sdk-litellm-555?style=for-the-badge">
-<img alt="cli: claude code" src="https://img.shields.io/badge/cli-claude%20code-db6d28?style=for-the-badge">
-<img alt="cli: codex" src="https://img.shields.io/badge/cli-codex-2fa39a?style=for-the-badge">
+<img alt="Anthropic SDK" src="https://img.shields.io/badge/Anthropic_SDK-backend-d97757?style=for-the-badge">
+<img alt="Claude Agent SDK" src="https://img.shields.io/badge/Claude_Agent_SDK-backend-d97757?style=for-the-badge">
+<img alt="LiteLLM" src="https://img.shields.io/badge/LiteLLM-backend-555?style=for-the-badge">
+<img alt="Claude Code CLI" src="https://img.shields.io/badge/Claude_Code_CLI-backend-d97757?style=for-the-badge">
+<img alt="OpenAI Codex CLI" src="https://img.shields.io/badge/OpenAI_Codex_CLI-backend-10a37f?style=for-the-badge">
 </p>
 
 <p align="center"><a href="#the-14-universal-rules">The 14 rules</a> · <a href="#the-workflow">The workflow</a> · <a href="#the-harness">The harness</a> · <a href="#install">Install</a> · <a href="#first-run">First run</a> · <a href="#settings-you-choose-once">Settings</a> · <a href="#read-more">Read more</a></p>
