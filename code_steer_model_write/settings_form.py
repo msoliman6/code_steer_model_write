@@ -228,6 +228,16 @@ STAGE_OF_KEY = {
 }
 
 
+def sentence(text: str) -> str:
+    """The page's punctuation rule: a description is a sentence -- it starts with a capital,
+    it ends with a full stop, and a double hyphen becomes a semicolon."""
+    t = text.strip().replace(" -- ", "; ").replace("--", ";")
+    if not t:
+        return t
+    t = t[0].upper() + t[1:]
+    return t if t.endswith((".", "!", "?")) else t + "."
+
+
 def defaults() -> dict[str, str]:
     return {f.key: f.default for f in FIELDS}
 

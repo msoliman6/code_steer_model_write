@@ -130,6 +130,8 @@ def dropdown(card: Card) -> rx.Component:
 
 
 def card_view(card: Card) -> rx.Component:
+    """A setting card: the name and its control on one line, the description as a full line
+    under them (the reference clamped it in the left column; the user asked for the full line)."""
     control = rx.match(
         card.kind,
         (
@@ -164,20 +166,25 @@ def card_view(card: Card) -> rx.Component:
         ),
         dropdown(card),
     )
-    return rx.hstack(
-        rx.vstack(
-            rx.text(card.name, font_weight="700", font_size=BODY),
-            rx.text(card.description, color=T.MUTED, font_size=SMALL, line_height="1.35"),
-            spacing="1",
-            width="150px",
-            min_width="150px",
-            overflow="hidden",
-            max_height="76px",
+    return rx.vstack(
+        rx.hstack(
+            rx.text(card.name, font_weight="700", font_size=BODY, min_width="170px"),
+            rx.box(control, flex="1"),
+            width="100%",
+            align="center",
+            spacing="4",
         ),
-        rx.box(control, flex="1"),
+        rx.text(
+            card.description,
+            color=T.MUTED,
+            font_size=SMALL,
+            line_height="1.45",
+            width="100%",
+            margin_top=T.SPACE["sm"],
+        ),
         **CARD,
         align="start",
-        spacing="4",
+        spacing="1",
     )
 
 
