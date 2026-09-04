@@ -195,6 +195,23 @@ class ModelRow:
 
 
 @dataclasses.dataclass
+class ProgRow:
+    hue: str = "slate"
+    frac: float = 0.0
+
+
+@dataclasses.dataclass
+class ProviderRow:
+    backend: str = ""
+    provider: str = ""
+    pill: str = ""
+    tone: str = "neutral"
+    requirement: str = ""
+    discovery: str = ""
+    models: int = 0
+
+
+@dataclasses.dataclass
 class SettingRow:
     name: str = ""
     value: str = ""
@@ -271,7 +288,7 @@ class S(rx.State):
     comments: dict[str, str] = {}
     detail_full: bool = False
     filter_phase: str = "all"
-    view_tab: str = rx.SessionStorage("full", name="csmw_view")
+    view_tab: str = rx.SessionStorage("run", name="csmw_view")
     artifacts: list[ArtRow] = []
     open_paths: list[str] = []
     artifact_md: dict[str, str] = {}
@@ -301,6 +318,10 @@ class S(rx.State):
     flagged: list[str] = []
     report_md: str = ""
     settings_rows: list[SettingRow] = []
+    providers: list[ProviderRow] = []
+    progress: float = 0.0
+    stage_progress: list[float] = []
+    prog_rows: list[ProgRow] = []
 
     # ---- loading -------------------------------------------------------------------------
 
@@ -364,7 +385,38 @@ class S(rx.State):
         self.flagged = d["flagged"]
         self.report_md = d.get("report_md") or ""
         self.settings_rows = _settings_rows(self.run_dir)
+        self.progress = float(d.get("progress", 0.0))
+        self.stage_progress = [float(x) for x in d.get("stage_progress", [])]
+        self.prog_rows = [
+            ProgRow(hue=st["hue"], frac=float(f))
+            for st, f in zip(d["stages"], self.stage_progress, strict=False)
+        ]
         self.loaded = True
+
+    @rx.event
+    def load_providers(self):
+        from code_steer_model_write.providers.status import all_statuses
+
+        tone = {"configured": "ok", "missing_key": "warn", "not_on_path": "bad", "not_connected": "neutral"}
+        self.providers = [
+            ProviderRow(
+                backend=x.backend,
+                provider=x.provider,
+                pill=x.pill,
+                tone=tone[x.state],
+                requirement=x.requirement,
+                discovery=x.discovery,
+                models=x.models,
+            )
+            for x in all_statuses()
+        ]
+
+    @rx.event
+    def refresh_models(self):
+        from code_steer_model_write.providers.status import refresh_catalogues
+
+        refresh_catalogues()
+        return S.load_providers
 
     @rx.event
     def load_runs(self):
@@ -465,6 +517,30 @@ class S(rx.State):
         return T.STAGE_HUES.get(self.stage.hue, T.MUTED)
 
     @rx.var
+    def live_hue(self) -> str:
+        """The running stage's hue: the only accent on the page."""
+        cur = next((s for s in self.stages if s.id == self.current_stage), None)
+        return T.STAGE_HUES.get(cur.hue, T.MUTED) if cur else T.MUTED
+
+    @rx.var
+    def percent(self) -> str:
+        return f"{int(round(self.progress * 100))}%"
+
+    @rx.var
+    def gate_title(self) -> str:
+        g = self.gates.get(self.current_stage)
+        return g.title if g else ""
+
+    @rx.var
+    def has_open_gate(self) -> bool:
+        return bool(self.gates)
+
+    @rx.event
+    def open_gate(self):
+        self.picked = next(iter(self.gates), self.current_stage)
+        self.view_tab = "run"
+
+    @rx.var
     def now_color(self) -> str:
         return {"COMPLETE": T.OK, "HALT": T.BAD, "GATE": T.WARN}.get(self.now_word, T.LIVE)
 
@@ -528,7 +604,17 @@ CARD = {
     "padding": T.SPACE["lg"],
     "width": "100%",
 }
+SUBCARD = {
+    "background": T.SUBCARD,
+    "border": f"1px solid {T.BORDER}",
+    "border_radius": T.RADIUS["box"],
+    "padding": T.SPACE["md"],
+}
 HUE_MATCH = [(k, v) for k, v in T.STAGE_HUES.items()]
+GLASS_FILL = [(k, T.tint(k, 0.10)) for k in T.STAGE_HUES]
+GLASS_FILL_SEL = [(k, T.tint(k, 0.22)) for k in T.STAGE_HUES]
+GLASS_STROKE = [(k, f"1px solid {T.tint(k, 0.55)}") for k in T.STAGE_HUES]
+GLASS_STROKE_SEL = [(k, f"1.5px solid {T.tint(k, 0.95)}") for k in T.STAGE_HUES]
 
 
 def eyebrow(text, right: rx.Component | None = None) -> rx.Component:
@@ -546,8 +632,32 @@ def pill(text) -> rx.Component:
     )
 
 
+def status_pill(text, tone) -> rx.Component:
+    """Uppercase mono on a faint tint: CONFIGURED · MISSING KEY · NOT ON PATH."""
+    color = rx.match(
+        tone,
+        ("ok", T.PILL["ok"][0]),
+        ("warn", T.PILL["warn"][0]),
+        ("bad", T.PILL["bad"][0]),
+        T.PILL["neutral"][0],
+    )
+    bg = rx.match(
+        tone,
+        ("ok", T.PILL["ok"][1]),
+        ("warn", T.PILL["warn"][1]),
+        ("bad", T.PILL["bad"][1]),
+        T.PILL["neutral"][1],
+    )
+    return rx.box(
+        rx.text(text, **MONO, font_size=SMALL, font_weight="700", letter_spacing="0.06em", color=color),
+        background=bg,
+        border_radius=T.RADIUS["chip"],
+        padding="3px 10px",
+    )
+
+
 def chip(c: ChipRow) -> rx.Component:
-    color = rx.match(c.tone, ("bad", T.BAD), ("live", T.LIVE), T.WARN)
+    color = rx.match(c.tone, ("bad", T.BAD), ("live", T.MUTED), T.WARN)
     return rx.box(
         rx.hstack(
             rx.text(c.label, **MONO, font_size=SMALL),
@@ -561,15 +671,10 @@ def chip(c: ChipRow) -> rx.Component:
     )
 
 
-GLASS_FILL = [(k, T.tint(k, 0.10)) for k in T.STAGE_HUES]
-GLASS_FILL_SEL = [(k, T.tint(k, 0.22)) for k in T.STAGE_HUES]
-GLASS_STROKE = [(k, f"1px solid {T.tint(k, 0.55)}") for k in T.STAGE_HUES]
-GLASS_STROKE_SEL = [(k, f"1.5px solid {T.tint(k, 0.95)}") for k in T.STAGE_HUES]
+# ---- the rail: glass boxes (the only tinted surfaces) ------------------------------------------
 
 
 def stage_box(s: Stage) -> rx.Component:
-    """A glass box (§7b): a translucent fill in the stage's hue with a tinted stroke; the
-    selected one is the darker glass, as two panes overlapping."""
     hue = rx.match(s.hue, *HUE_MATCH, T.MUTED)
     selected = S.selected == s.id
     glyph = rx.match(s.state, ("done", "✓"), ("now", "●"), ("halted", "■"), "○")
@@ -638,7 +743,6 @@ def stage_box(s: Stage) -> rx.Component:
 
 
 def start_box() -> rx.Component:
-    """The first box of the rail: the brief and the settings the run started with."""
     selected = S.selected == "start"
     return rx.vstack(
         rx.text("· settings", **MONO, color=T.MUTED, font_size=SMALL, min_height="36px"),
@@ -661,7 +765,7 @@ def start_box() -> rx.Component:
             on_click=S.pick("start"),
         ),
         rx.text(
-            S.mode + " · rounds " + S.rounds.to_string(),
+            f"{S.mode} · rounds {S.rounds}",
             **MONO,
             color=T.MUTED,
             font_size=SMALL,
@@ -678,31 +782,40 @@ def start_box() -> rx.Component:
     )
 
 
-def setting_row(r: SettingRow) -> rx.Component:
-    return rx.hstack(
-        rx.text(r.name, **MONO, color=T.MUTED, font_size=SMALL, min_width="190px"),
-        rx.text(r.value, **MONO, font_size=BODY),
-        width="100%",
-        align="start",
+def progress_segment(r: ProgRow) -> rx.Component:
+    """One segment per stage in its hue, filled by that stage's fraction (the rail in miniature)."""
+    hue = rx.match(r.hue, *HUE_MATCH, T.MUTED)
+    return rx.box(
+        rx.box(width=f"{r.frac * 100}%", height="100%", background=hue, border_radius="2px"),
+        flex="1",
+        height="8px",
+        background=T.SUBCARD,
+        border_radius="2px",
+        overflow="hidden",
     )
 
 
-def start_panel() -> rx.Component:
-    return rx.box(
-        eyebrow(
-            "START — WHAT THIS RUN WAS GIVEN",
-            rx.link("New run like this ▸", href="/new", **MONO, font_size=SMALL, color=T.LIVE),
+def progress_bar() -> rx.Component:
+    """tqdm, with better graphics: segments per stage, the percentage, elapsed, the estimate."""
+    return rx.hstack(
+        rx.hstack(
+            rx.foreach(S.prog_rows, progress_segment),
+            spacing="1",
+            width="34%",
+            align="center",
         ),
+        rx.text(S.percent, **MONO, font_weight="700", font_size=BODY, min_width="44px"),
+        rx.text(f"· {S.elapsed} elapsed", **MONO, color=T.MUTED, font_size=SMALL),
         rx.text(
-            "The brief and every setting as chosen when the run started; a new run opens the form with the same picks.",
-            color=T.MUTED,
-            font_size=BODY,
+            rx.cond(S.process == "completed", "· finished", "· remaining: steps (no history yet)"),
+            **MONO,
+            color=T.DIM,
+            font_size=SMALL,
         ),
-        rx.vstack(
-            rx.foreach(S.settings_rows, setting_row), spacing="1", width="100%", margin_top=T.SPACE["md"]
-        ),
-        border_top=f"2px solid {T.tint('slate', 0.95)}",
-        **CARD,
+        spacing="3",
+        align="center",
+        width="100%",
+        margin_top=T.SPACE["sm"],
     )
 
 
@@ -726,6 +839,7 @@ def header() -> rx.Component:
                 on_click=S.toggle_detail,
                 size="1",
                 variant="soft",
+                color_scheme="gray",
             ),
             width="100%",
             align="center",
@@ -737,7 +851,9 @@ def header() -> rx.Component:
             width="100%",
             align="start",
             margin_top=T.SPACE["md"],
+            overflow="hidden",
         ),
+        progress_bar(),
         rx.hstack(
             rx.foreach(S.model_rows, lambda m: pill(f"{m.role} {m.model}")),
             pill(f"Rounds {S.rounds}"),
@@ -748,7 +864,7 @@ def header() -> rx.Component:
         ),
         rx.hstack(
             rx.text("Elapsed", **MONO, color=T.MUTED),
-            rx.text(S.elapsed, **MONO, font_weight="700", border_bottom=f"2px solid {T.LIVE}"),
+            rx.text(S.elapsed, **MONO, font_weight="700", border_bottom="2px solid " + S.live_hue),
             rx.text(
                 rx.cond(S.process == "completed", "Finished", f"Remaining {S.remaining}"),
                 **MONO,
@@ -766,34 +882,12 @@ def header() -> rx.Component:
             margin_top=T.SPACE["md"],
             align="center",
         ),
-        rx.hstack(
-            rx.box(width="8px", height="8px", border_radius="50%", background=S.now_color),
-            rx.text(
-                S.now_word, **MONO, font_size=SMALL, color=T.MUTED, letter_spacing=T.LETTER_SPACING_EYEBROW
-            ),
-            rx.text(S.now_text, font_weight="600"),
-            rx.spacer(),
-            rx.cond(
-                S.picked_elsewhere,
-                rx.button("jump to running", size="1", variant="soft", on_click=S.jump_to_running),
-                rx.fragment(),
-            ),
-            rx.cond(
-                S.is_running,
-                rx.button("Stop", size="1", color_scheme="red", variant="soft", on_click=S.stop_run),
-                rx.fragment(),
-            ),
-            background=T.SURFACE,
-            border=f"1px solid {T.BORDER}",
-            border_radius=T.RADIUS["box"],
-            padding=T.SPACE["md"],
-            width="100%",
-            align="center",
-            margin_top=T.SPACE["md"],
-        ),
         rx.hstack(rx.foreach(S.chips, chip), spacing="2", margin_top=T.SPACE["sm"]),
         **CARD,
     )
+
+
+# ---- panels (flat cards) ---------------------------------------------------------------------
 
 
 def question_row(q: Question) -> rx.Component:
@@ -834,7 +928,7 @@ def question_row(q: Question) -> rx.Component:
 def gate_form() -> rx.Component:
     g = S.stage_gate
     return rx.box(
-        eyebrow(f"GATE — {g.title}", rx.text(g.kind, **MONO, color=T.MUTED, font_size=SMALL)),
+        eyebrow(f"GATE — {g.title}", status_pill("WAITING FOR YOU", "warn")),
         rx.cond(
             g.carried.length() > 0,
             rx.vstack(
@@ -847,18 +941,21 @@ def gate_form() -> rx.Component:
         ),
         rx.vstack(rx.foreach(g.questions, question_row), spacing="2", width="100%"),
         rx.hstack(
-            rx.button("Proceed", on_click=S.decide("proceed"), color_scheme="green"),
+            rx.button("Proceed", on_click=S.decide("proceed"), color_scheme="gray", variant="solid"),
             rx.cond(
                 g.can_revise,
-                rx.button("Send back with comments", on_click=S.decide("revise"), variant="soft"),
+                rx.button(
+                    "Send back with comments",
+                    on_click=S.decide("revise"),
+                    variant="soft",
+                    color_scheme="gray",
+                ),
                 rx.fragment(),
             ),
             spacing="2",
             margin_top=T.SPACE["md"],
         ),
-        border=f"1px solid {T.WARN}",
-        border_radius=T.RADIUS["box"],
-        padding=T.SPACE["md"],
+        **SUBCARD,
         width="100%",
         margin_top=T.SPACE["md"],
     )
@@ -891,13 +988,48 @@ def agent_row(r: AgentRow) -> rx.Component:
         rx.text(r.role, **MONO, color=T.MUTED),
         rx.text(r.model, **MONO, color=T.MUTED),
         rx.spacer(),
-        rx.text(
-            r.tokens.to_string() + " tok · " + r.seconds.to_string() + "s · " + r.status,
-            **MONO,
-            color=T.MUTED,
-        ),
+        rx.text(f"{r.tokens} tok · {r.seconds}s · {r.status}", **MONO, color=T.MUTED),
         width="100%",
         font_size=SMALL,
+    )
+
+
+def stage_panel() -> rx.Component:
+    s = S.stage
+    return rx.box(
+        rx.text(f"Stage {s.n} · {s.title} · {s.author} + {s.checker}", **MONO, color=S.stage_hue),
+        rx.text(s.description, color=T.MUTED, font_size=BODY, margin_top=T.SPACE["xs"]),
+        rx.text(s.duration, **MONO, color=T.MUTED, font_size=SMALL, margin_top=T.SPACE["xs"]),
+        rx.cond(
+            s.outcome != "",
+            rx.text(
+                s.outcome, font_weight="700", font_size=f"{T.SIZE['headline']}px", margin_top=T.SPACE["sm"]
+            ),
+            rx.fragment(),
+        ),
+        rx.cond(S.stage_has_gate, gate_form(), rx.fragment()),
+        rx.cond(
+            s.rows.length() > 0,
+            rx.vstack(
+                eyebrow(f"RESULTS — {s.note}"),
+                rx.foreach(s.rows, result_row),
+                spacing="1",
+                width="100%",
+                margin_top=T.SPACE["md"],
+            ),
+            rx.fragment(),
+        ),
+        rx.el.details(
+            rx.el.summary(
+                rx.text(f"Agent runs · {S.stage_runs.length()}", **MONO, color=T.MUTED, font_size=BODY)
+            ),
+            rx.foreach(S.stage_runs, agent_row),
+            id="stage-agent-runs",
+            open=S.detail_full,
+            margin_top=T.SPACE["md"],
+        ),
+        border_top="2px solid " + S.stage_hue,
+        **CARD,
     )
 
 
@@ -908,7 +1040,7 @@ def artifact_row(a: ArtRow) -> rx.Component:
             rx.text(
                 rx.cond(is_open, "▾", "▸"),
                 **MONO,
-                color=T.LIVE,
+                color=T.TEXT,
                 cursor="pointer",
                 on_click=S.toggle_artifact(a.path),
                 width="16px",
@@ -924,8 +1056,7 @@ def artifact_row(a: ArtRow) -> rx.Component:
             is_open,
             rx.box(
                 rx.markdown(S.artifact_md[a.path]),
-                padding=T.SPACE["md"],
-                border_left=f"2px solid {T.BORDER_STRONG}",
+                **SUBCARD,
                 margin_left="8px",
                 width="100%",
                 overflow_x="auto",
@@ -955,51 +1086,6 @@ def artifacts_panel() -> rx.Component:
     )
 
 
-def stage_panel() -> rx.Component:
-    s = S.stage
-    return rx.box(
-        rx.text(
-            "Stage " + s.n.to_string() + " · " + s.title + " · " + s.author + " + " + s.checker,
-            **MONO,
-            color=S.stage_hue,
-        ),
-        rx.text(s.description, color=T.MUTED, font_size=BODY, margin_top=T.SPACE["xs"]),
-        rx.text(s.duration, **MONO, color=T.MUTED, font_size=SMALL, margin_top=T.SPACE["xs"]),
-        rx.cond(
-            s.outcome != "",
-            rx.text(
-                s.outcome, font_weight="700", font_size=f"{T.SIZE['headline']}px", margin_top=T.SPACE["sm"]
-            ),
-            rx.fragment(),
-        ),
-        rx.cond(S.stage_has_gate, gate_form(), rx.fragment()),
-        rx.cond(
-            s.rows.length() > 0,
-            rx.vstack(
-                eyebrow(f"RESULTS — {s.note}"),
-                rx.foreach(s.rows, result_row),
-                spacing="1",
-                width="100%",
-                margin_top=T.SPACE["md"],
-            ),
-            rx.fragment(),
-        ),
-        rx.el.details(
-            rx.el.summary(
-                rx.text(
-                    "Agent runs · " + S.stage_runs.length().to_string(), **MONO, color=T.MUTED, font_size=BODY
-                )
-            ),
-            rx.foreach(S.stage_runs, agent_row),
-            id="stage-agent-runs",
-            open=S.detail_full,
-            margin_top=T.SPACE["md"],
-        ),
-        border_top=f"2px solid {S.stage_hue}",
-        **CARD,
-    )
-
-
 def lane_row(lane: str) -> rx.Component:
     color = {"a": T.ACTOR["a"], "b": T.ACTOR["b"], "you": T.ACTOR["you"]}[lane]
     return rx.hstack(
@@ -1025,7 +1111,7 @@ def lane_row(lane: str) -> rx.Component:
             position="relative",
             height="18px",
             width="100%",
-            background=T.SURFACE,
+            background=T.SUBCARD,
             border_radius="4px",
         ),
         width="100%",
@@ -1049,10 +1135,7 @@ def evidence() -> rx.Component:
         eyebrow(
             "EVIDENCE",
             rx.text(
-                "swimlane · " + S.events.length().to_string() + " events · run summary",
-                **MONO,
-                color=T.MUTED,
-                font_size=SMALL,
+                f"swimlane · {S.events.length()} events · run summary", **MONO, color=T.MUTED, font_size=SMALL
             ),
         ),
         rx.box(
@@ -1078,6 +1161,7 @@ def evidence() -> rx.Component:
                     lambda p: rx.button(
                         p,
                         size="1",
+                        color_scheme="gray",
                         variant=rx.cond(S.filter_phase == p, "solid", "soft"),
                         on_click=S.set_filter(p),
                     ),
@@ -1102,6 +1186,85 @@ def evidence() -> rx.Component:
         ),
         **CARD,
     )
+
+
+def setting_row(r: SettingRow) -> rx.Component:
+    return rx.hstack(
+        rx.text(r.name, **MONO, color=T.MUTED, font_size=SMALL, min_width="190px"),
+        rx.text(r.value, **MONO, font_size=BODY),
+        width="100%",
+        align="start",
+    )
+
+
+def start_panel() -> rx.Component:
+    return rx.box(
+        eyebrow(
+            "SETTINGS — WHAT THIS RUN WAS GIVEN",
+            rx.link("New run like this ▸", href="/new", **MONO, font_size=SMALL, color=T.TEXT),
+        ),
+        rx.text(
+            "The brief and every setting as chosen when the run started; a new run opens the form with the same picks.",
+            color=T.MUTED,
+            font_size=BODY,
+        ),
+        rx.vstack(
+            rx.foreach(S.settings_rows, setting_row), spacing="1", width="100%", margin_top=T.SPACE["md"]
+        ),
+        **CARD,
+    )
+
+
+def provider_card(p: ProviderRow) -> rx.Component:
+    return rx.box(
+        rx.hstack(
+            rx.text(p.backend, font_weight="700", font_size=BODY),
+            rx.spacer(),
+            status_pill(p.pill, p.tone),
+            width="100%",
+            align="center",
+        ),
+        rx.text(p.requirement, **MONO, color=T.MUTED, font_size=SMALL, margin_top=T.SPACE["xs"]),
+        rx.text(f"{p.models} models · {p.discovery} discovery", **MONO, color=T.DIM, font_size=SMALL),
+        rx.hstack(
+            rx.button(
+                "Refresh models", size="1", variant="soft", color_scheme="gray", on_click=S.refresh_models
+            ),
+            spacing="2",
+            margin_top=T.SPACE["sm"],
+        ),
+        **SUBCARD,
+        min_width="230px",
+        flex="1 1 230px",
+    )
+
+
+def providers_panel() -> rx.Component:
+    return rx.vstack(
+        rx.box(
+            rx.text("Providers", font_weight="700", font_size=f"{T.SIZE['headline']}px"),
+            rx.text(
+                "Each backend's readiness, from the same facts the doctor checks; a model catalogue is read from the CLI where it can say and from a maintained table where it cannot.",
+                color=T.MUTED,
+                font_size=BODY,
+                margin_top=T.SPACE["xs"],
+            ),
+            rx.hstack(
+                rx.foreach(S.providers, provider_card),
+                spacing="3",
+                wrap="wrap",
+                width="100%",
+                margin_top=T.SPACE["md"],
+            ),
+            **CARD,
+        ),
+        spacing="4",
+        width="100%",
+        on_mount=S.load_providers,
+    )
+
+
+# ---- the shell -------------------------------------------------------------------------------
 
 
 def status_dot(dot, ring) -> rx.Component:
@@ -1129,17 +1292,15 @@ def run_tab(r) -> rx.Component:
         padding="8px 14px",
         cursor="pointer",
         on_click=S.open_run(r["dir"]),
-        border_bottom=rx.cond(active, f"2px solid {T.LIVE}", "2px solid transparent"),
+        border_bottom=rx.cond(active, "2px solid " + S.live_hue, "2px solid transparent"),
     )
 
 
 def runs_tabs() -> rx.Component:
-    """Browser-like tabs, no card: a dot per run (green running · amber waiting for you · red halted
-    or broke · grey done, with a green ring for a clean verdict and an amber ring for carried items)."""
     return rx.hstack(
         rx.foreach(S.runs, run_tab),
         rx.spacer(),
-        rx.link("New run ▸", href="/new", **MONO, font_size=SMALL, color=T.LIVE, padding="8px 14px"),
+        rx.link("New run ▸", href="/new", **MONO, font_size=SMALL, color=T.TEXT, padding="8px 14px"),
         width="100%",
         border_bottom=f"1px solid {T.BORDER}",
         align="end",
@@ -1147,33 +1308,123 @@ def runs_tabs() -> rx.Component:
     )
 
 
-VIEW_TABS = [("full", "Full"), ("stage", "Stage"), ("outputs", "Outputs"), ("evidence", "Evidence")]
+NAV = [
+    ("run", "Run"),
+    ("outputs", "Outputs"),
+    ("evidence", "Evidence"),
+    ("settings", "Settings"),
+    ("providers", "Providers"),
+]
 
 
-def view_tab(key: str, label: str) -> rx.Component:
+def nav_row(key: str, label: str) -> rx.Component:
     active = S.view_tab == key
     return rx.box(
         rx.text(
             label,
-            **MONO,
             font_size=BODY,
+            font_weight=rx.cond(active, "700", "500"),
             color=rx.cond(active, T.TEXT, T.MUTED),
-            font_weight=rx.cond(active, "700", "400"),
         ),
-        padding="8px 12px",
+        padding="10px 14px",
+        border_radius=T.RADIUS["box"],
         cursor="pointer",
+        width="100%",
+        background=rx.cond(active, T.SEL_FILL, "transparent"),
+        border=rx.cond(active, f"1px solid {T.SEL_BORDER}", "1px solid transparent"),
         on_click=S.set_view(key),
-        border_left=rx.cond(active, f"2px solid {T.LIVE}", "2px solid transparent"),
     )
 
 
-def view_tabs() -> rx.Component:
+def brand() -> rx.Component:
+    return rx.hstack(
+        rx.box(
+            rx.text("🧊", font_size="18px"),
+            width="40px",
+            height="40px",
+            border_radius="10px",
+            background=T.SUBCARD,
+            border=f"1px solid {T.BORDER}",
+            display="flex",
+            align_items="center",
+            justify_content="center",
+        ),
+        rx.vstack(
+            rx.text("code steers · models write", font_weight="700", font_size=BODY, white_space="nowrap"),
+            rx.text("run control", color=T.MUTED, font_size=SMALL),
+            spacing="0",
+            align="start",
+        ),
+        spacing="3",
+        align="center",
+        padding="6px 4px 18px 4px",
+    )
+
+
+def sidebar() -> rx.Component:
     return rx.vstack(
-        *[view_tab(k, v) for k, v in VIEW_TABS],
-        spacing="0",
+        brand(),
+        *[nav_row(k, v) for k, v in NAV],
+        spacing="1",
         align="start",
-        min_width="110px",
-        padding_top=T.SPACE["sm"],
+        width=T.SIDEBAR_W,
+        min_width=T.SIDEBAR_W,
+        padding=T.SPACE["lg"],
+        border_right=f"1px solid {T.BORDER}",
+        min_height="100vh",
+        background=T.SURFACE,
+    )
+
+
+def bottom_bar() -> rx.Component:
+    """The next thing the run wants from you, where a human looks for the next action."""
+    return rx.hstack(
+        rx.box(width="3px", height="36px", background=S.live_hue, border_radius="2px"),
+        rx.vstack(
+            rx.hstack(
+                rx.box(width="8px", height="8px", border_radius="50%", background=S.now_color),
+                rx.text(
+                    S.now_word,
+                    **MONO,
+                    font_size=SMALL,
+                    color=T.MUTED,
+                    letter_spacing=T.LETTER_SPACING_EYEBROW,
+                ),
+                spacing="2",
+                align="center",
+            ),
+            rx.text(S.now_text, font_weight="600", font_size=BODY),
+            spacing="0",
+            align="start",
+        ),
+        rx.spacer(),
+        rx.cond(
+            S.picked_elsewhere,
+            rx.button(
+                "jump to running", size="1", variant="soft", color_scheme="gray", on_click=S.jump_to_running
+            ),
+            rx.fragment(),
+        ),
+        rx.cond(
+            S.has_open_gate,
+            rx.button(
+                f"Answer the gate: {S.gate_title}", color_scheme="gray", variant="solid", on_click=S.open_gate
+            ),
+            rx.fragment(),
+        ),
+        rx.cond(
+            S.is_running,
+            rx.button("Stop", size="1", color_scheme="red", variant="soft", on_click=S.stop_run),
+            rx.fragment(),
+        ),
+        spacing="3",
+        align="center",
+        width="100%",
+        padding=f"{T.SPACE['md']} {T.SPACE['lg']}",
+        background=T.CARD,
+        border_top=f"1px solid {T.BORDER}",
+        position="sticky",
+        bottom="0",
     )
 
 
@@ -1183,44 +1434,52 @@ def body() -> rx.Component:
         start_panel(),
         rx.match(
             S.view_tab,
-            ("stage", rx.vstack(stage_panel(), spacing="4", width="100%")),
-            ("outputs", rx.vstack(artifacts_panel(), spacing="4", width="100%")),
-            ("evidence", rx.vstack(evidence(), spacing="4", width="100%")),
+            ("outputs", artifacts_panel()),
+            ("evidence", evidence()),
+            ("settings", start_panel()),
+            ("providers", providers_panel()),
             rx.vstack(stage_panel(), artifacts_panel(), evidence(), spacing="4", width="100%"),
         ),
     )
 
 
 def index() -> rx.Component:
-    return rx.box(
+    return rx.hstack(
+        sidebar(),
         rx.vstack(
-            rx.text("CODE STEERS · MODELS WRITE", **EYEBROW),
-            runs_tabs(),
-            rx.cond(
-                S.loaded,
+            rx.box(
                 rx.vstack(
-                    header(),
-                    rx.hstack(view_tabs(), body(), spacing="4", width="100%", align="start"),
+                    runs_tabs(),
+                    rx.cond(
+                        S.loaded,
+                        rx.vstack(header(), body(), spacing="4", width="100%"),
+                        rx.text("Pick a run.", color=T.MUTED),
+                    ),
                     spacing="4",
                     width="100%",
+                    padding=T.SPACE["lg"],
                 ),
-                rx.text("Pick a run.", color=T.MUTED),
+                flex="1",
+                width="100%",
+                overflow_y="auto",
             ),
-            spacing="4",
+            rx.cond(S.loaded, bottom_bar(), rx.fragment()),
+            spacing="0",
             width="100%",
-            max_width=T.PAGE_WIDTH,
-            margin="0 auto",
-            padding=T.SPACE["lg"],
+            min_height="100vh",
+            flex="1",
         ),
+        spacing="0",
+        align="start",
+        width="100%",
         background=T.SURFACE,
         color=T.TEXT,
-        min_height="100vh",
         font_family=T.SANS,
         font_size=BODY,
         on_mount=[S.load_runs, S.poll],
     )
 
 
-app = rx.App(theme=rx.theme(appearance="dark"))
+app = rx.App(theme=rx.theme(appearance="dark", gray_color="slate"))
 app.add_page(index, route="/", title="csmw")
 app.add_page(start_page, route="/new", title="csmw · new run")

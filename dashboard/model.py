@@ -133,6 +133,8 @@ class RunView(BaseModel):
     refresh_hash: str
     live_files: list[str]
     artifacts: list[ArtifactRef] = Field(default_factory=list)
+    progress: float = 0.0  # 0..1 end to end: done stages plus the running stage's steps done
+    stage_progress: list[float] = Field(default_factory=list)  # per stage, 0..1, in rail order
     dot: str = "queued"  # running | waiting | halted | done | queued
     dot_ring: str = ""  # "" | ok | warn  (for done: clean verdict, or carried items)
 
@@ -413,6 +415,16 @@ def build_view(run_dir: Path | str) -> RunView:
     rh, live = refresh_hash(paths)
     rmd = (paths.run_dir / "REPORT.md").read_text() if (paths.run_dir / "REPORT.md").exists() else None
     dot, ring = run_dot(st, halt, any(s.gate for s in stages), bool(carried) or failing > 0)
+    fracs: list[float] = []
+    for sv in stages:
+        if sv.state == "done" or st.status.value == "COMPLETED":
+            fracs.append(1.0)
+        elif sv.steps:
+            done_n = sum(1 for k in sv.steps if step_status.get(k) == "done")
+            fracs.append(min(0.95, done_n / max(len(sv.steps) + 1, 1)))
+        else:
+            fracs.append(0.0)
+    progress = round(sum(fracs) / max(len(fracs), 1), 3) if fracs else 0.0
     arts = list_artifacts(paths, spec, step_phase)
     return RunView(
         run_id=st.run_id,
@@ -451,6 +463,8 @@ def build_view(run_dir: Path | str) -> RunView:
         artifacts=arts,
         dot=dot,
         dot_ring=ring,
+        progress=progress,
+        stage_progress=fracs,
     )
 
 

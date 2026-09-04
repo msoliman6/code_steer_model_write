@@ -3,10 +3,10 @@ No literal in a component. The stage and actor hues are the figure's (code_steer
 
 from __future__ import annotations
 
-SURFACE = "#0d1117"
-CARD = "#0f141b"
-BORDER = "#252832"
-BORDER_STRONG = "#3a3f4b"
+SURFACE = "#0f1113"
+CARD = "#16191d"
+BORDER = "#262a30"
+BORDER_STRONG = "#3a3f47"
 TEXT = "#e6edf3"
 MUTED = "#9aa4ae"
 DIM = "#6e7681"
@@ -15,7 +15,7 @@ WHITE = "#ffffff"
 OK = "#3fb950"
 WARN = "#d4a72c"
 BAD = "#e06661"
-LIVE = "#58a6ff"
+LIVE = "#8b949e"  # no accent colour: selection is contrast; the stage hue is the only living colour
 
 STAGE_HUES: dict[str, str] = {
     "blue": "#6ea6e8",
@@ -68,6 +68,18 @@ def k(n: int | float) -> str:
     if n >= 1_000:
         return f"{n / 1_000:.1f}K" if n < 100_000 else f"{n / 1_000:.0f}K"
     return f"{int(n)}"
+
+
+SUBCARD = "#1c2026"  # a card inside a card
+SEL_FILL = "#22262c"  # the selected row: contrast, not a hue
+SEL_BORDER = "#3f444c"
+SIDEBAR_W = "240px"
+PILL = {  # the status pills: uppercase mono on a faint tint
+    "ok": ("#3fb950", "rgba(63,185,80,0.14)"),
+    "warn": ("#d4a72c", "rgba(212,167,44,0.14)"),
+    "bad": ("#e06661", "rgba(224,102,97,0.14)"),
+    "neutral": ("#9aa4ae", "rgba(154,164,174,0.12)"),
+}
 
 
 def tint(hue: str, alpha: float) -> str:
