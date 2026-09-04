@@ -415,7 +415,7 @@ def form_model(values: dict[str, str]) -> list[dict[str, Any]]:
     return [
         {
             "key": f.key,
-            "name": f.name,
+            "name": f.name[:1].upper() + f.name[1:],
             "description": sentence(f.description),
             "kind": f.kind,
             "options": f.options,

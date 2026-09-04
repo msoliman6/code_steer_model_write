@@ -43,7 +43,7 @@ def _settings_rows(run_dir: str) -> list["SettingRow"]:
         for f in sf.FIELDS:
             v = form.get(f.key, "")
             if v:
-                rows.append(SettingRow(name=f.name, value=str(v), group=f.group))
+                rows.append(SettingRow(name=f.name[:1].upper() + f.name[1:], value=str(v), group=f.group))
         return rows
     rows.append(
         SettingRow(
