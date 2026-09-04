@@ -24,6 +24,7 @@ STAGE_HUES: dict[str, str] = {
     "teal": "#43bdb2",
     "red": "#e06661",
     "slate": "#9aa4ae",
+    "rose": "#e8639f",  # the Start box: the pink from the mark; no stage uses it
 }
 STAGE_RGB: dict[str, tuple[int, int, int]] = {
     "blue": (77, 143, 220),
@@ -32,6 +33,7 @@ STAGE_RGB: dict[str, tuple[int, int, int]] = {
     "teal": (47, 163, 154),
     "red": (208, 74, 69),
     "slate": (139, 148, 158),
+    "rose": (232, 99, 159),
 }
 ACTOR: dict[str, str] = {"a": "#db6d28", "b": "#2fa39a", "you": "#d4a72c", "code": "#8b949e"}
 ACTOR_GLYPH: dict[str, str] = {"a": "✳", "b": "☘", "you": "◆", "code": "·"}

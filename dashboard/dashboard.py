@@ -894,8 +894,13 @@ def start_box() -> rx.Component:
         rx.box(
             rx.vstack(
                 rx.hstack(
-                    rx.text("▸", color=T.MUTED, font_size=f"{T.SIZE['title']}px"),
-                    rx.text("Start", font_weight="700", font_size=f"{T.SIZE['title']}px", color=T.TEXT),
+                    rx.text("▸", color=T.STAGE_HUES["rose"], font_size=f"{T.SIZE['title']}px"),
+                    rx.text(
+                        "Start",
+                        font_weight="700",
+                        font_size=f"{T.SIZE['title']}px",
+                        color=T.STAGE_HUES["rose"],
+                    ),
                     spacing="2",
                     align="center",
                     justify="center",
@@ -905,9 +910,9 @@ def start_box() -> rx.Component:
                 align="center",
             ),
             border=rx.cond(
-                selected, f"1.5px solid {T.tint('slate', 0.95)}", f"1px solid {T.tint('slate', 0.55)}"
+                selected, f"1.5px solid {T.tint('rose', 0.95)}", f"1px solid {T.tint('rose', 0.55)}"
             ),
-            background=rx.cond(selected, T.tint("slate", 0.22), T.tint("slate", 0.10)),
+            background=rx.cond(selected, T.tint("rose", 0.22), T.tint("rose", 0.10)),
             border_radius=T.RADIUS["box"],
             padding=T.SPACE["md"],
             width="100%",
@@ -919,10 +924,15 @@ def start_box() -> rx.Component:
             **MONO,
             color=T.MUTED,
             font_size=SMALL,
-            white_space="nowrap",
-            overflow="hidden",
-            text_overflow="ellipsis",
+            text_align="center",
             width="100%",
+            line_height="1.3",
+            style={
+                "display": "-webkit-box",
+                "WebkitLineClamp": "2",
+                "WebkitBoxOrient": "vertical",
+                "overflow": "hidden",
+            },
         ),
         spacing="1",
         width="100%",
