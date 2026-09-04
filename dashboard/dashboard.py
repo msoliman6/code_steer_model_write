@@ -992,28 +992,53 @@ def token_line() -> rx.Component:
     )
 
 
-def header() -> rx.Component:
-    """Identity and settings as one row of pills, the rail, the progress row, the token totals."""
+def history_pill() -> rx.Component:
+    """FRESH RUN in green, or RESUMED ×n in amber: whether the run has been picked up from disk."""
     return rx.box(
-        rx.hstack(
-            setting_pill("run", S.run_id),
-            setting_pill("recipe", S.recipe),
-            setting_pill("start", rx.cond(S.fresh, "fresh", f"resumed ×{S.resumed_count}")),
-            rx.spacer(),
-            rx.foreach(S.model_rows, lambda m: setting_pill(m.role, m.model)),
-            setting_pill("rounds", S.rounds.to_string()),
-            setting_pill("mode", S.mode),
-            rx.button(
-                rx.cond(S.detail_full, "Detail: Full", "Detail: Glance"),
-                on_click=S.toggle_detail,
-                size="1",
-                variant="soft",
-                color_scheme="gray",
+        rx.text(
+            rx.cond(S.fresh, "FRESH RUN", f"RESUMED ×{S.resumed_count}"),
+            **PILL_STYLE,
+            color=rx.cond(S.fresh, T.PILL["ok"][0], T.PILL["warn"][0]),
+        ),
+        background=rx.cond(S.fresh, T.PILL["ok"][1], T.PILL["warn"][1]),
+        border_radius="8px",
+        padding="4px 11px",
+        white_space="nowrap",
+    )
+
+
+def header() -> rx.Component:
+    """One centred row of pills (the run's name, its history, the settings), the Detail switch at
+    the row's right; the rail; the progress row; the token totals."""
+    return rx.box(
+        rx.box(
+            rx.hstack(
+                setting_pill("run", S.run_id),
+                history_pill(),
+                rx.foreach(S.model_rows, lambda m: setting_pill(m.role, m.model)),
+                setting_pill("rounds", S.rounds.to_string()),
+                setting_pill("mode", S.mode),
+                spacing="2",
+                justify="center",
+                align="center",
+                width="100%",
+                wrap="wrap",
+                padding_right="120px",
             ),
-            spacing="2",
+            rx.box(
+                rx.button(
+                    rx.cond(S.detail_full, "Detail: Full", "Detail: Glance"),
+                    on_click=S.toggle_detail,
+                    size="1",
+                    variant="soft",
+                    color_scheme="gray",
+                ),
+                position="absolute",
+                right="0",
+                top="0",
+            ),
+            position="relative",
             width="100%",
-            align="center",
-            wrap="wrap",
         ),
         rx.hstack(
             start_box(),
