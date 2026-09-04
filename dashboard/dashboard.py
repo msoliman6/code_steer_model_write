@@ -188,6 +188,19 @@ class ChipRow:
 
 
 @dataclasses.dataclass
+class StepRow:
+    step: str = ""
+    stage: str = ""
+    kind: str = ""
+    role: str = ""
+    model: str = ""
+    status: str = ""
+    tokens: int = 0
+    seconds: float = 0.0
+    label: str = ""  # tokens in K/M
+
+
+@dataclasses.dataclass
 class AgentRow:
     step: str = ""
     role: str = ""
@@ -341,6 +354,8 @@ class S(rx.State):
     gates: dict[str, GateView] = {}
     chips: list[ChipRow] = []
     agent_runs: list[AgentRow] = []
+    steps: list[StepRow] = []
+    hidden_runs: str = rx.LocalStorage("[]", name="csmw_hidden_runs")  # closed tabs, this browser
     segments: list[Seg] = []
     events: list[EventRow] = []
     carried: list[CarriedRow] = []
@@ -392,6 +407,13 @@ class S(rx.State):
         ]
         self.agent_runs = [
             AgentRow(**{f.name: a[f.name] for f in dataclasses.fields(AgentRow)}) for a in d["agent_runs"]
+        ]
+        self.steps = [
+            StepRow(
+                **{f.name: x[f.name] for f in dataclasses.fields(StepRow) if f.name in x},
+                label=T.k(x["tokens"]),
+            )
+            for x in d.get("steps", [])
         ]
         total = max([sg["end"] for sg in d["segments"]] + [1.0])
         self.segments = [
@@ -472,12 +494,33 @@ class S(rx.State):
     def load_runs(self):
         if self.view_tab not in {k for k, _ in NAV}:
             self.view_tab = "run"  # a stale pick from an earlier layout
-        self.runs = _runs()
+        self.runs = [r for r in _runs() if r["dir"] not in self._hidden()]
+        if self.run_dir and self.run_dir not in {r["dir"] for r in self.runs}:
+            self.run_dir = ""
         if not self.run_dir and self.runs:
             self.run_dir = self.runs[0]["dir"]
         self.hash_ = ""  # a page load rebuilds the view even when nothing on disk moved
         if self.run_dir:
             self._apply(self.run_dir)
+
+    def _hidden(self) -> set[str]:
+        try:
+            return set(json.loads(self.hidden_runs or "[]"))
+        except ValueError:
+            return set()
+
+    @rx.event
+    def close_run(self, run_dir: str):
+        """The × on a tab: a live run is asked to stop (the STOP file, honoured at the next step
+        boundary), then the tab is hidden in this browser. The run dir is never deleted."""
+        if run_dir == self.run_dir and self.control in ("running", "gate"):
+            atomic_write_text(Path(run_dir) / "STOP", "closed from the page")
+        elif run_dir != self.run_dir:
+            st = Path(run_dir) / "state.json"
+            if st.exists() and json.loads(st.read_text()).get("status") == "RUNNING":
+                atomic_write_text(Path(run_dir) / "STOP", "closed from the page")
+        self.hidden_runs = json.dumps(sorted(self._hidden() | {run_dir}))
+        self.load_runs()
 
     @rx.event
     def open_run(self, run_dir: str):
@@ -550,6 +593,15 @@ class S(rx.State):
     @rx.var
     def stage_runs(self) -> list[AgentRow]:
         return [r for r in self.agent_runs if r.stage == self.selected]
+
+    @rx.var
+    def stage_steps(self) -> list[StepRow]:
+        return [r for r in self.steps if r.stage == self.selected]
+
+    @rx.var
+    def stage_steps_done(self) -> str:
+        rows = [r for r in self.steps if r.stage == self.selected]
+        return f"{sum(1 for r in rows if r.status == 'done')}/{len(rows)} done"
 
     @rx.var
     def filtered_events(self) -> list[EventRow]:
@@ -720,10 +772,29 @@ GLASS_STROKE = [(k, f"1px solid {T.tint(k, 0.55)}") for k in T.STAGE_HUES]
 GLASS_STROKE_SEL = [(k, f"1.5px solid {T.tint(k, 0.95)}") for k in T.STAGE_HUES]
 
 
-def eyebrow(text, right: rx.Component | None = None) -> rx.Component:
+def eyebrow(text, right: rx.Component | None = None, *, color=None) -> rx.Component:
+    """A card's title: uppercase mono, letter-spaced, muted (or the stage hue); a muted summary
+    on its right. Every card on the page opens with one, so the eye reads them as one kind."""
+    style = {**EYEBROW, "color": color} if color is not None else EYEBROW
     return rx.hstack(
-        rx.text(text, **EYEBROW), rx.spacer(), right or rx.fragment(), width="100%", align="center"
+        rx.text(text, **style), rx.spacer(), right or rx.fragment(), width="100%", align="center"
     )
+
+
+def sub_eyebrow(text, right: rx.Component | None = None) -> rx.Component:
+    """A section inside a card: the same face as the card title, one shade dimmer, spaced above."""
+    return rx.hstack(
+        rx.text(text, **{**EYEBROW, "color": T.DIM}),
+        rx.spacer(),
+        right or rx.fragment(),
+        width="100%",
+        align="center",
+        margin_top=T.SPACE["md"],
+    )
+
+
+def summary_text(text) -> rx.Component:
+    return rx.text(text, **MONO, color=T.MUTED, font_size=SMALL)
 
 
 PILL_STYLE = {
@@ -1209,24 +1280,37 @@ def result_row(r: Row) -> rx.Component:
     )
 
 
-def agent_row(r: AgentRow) -> rx.Component:
-    return rx.hstack(
-        rx.text(r.step, **MONO),
-        rx.text(r.role, **MONO, color=T.MUTED),
-        rx.text(r.model, **MONO, color=T.MUTED),
-        rx.spacer(),
-        rx.text(f"{r.tokens} tok · {r.seconds}s · {r.status}", **MONO, color=T.MUTED),
+def step_row(r: StepRow) -> rx.Component:
+    """One step: its state glyph, its key, the side and model as pills, tokens and seconds when it
+    ran. Done in text colour, running in the stage hue, pending dimmed: the eye follows the run."""
+    color = rx.match(r.status, ("done", T.TEXT), ("running", S.stage_hue), T.DIM)
+    glyph = rx.match(r.status, ("done", "✓"), ("running", "●"), "○")
+    side = rx.match(
+        r.role,
+        ("author", setting_pill("author", r.model, "a")),
+        ("checker", setting_pill("checker", r.model, "b")),
+        ("you", setting_pill("you", "gate")),
+        setting_pill("code", r.kind),
+    )
+    return rx.grid(
+        rx.text(glyph, **MONO, color=color, font_size=BODY, text_align="center"),
+        rx.text(r.step, **MONO, color=color, font_size=BODY, white_space="nowrap"),
+        rx.box(side, opacity=rx.cond(r.status == "pending", "0.55", "1")),
+        rx.text(rx.cond(r.tokens > 0, f"{r.label} tok", ""), **MONO, color=T.MUTED, font_size=SMALL),
+        rx.text(rx.cond(r.seconds > 0, f"{r.seconds}s", ""), **MONO, color=T.MUTED, font_size=SMALL),
+        rx.text(r.status, **MONO, color=color, font_size=SMALL),
+        grid_template_columns="18px 220px auto 90px 70px 80px",
+        column_gap="14px",
+        align_items="center",
         width="100%",
-        font_size=SMALL,
     )
 
 
 def stage_panel() -> rx.Component:
     s = S.stage
     return rx.box(
-        rx.text(f"Stage {s.n} · {s.title}", **MONO, color=S.stage_hue),
+        eyebrow(f"STAGE {s.n} · {s.title}", summary_text(s.duration), color=S.stage_hue),
         rx.text(s.description, color=T.MUTED, font_size=BODY, margin_top=T.SPACE["xs"]),
-        rx.text(s.duration, **MONO, color=T.MUTED, font_size=SMALL, margin_top=T.SPACE["xs"]),
         rx.cond(
             s.outcome != "",
             rx.text(
@@ -1238,22 +1322,19 @@ def stage_panel() -> rx.Component:
         rx.cond(
             s.rows.length() > 0,
             rx.vstack(
-                eyebrow(f"RESULTS — {s.note}"),
+                sub_eyebrow("RESULTS", summary_text(s.note)),
                 rx.foreach(s.rows, result_row),
                 spacing="1",
                 width="100%",
-                margin_top=T.SPACE["md"],
             ),
             rx.fragment(),
         ),
-        rx.el.details(
-            rx.el.summary(
-                rx.text(f"Agent runs · {S.stage_runs.length()}", **MONO, color=T.MUTED, font_size=BODY)
-            ),
-            rx.foreach(S.stage_runs, agent_row),
-            id="stage-agent-runs",
-            open=S.detail_full,
-            margin_top=T.SPACE["md"],
+        rx.vstack(
+            sub_eyebrow("STEPS", summary_text(S.stage_steps_done)),
+            rx.foreach(S.stage_steps, step_row),
+            spacing="1",
+            width="100%",
+            id="stage-steps",
         ),
         border_top="2px solid " + S.stage_hue,
         **CARD,
@@ -1297,15 +1378,7 @@ def artifact_row(a: ArtRow) -> rx.Component:
 
 def artifacts_panel() -> rx.Component:
     return rx.box(
-        eyebrow(
-            "OUTPUTS OF THIS STAGE",
-            rx.text(
-                f"{S.stage_artifacts.length()} records · ▸ reads one as markdown",
-                **MONO,
-                color=T.MUTED,
-                font_size=SMALL,
-            ),
-        ),
+        eyebrow("OUTPUTS", summary_text(f"{S.stage_artifacts.length()} records · ▸ reads one as markdown")),
         rx.vstack(
             rx.foreach(S.stage_artifacts, artifact_row), spacing="2", width="100%", margin_top=T.SPACE["sm"]
         ),
@@ -1366,7 +1439,7 @@ def evidence() -> rx.Component:
             ),
         ),
         rx.box(
-            eyebrow("WHERE THE TIME WENT"),
+            sub_eyebrow("WHERE THE TIME WENT"),
             lane_row("a"),
             lane_row("b"),
             lane_row("you"),
@@ -1516,9 +1589,19 @@ def run_tab(r, *, active_allowed: bool = True) -> rx.Component:
             font_weight=rx.cond(active, "700", "400"),
         ),
         rx.text(r["recipe"], **MONO, font_size=SMALL, color=T.DIM),
+        rx.text(
+            "×",
+            **MONO,
+            font_size=BODY,
+            color=T.DIM,
+            padding_left="6px",
+            title="close: a live run is stopped first; the run dir stays",
+            _hover={"color": T.TEXT},
+            on_click=S.close_run(r["dir"]).stop_propagation,
+        ),
         spacing="2",
         align="center",
-        padding="8px 16px",
+        padding="8px 12px 8px 16px",
         cursor="pointer",
         on_click=S.open_run(r["dir"]),
         # browser tabs: a divider between neighbours, the open one lifted onto the card surface

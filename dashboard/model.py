@@ -72,6 +72,20 @@ class Chip(BaseModel):
     stage: str | None = None
 
 
+class StepRow(BaseModel):
+    """One step of the run as the page lists it: done, running, or pending (derived from disk but
+    not yet issued). Pending steps show which side and model the run will wait for."""
+
+    step: str
+    stage: str
+    kind: str
+    role: str  # author | checker | code | you
+    model: str
+    status: str  # done | running | pending | waiting
+    tokens: int = 0
+    seconds: float = 0.0
+
+
 class AgentRun(BaseModel):
     step: str
     role: str
@@ -127,6 +141,7 @@ class RunView(BaseModel):
     current_stage: str | None
     chips: list[Chip]
     agent_runs: list[AgentRun]
+    steps: list[StepRow] = []
     segments: list[Segment]
     token_series: dict[str, list[tuple[float, int]]]
     events: list[dict[str, Any]]
@@ -377,6 +392,7 @@ def build_view(run_dir: Path | str) -> RunView:
     if retries:
         chips.append(Chip(key="retries", label="Stalls", count=retries, tone="warn"))
 
+    steps = _step_rows(paths, st, spec, calls, step_phase, now)
     agent_runs = [
         AgentRun(
             step=c["step"],
@@ -476,6 +492,7 @@ def build_view(run_dir: Path | str) -> RunView:
         current_stage=current,
         chips=chips,
         agent_runs=agent_runs,
+        steps=steps,
         segments=segments,
         token_series=series,
         events=ev_rows,
@@ -712,6 +729,79 @@ def _generic_md(data: Any, level: int = 3) -> str:
             return "\n".join(lines)
         return "\n".join(f"- {x}" for x in data) or "(empty)"
     return str(data)
+
+
+def _step_rows(
+    paths: RunPaths, st: RunState, spec, calls: dict, step_phase: dict[str, str], now
+) -> list[StepRow]:
+    """The steps the recipe derives from disk right now (rule 1: steps come from files), each
+    with its status from state.json and its tokens from the calls. A step not yet issued is
+    pending; its side and model come from the task, per-stage settings included."""
+    from code_steer_model_write import settings_form as sf
+    from code_steer_model_write.artifacts.store import Store
+    from code_steer_model_write.spec.task import TaskSpec
+
+    task = None
+    tp = paths.run_dir / "task.json"
+    if tp.exists():
+        try:
+            task = TaskSpec.model_validate(json.loads(tp.read_text()))
+        except Exception:  # noqa: BLE001 - an unreadable task only costs the pending rows their model
+            task = None
+    try:
+        program_steps = registry.get(st.recipe).steps(st, paths, Store(paths.run_dir))
+    except Exception:  # noqa: BLE001 - a recipe that cannot derive from a half-written run dir
+        program_steps = []
+    by_step: dict[str, dict] = {}
+    for (key, _attempt), c in calls.items():
+        row = by_step.setdefault(key, {"tokens": 0, "seconds": 0.0, "model": "", "role": ""})
+        row["tokens"] += c["tokens"]
+        row["seconds"] += ((c["t1"] or now) - c["t0"]).total_seconds()
+        row["model"] = c["model"] or row["model"]
+        row["role"] = c["role"] or row["role"]
+    out: list[StepRow] = []
+    seen: set[str] = set()
+    for sp in program_steps:
+        seen.add(sp.key)
+        rec = st.steps.get(sp.key)
+        status = "done" if rec and rec.done_at is not None else ("running" if rec else "pending")
+        role = sp.role or ("you" if sp.gate else "code")
+        stage = _stage_of(str(sp.phase), spec) or (spec.stages[0].id if spec.stages else "")
+        model = by_step.get(sp.key, {}).get("model", "")
+        if not model and task is not None and role in task.roles:
+            try:
+                model = sf.stage_role(task, stage, role).model
+            except Exception:  # noqa: BLE001
+                model = task.roles[role].model
+        c = by_step.get(sp.key, {})
+        out.append(
+            StepRow(
+                step=sp.key,
+                stage=stage,
+                kind=sp.kind.value,
+                role=role,
+                model=model or "",
+                status=status,
+                tokens=int(c.get("tokens", 0)),
+                seconds=round(float(c.get("seconds", 0.0)), 1),
+            )
+        )
+    for key, c in by_step.items():  # a call the recipe no longer lists (an old round): still shown
+        if key not in seen:
+            rec = st.steps.get(key)
+            out.append(
+                StepRow(
+                    step=key,
+                    stage=_stage_of(step_phase.get(key, ""), spec),
+                    kind="author",
+                    role=c["role"] or "code",
+                    model=c["model"],
+                    status="done" if rec and rec.done_at is not None else "running",
+                    tokens=int(c["tokens"]),
+                    seconds=round(float(c["seconds"]), 1),
+                )
+            )
+    return out
 
 
 def _stage_of(phase: str, spec) -> str:
