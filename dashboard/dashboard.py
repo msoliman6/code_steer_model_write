@@ -1029,7 +1029,7 @@ def progress_bar() -> rx.Component:
                 spacing="3",
                 align="center",
             ),
-            spacing="1",
+            spacing="0",
             align="start",
         ),
         rx.grid(
@@ -1041,6 +1041,7 @@ def progress_bar() -> rx.Component:
             justify_items="start",
         ),
         spacing="3",
+        justify="center",
         align="center",
         width="100%",
         margin_top=T.SPACE["lg"],
