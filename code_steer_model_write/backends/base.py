@@ -91,6 +91,7 @@ class CallSpec(BaseModel):
     stall_seconds: int = 180
     scope_root: Path | None = None  # a tool-bearing call may write only under this folder
     fixture: str | None = None  # the fake backend's hint: which fixture answers this call
+    schema_model: Any = None  # the Artifact class itself, for a backend that takes a type (pydantic_ai)
 
 
 class CallResult(BaseModel):

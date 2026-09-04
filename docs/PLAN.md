@@ -47,6 +47,23 @@ Agreed with the user on 2026-09-04. Nothing below is code; it is what the code w
   provider so nothing leaves the process). `default_layers()` chooses by the profile and
   writes a `layers.installed` event. Dependencies: `cedarpy>=4.8`, `guardrails-ai>=0.11`
   (114 MB on disk). Walk 13/13, tests 97, ruff and pyright clean on `layers/`.
+- **Phase 3 — L4 with its tool: built 2026-09-04.** `backends/pydantic_ai.py`: PydanticAI behind
+  the Backend seam. The Artifact class is the agent's output type (`CallSpec.schema_model`,
+  set by `ask()`), in the provider's native structured-output mode where it has one, so the
+  schema is enforced at generation; the answer returns as a pydantic instance and the
+  runtime's validator, rails and re-ask still rule on it. Tool-using calls use the deferred
+  loop: the model emits a call, the run pauses, the ToolDef's function answers it (L6's
+  callback), the run resumes; bounded by `max_turns` with an honest `budget` status. The
+  typed message record goes to the stream file; usage on every result. Models are
+  `provider:model` (`anthropic:…`, `openai:…`, `openai-chat:…`); the vendor for rule 3 is the
+  prefix. Backend name `pydantic_ai`; tests on PydanticAI's `TestModel`, a runaway
+  `FunctionModel`, and a local fake OpenAI chat server. Dependencies `pydantic-ai-slim
+  [anthropic,openai]>=2.39` and `openai>=3.8` (the user's decision over Guardrails' `<3` pin:
+  Guardrails validates only, never calls a model for us; LiteLLM's pin is the same and LiteLLM
+  leaves in phase 6 with the price map vendored). The doctor names the tool behind each seam.
+  Walk 13/13, tests 101, ruff and pyright clean. Classes retired, from section 8 once a side
+  runs on it: an exit code that lies, a message parsed by position, an accounting path skipped
+  on one exit, liveness from the wrong signal -- for that side.
   **Live:** `live-3` halted at contract arbitration (a refusal with no re-ask, in the CLI
   backend; fixed at the class, ledger). `live-4` (2026-09-04, Haiku 4.5 low + gpt-5.4-mini
   low, auto, one round): COMPLETED, 27 steps, 0 halts, 0 resumes, 3 refusals all recovered,

@@ -41,7 +41,7 @@ def _requirements() -> list[str]:
     for ln in (ROOT / "requirements.txt").read_text().splitlines():
         ln = ln.strip()
         if ln and not ln.startswith("#"):
-            out.append(ln.split(">=")[0].split("==")[0].strip())
+            out.append(ln.split(">=")[0].split("==")[0].split("[")[0].strip())
     return out
 
 
@@ -61,7 +61,11 @@ def run(*, deep: bool = False) -> int:
     )
     missing = []
     for name in _requirements():
-        mod = {"pydantic-settings": "pydantic_settings"}.get(name, name)
+        mod = {
+            "pydantic-settings": "pydantic_settings",
+            "guardrails-ai": "guardrails",
+            "pydantic-ai-slim": "pydantic_ai",
+        }.get(name, name)
         try:
             importlib.import_module(mod)
         except Exception:  # noqa: BLE001
@@ -75,6 +79,15 @@ def run(*, deep: bool = False) -> int:
         )
     else:
         d.note("packages        every requirement importable")
+    try:
+        from .layers import default_layers
+
+        inst = default_layers().installed()
+        d.note(
+            f"layers          policy={inst['policy']} rails={inst['rails']} sandbox={inst['sandbox']} tools={inst['tools']}"
+        )
+    except Exception as e:  # noqa: BLE001 -- a seam whose tool cannot load is a halt, said in words
+        d.halt(f"layers          a seam's tool did not load: {type(e).__name__}: {str(e)[:160]}")
     for tool in ("ruff", "pyright", "pytest"):
         found = shutil.which(tool) or (tool == "pytest" and importlib.util.find_spec("pytest"))
         (d.note if found else d.warn)(

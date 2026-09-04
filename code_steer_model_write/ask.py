@@ -142,6 +142,7 @@ def ask(
             stall_seconds=ctx.stall_seconds,
             scope_root=ctx.scope_root,
             fixture=ctx.fixture,
+            schema_model=schema,
         )
         ev.append(
             "call.started",

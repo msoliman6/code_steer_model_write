@@ -43,6 +43,9 @@ class BackendName(StrEnum):
     LITELLM = "litellm"
     CLAUDE_CLI = "claude_cli"
     CODEX_CLI = "codex_cli"
+    PYDANTIC_AI = (
+        "pydantic_ai"  # L4 first implementation (ARCHITECTURE.md 7.5): any provider, `provider:model`
+    )
     FAKE = "fake"
 
 
@@ -52,11 +55,16 @@ VENDOR_OF: dict[BackendName, str] = {
     BackendName.CLAUDE_CLI: "anthropic",
     BackendName.CODEX_CLI: "openai",
     BackendName.LITELLM: "litellm",  # vendor is the model's; resolved by model name
+    BackendName.PYDANTIC_AI: "pydantic_ai",  # the vendor is the model's `provider:` prefix; resolved by model name
     BackendName.FAKE: "fake",
 }
 
 
 def vendor_of(backend: BackendName, model: str) -> str:
+    if backend is BackendName.PYDANTIC_AI:
+        # `provider:model`; the provider is the vendor (rule 3 compares vendors, not backends)
+        head = model.split(":", 1)[0].lower() if ":" in model else "anthropic"
+        return head.split("-", 1)[0]  # openai-chat, openai-responses -> openai
     if backend is BackendName.LITELLM:
         head = model.split("/", 1)[0].lower()
         return head if "/" in model else ("openai" if model.startswith(("gpt", "o")) else head)

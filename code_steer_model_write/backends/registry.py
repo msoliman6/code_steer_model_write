@@ -32,4 +32,8 @@ def make(name: str | BackendName) -> Backend:
         from .cli import CodexCliBackend
 
         return CodexCliBackend()
+    if n is BackendName.PYDANTIC_AI:
+        from .pydantic_ai import PydanticAIBackend
+
+        return PydanticAIBackend()
     raise KeyError(name)

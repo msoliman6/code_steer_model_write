@@ -320,3 +320,126 @@ def test_claude_cli_hands_back_the_last_answer_when_its_harness_gives_up(tmp_pat
     r = ClaudeCliBackend().complete(_call(), lambda f: None)
     assert r.status == "final" and r.parsed == nested, r
     assert r.usage.input_tokens == 5
+
+
+def _fake_openai_server():
+    """A local server speaking the OpenAI chat-completions dialect, answering one structured
+    completion; no network, no key. (`openai:` alone now means the Responses API in PydanticAI,
+    so the test names the chat dialect it fakes: `openai-chat:`.)"""
+    import json as _json
+    import threading
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+
+    class H(BaseHTTPRequestHandler):
+        def log_message(self, *a):
+            pass
+
+        def do_POST(self):
+            n = int(self.headers.get("content-length", 0))
+            body = _json.loads(self.rfile.read(n) or b"{}")
+            resp = {
+                "id": "r1",
+                "object": "chat.completion",
+                "created": 0,
+                "model": body.get("model", "m"),
+                "choices": [
+                    {
+                        "index": 0,
+                        "finish_reason": "stop",
+                        "message": {"role": "assistant", "content": _json.dumps({"ok": True})},
+                    }
+                ],
+                "usage": {"prompt_tokens": 11, "completion_tokens": 5, "total_tokens": 16},
+            }
+            out = _json.dumps(resp).encode()
+            self.send_response(200)
+            self.send_header("content-type", "application/json")
+            self.send_header("content-length", str(len(out)))
+            self.end_headers()
+            self.wfile.write(out)
+
+    srv = HTTPServer(("127.0.0.1", 0), H)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    return srv
+
+
+def test_pydantic_ai_backend_schema_call_on_the_test_model():
+    """L4 first implementation (7.5): a schema call returns the validated answer, usage on the
+    result, and a typed record in the stream file -- nothing parsed by position."""
+    from pydantic import BaseModel
+    from pydantic_ai.models.test import TestModel
+
+    from code_steer_model_write.backends.pydantic_ai import PydanticAIBackend
+
+    class Answer(BaseModel):
+        ok: bool
+
+    facts = []
+    call = _call(schema_model=Answer)
+    r = PydanticAIBackend(model=TestModel()).complete(call, facts.append)
+    assert r.status == "final" and r.parsed == {"ok": False} and r.usage.input_tokens > 0
+    assert [f.kind for f in facts] == ["usage", "final"]
+
+
+def test_pydantic_ai_backend_deferred_tool_loop_is_ours_and_bounded():
+    """Ask with tools uses a callback (section 6): the model emits the call, our function answers,
+    the run resumes; a model that never stops hits the turn cap with an honest budget status."""
+    from pydantic import BaseModel
+    from pydantic_ai.messages import ModelResponse, ToolCallPart
+    from pydantic_ai.models.function import FunctionModel
+    from pydantic_ai.models.test import TestModel
+
+    from code_steer_model_write.backends.base import ToolDef
+    from code_steer_model_write.backends.pydantic_ai import PydanticAIBackend
+
+    class Answer(BaseModel):
+        ok: bool
+
+    got = []
+
+    def lookup(q: str) -> str:
+        got.append(q)
+        return f"found {q}"
+
+    tool = ToolDef(
+        name="lookup",
+        description="look something up",
+        input_schema={
+            "type": "object",
+            "properties": {"q": {"type": "string"}},
+            "required": ["q"],
+            "additionalProperties": False,
+        },
+        fn=lookup,
+    )
+    call = _call(schema_model=Answer, tools=[tool], max_turns=3)
+    r = PydanticAIBackend(model=TestModel(call_tools=["lookup"])).complete(call, lambda f: None)
+    assert r.status == "final" and got == ["a"] and r.usage.tool_calls == 1
+
+    def forever(messages, info):
+        return ModelResponse(parts=[ToolCallPart(tool_name="lookup", args={"q": "again"})])
+
+    r2 = PydanticAIBackend(model=FunctionModel(forever)).complete(call, lambda f: None)
+    assert r2.status == "budget" and "3 turns" in r2.reason
+
+
+def test_pydantic_ai_backend_reaches_an_openai_provider(monkeypatch):
+    """Any provider, `provider:model` (7.5): the OpenAI path against a local fake server, with
+    openai>=3.8 installed beside Guardrails (decided 2026-09-04)."""
+    from pydantic import BaseModel
+
+    from code_steer_model_write.backends.pydantic_ai import PydanticAIBackend
+
+    class Answer(BaseModel):
+        ok: bool
+
+    srv = _fake_openai_server()
+    try:
+        monkeypatch.setenv("OPENAI_BASE_URL", f"http://127.0.0.1:{srv.server_address[1]}/v1")
+        monkeypatch.setenv("OPENAI_API_KEY", "test")
+        call = _call(model="openai-chat:gpt-5.4-mini", schema_model=Answer)
+        r = PydanticAIBackend().complete(call, lambda f: None)
+        assert r.status == "final" and r.parsed == {"ok": True} and r.usage.input_tokens == 11, r
+        assert r.model_used == "openai-chat:gpt-5.4-mini"
+    finally:
+        srv.shutdown()
