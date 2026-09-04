@@ -210,6 +210,8 @@ Values are USD per million input and output tokens.
 Descends from [freeze-and-swap](https://github.com/msoliman6/freeze-and-swap) (MIT): the
 freeze, the swap, the coded driver, the offline walk, the page. This template generalises its
 doctrine into recipes on a Prefect + MLflow + Reflex runtime.
+[claudex-loop](https://github.com/chaseai-yt/claudex-loop) showed Claude Code paired with OpenAI Codex as an
+adversarial reviewer inside a Claude Code plugin; the coder project built on this template follows that pairing.
 
 ## License
 
