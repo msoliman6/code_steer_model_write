@@ -69,6 +69,7 @@ SPEC = RecipeSpec(
     stages=[
         StageSpec(
             id="plan",
+            side_labels={"author": "writes the plan", "checker": "attacks it"},
             n=0,
             title="Plan",
             emoji="🗺",
@@ -80,6 +81,7 @@ SPEC = RecipeSpec(
         ),
         StageSpec(
             id="contracts",
+            side_labels={"author": "writes the contract", "checker": "attacks it, then audits"},
             n=1,
             title="Contracts",
             emoji="📜",
@@ -95,6 +97,7 @@ SPEC = RecipeSpec(
         ),
         StageSpec(
             id="verification",
+            side_labels={"checker": "writes the properties", "author": "reviews coverage"},
             n=2,
             title="Verification Design",
             emoji="🧪",
@@ -109,6 +112,7 @@ SPEC = RecipeSpec(
         ),
         StageSpec(
             id="build",
+            side_labels={"checker": "writes the tests", "author": "writes the source"},
             n=3,
             title="Build",
             emoji="🔨",
@@ -125,6 +129,7 @@ SPEC = RecipeSpec(
         ),
         StageSpec(
             id="verify",
+            side_labels={"author": "rules on the test", "checker": "rules on the code"},
             n=4,
             title="Verification Run",
             emoji="🚑",

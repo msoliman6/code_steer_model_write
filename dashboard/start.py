@@ -216,32 +216,33 @@ GLASS_STROKE = [(k, f"1px solid {T.tint(k, 0.55)}") for k in T.STAGE_HUES]
 
 
 def side_row(model: Card, effort: Card) -> rx.Component:
-    """One line per side of a stage: the function (writer / checker), then the model and its
-    effort side by side; the box above says which stage, so the labels stay short."""
+    """One block per side of a stage: what the side does here, then the model on one row and
+    the effort on the next; the box above says which stage, so the labels stay short."""
     color = rx.cond(model.side == "author", T.ACTOR["a"], T.ACTOR["b"])
     glyph = rx.cond(model.side == "author", "✳", "☘")
     return rx.vstack(
         rx.hstack(
             rx.text(glyph, color=color, font_size=SMALL),
-            rx.text(model.func, **MONO, color=T.MUTED, font_size=SMALL),
+            rx.text(model.func, font_weight="700", font_size=SMALL),
             rx.text(model.side, **MONO, color=T.DIM, font_size=SMALL),
             spacing="2",
             align="center",
         ),
+        rx.select(
+            model.options,
+            value=model.value,
+            on_change=lambda v: Start.set_value(model.key, v),
+            size="1",
+            width="100%",
+        ),
         rx.hstack(
-            rx.select(
-                model.options,
-                value=model.value,
-                on_change=lambda v: Start.set_value(model.key, v),
-                size="1",
-                width="100%",
-            ),
+            rx.text("effort", **MONO, color=T.DIM, font_size=SMALL, min_width="44px"),
             rx.select(
                 effort.options,
                 value=effort.value,
                 on_change=lambda v: Start.set_value(effort.key, v),
                 size="1",
-                width="88px",
+                width="100%",
             ),
             spacing="2",
             width="100%",

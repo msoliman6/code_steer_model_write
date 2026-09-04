@@ -58,6 +58,9 @@ class StageSpec(BaseModel):
     checker: str = "none"
     figure: FigurePhrases
     qualifier: str | None = None  # "TWO ISOLATED AUTHORS" -> "3 · BUILD — TWO ISOLATED AUTHORS"
+    side_labels: dict[str, str] = Field(
+        default_factory=dict
+    )  # role -> what it does on this stage ("tests", "rules on code")
     freeze_label: str | None = (
         None  # a slate, bold box after this stage's gates: "Freeze — the contract is hashed"
     )
