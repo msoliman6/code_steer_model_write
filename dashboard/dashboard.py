@@ -850,10 +850,15 @@ def stage_box(s: Stage) -> rx.Component:
             **MONO,
             color=T.MUTED,
             font_size=SMALL,
-            white_space="nowrap",
-            overflow="hidden",
-            text_overflow="ellipsis",
+            text_align="center",
             width="100%",
+            line_height="1.3",
+            style={
+                "display": "-webkit-box",
+                "WebkitLineClamp": "2",
+                "WebkitBoxOrient": "vertical",
+                "overflow": "hidden",
+            },
         ),
         spacing="1",
         width="100%",
@@ -922,21 +927,24 @@ def progress_segment(r: ProgRow) -> rx.Component:
 
 
 def progress_bar() -> rx.Component:
-    """tqdm, with better graphics: segments per stage, the percentage, elapsed, the estimate."""
+    """tqdm, with better graphics: segments per stage, the percentage, elapsed, then the token
+    totals under their marks. The one time line on the page."""
     return rx.hstack(
-        rx.hstack(
-            rx.foreach(S.prog_rows, progress_segment),
-            spacing="1",
-            width="34%",
-            align="center",
-        ),
+        rx.hstack(rx.foreach(S.prog_rows, progress_segment), spacing="1", width="34%", align="center"),
         rx.text(S.percent, **MONO, font_weight="700", font_size=BODY, min_width="44px"),
-        rx.text(f"· {S.elapsed} elapsed", **MONO, color=T.MUTED, font_size=SMALL),
+        rx.text(f"· {S.elapsed}", **MONO, color=T.MUTED, font_size=SMALL),
         rx.text(
-            rx.cond(S.process == "completed", "· finished", "· remaining: steps (no history yet)"),
-            **MONO,
-            color=T.DIM,
-            font_size=SMALL,
+            rx.cond(S.process == "completed", "· finished", "· running"), **MONO, color=T.DIM, font_size=SMALL
+        ),
+        rx.spacer(),
+        rx.foreach(
+            S.token_rows,
+            lambda t: rx.hstack(
+                side_mark(t.role == "author", "14px"),
+                rx.text(f"{t.label} tok", **MONO, font_weight="700", font_size=SMALL),
+                spacing="1",
+                align="center",
+            ),
         ),
         spacing="3",
         align="center",
@@ -987,26 +995,6 @@ def header() -> rx.Component:
             spacing="2",
             margin_top=T.SPACE["md"],
             wrap="wrap",
-        ),
-        rx.hstack(
-            rx.text("Elapsed", **MONO, color=T.MUTED),
-            rx.text(S.elapsed, **MONO, font_weight="700", border_bottom="2px solid " + S.live_hue),
-            rx.text(
-                rx.cond(S.process == "completed", "Finished", f"Remaining {S.remaining}"),
-                **MONO,
-                color=T.MUTED,
-            ),
-            rx.foreach(
-                S.token_rows,
-                lambda t: rx.hstack(
-                    rx.text(t.role, **MONO, color=T.MUTED),
-                    rx.text(f"{t.label} tok", **MONO, font_weight="700"),
-                    spacing="1",
-                ),
-            ),
-            spacing="4",
-            margin_top=T.SPACE["md"],
-            align="center",
         ),
         rx.hstack(rx.foreach(S.chips, chip), spacing="2", margin_top=T.SPACE["sm"]),
         **CARD,
@@ -1123,7 +1111,7 @@ def agent_row(r: AgentRow) -> rx.Component:
 def stage_panel() -> rx.Component:
     s = S.stage
     return rx.box(
-        rx.text(f"Stage {s.n} · {s.title} · {s.author} + {s.checker}", **MONO, color=S.stage_hue),
+        rx.text(f"Stage {s.n} · {s.title}", **MONO, color=S.stage_hue),
         rx.text(s.description, color=T.MUTED, font_size=BODY, margin_top=T.SPACE["xs"]),
         rx.text(s.duration, **MONO, color=T.MUTED, font_size=SMALL, margin_top=T.SPACE["xs"]),
         rx.cond(
