@@ -956,8 +956,8 @@ def progress_segment(r: ProgRow) -> rx.Component:
 
 
 def progress_bar() -> rx.Component:
-    """tqdm, with better graphics: segments per stage, the percentage, elapsed, the run's state in
-    its tone, then the token totals under their marks. The one line that says where the run is."""
+    """tqdm, with better graphics: segments per stage, the percentage, elapsed and the run's state
+    in its tone on the left; the wrong-ness chips on the right of the same row."""
     return rx.hstack(
         rx.hstack(rx.foreach(S.prog_rows, progress_segment), spacing="1", width="30%", align="center"),
         rx.text(S.percent, **MONO, font_weight="700", font_size=BODY, min_width="44px"),
@@ -966,6 +966,17 @@ def progress_bar() -> rx.Component:
         rx.text("·", color=T.DIM),
         rx.text(S.status_word, **MONO, font_weight="700", font_size=BODY, color=S.status_color),
         rx.spacer(),
+        rx.foreach(S.chips, chip),
+        spacing="3",
+        align="center",
+        width="100%",
+        margin_top=T.SPACE["lg"],
+    )
+
+
+def token_line() -> rx.Component:
+    """The token totals per side under their marks, beneath the progress bar. Tokens, never dollars."""
+    return rx.hstack(
         rx.foreach(
             S.token_rows,
             lambda t: rx.hstack(
@@ -975,25 +986,19 @@ def progress_bar() -> rx.Component:
                 align="center",
             ),
         ),
-        spacing="3",
+        spacing="4",
         align="center",
-        width="100%",
-        margin_top=T.SPACE["lg"],
+        margin_top=T.SPACE["sm"],
     )
 
 
 def header() -> rx.Component:
+    """Identity and settings as one row of pills, the rail, the progress row, the token totals."""
     return rx.box(
         rx.hstack(
-            rx.text(S.run_id, **MONO, color=T.MUTED),
-            rx.text("·", color=T.DIM),
-            rx.text(S.recipe, **MONO, color=T.MUTED),
-            rx.text("·", color=T.DIM),
-            rx.text(
-                rx.cond(S.fresh, "Fresh run", f"Resumed ×{S.resumed_count}"),
-                **MONO,
-                color=rx.cond(S.fresh, T.OK, T.WARN),
-            ),
+            setting_pill("run", S.run_id),
+            setting_pill("recipe", S.recipe),
+            setting_pill("start", rx.cond(S.fresh, "fresh", f"resumed ×{S.resumed_count}")),
             rx.spacer(),
             rx.foreach(S.model_rows, lambda m: setting_pill(m.role, m.model)),
             setting_pill("rounds", S.rounds.to_string()),
@@ -1005,8 +1010,10 @@ def header() -> rx.Component:
                 variant="soft",
                 color_scheme="gray",
             ),
+            spacing="2",
             width="100%",
             align="center",
+            wrap="wrap",
         ),
         rx.hstack(
             start_box(),
@@ -1018,15 +1025,7 @@ def header() -> rx.Component:
             overflow="hidden",
         ),
         progress_bar(),
-        rx.hstack(
-            rx.spacer(),
-            rx.foreach(S.chips, chip),
-            spacing="2",
-            margin_top=T.SPACE["md"],
-            width="100%",
-            align="center",
-            wrap="wrap",
-        ),
+        token_line(),
         **CARD,
     )
 
