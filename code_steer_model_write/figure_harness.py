@@ -122,7 +122,10 @@ class Node:
 def layout() -> list[Node]:
     nodes: list[Node] = []
     y = 30.0
-    n = Node(190, y, 620,
+    n = Node(
+        190,
+        y,
+        620,
         "blue",
         "AGENT WORKFLOW",
         "The workflow figure above · Python",

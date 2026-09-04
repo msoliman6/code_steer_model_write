@@ -245,9 +245,10 @@ def build_view(run_dir: Path | str) -> RunView:
                 c["tokens"] += n
             if e.role:
                 tokens_by_role[e.role] = tokens_by_role.get(e.role, 0) + n
-                io = io_by_role.setdefault(e.role, [0, 0])
-                io[0] += int(e.data.get("input_tokens", 0)) + int(e.data.get("cache_read_tokens", 0))
+                io = io_by_role.setdefault(e.role, [0, 0, 0])
+                io[0] += int(e.data.get("input_tokens", 0))
                 io[1] += int(e.data.get("output_tokens", 0))
+                io[2] += int(e.data.get("cache_read_tokens", 0))
                 series.setdefault(e.role, []).append(((e.ts - t0).total_seconds(), tokens_by_role[e.role]))
         elif e.kind in ("call.final", "call.error") and e.step:
             c = calls.get((e.step, e.attempt or 1))
@@ -458,7 +459,9 @@ def build_view(run_dir: Path | str) -> RunView:
         else:
             fracs.append(0.0)
     progress = round(sum(fracs) / max(len(fracs), 1), 3) if fracs else 0.0
-    cost_by_role = {r: config.cost_usd(models.get(r, ""), io[0], io[1]) for r, io in io_by_role.items()}
+    cost_by_role = {
+        r: config.cost_usd(models.get(r, ""), io[0], io[1], io[2]) for r, io in io_by_role.items()
+    }
     arts = list_artifacts(paths, spec, step_phase, evs)
     return RunView(
         run_id=st.run_id,
