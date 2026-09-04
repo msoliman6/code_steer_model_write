@@ -893,9 +893,13 @@ test, done before anything moves so the move is a pure relocation.
 ### 12.4 The order
 
 1. Fix 12.3 in the template, walk green, push.
-2. `copier copy` the template into `~/Documents/Agents_design/csmw-coder` to get the project
-   skeleton, then move the files of 12.2 into it unchanged; `pip install -e` both; `csmw walk
-   code_builder` green; one live pass; push as its own private repo.
+2. **Done 2026-09-04.** The project skeleton was written by hand (copier is not installed and
+   `copier.yml` still describes the old copy-the-template model; it is rewritten in step 3 to
+   produce this skeleton): `~/Documents/Agents_design/csmw_coder`, private repo
+   `msoliman6/csmw_coder`, its own venv with the template installed editable from the sibling
+   checkout. The recipe, fakers, prompts, example, walk legs, figure, runs and tests moved; only
+   import paths and the root constant changed. Walk 10/10 from the installed package; live pass
+   `live-2` clean (23 steps, no halt, no refusal, no resume).
 3. Delete the moved files from the template; the template's walk, tests and figures stay green
    with the debate recipe alone; push.
 4. Only then the coder gets new work: the plugin (12.5).
