@@ -105,6 +105,12 @@ Agreed with the user on 2026-09-04. Nothing below is code; it is what the code w
   recovered on the re-ask), 14 min; verdict in the record: 5/5 properties pass, 5/5 fail on
   the null, nothing carried; 25 Cedar decisions, 33 verdicts, 15 tool calls; the layer
   assertion passes on the live record. The clean pass phases 1-3 owed.**
+  **`live-7` (2026-09-04, phase 4): started through the plugin's MCP server over stdio
+  (`workflow_run` returned the run id at once), the CLI logins: COMPLETED, 28 steps, 0 halts,
+  0 resumes, 2 refusals recovered (a vacuous test caught by the null run; a two-file answer
+  refused by the schema), 16 min; the first verify failed one property, triage q1 ruled it a
+  test bug, the checker fixed the tests, the second verify: 4/4 pass, 4/4 fail on the null;
+  two minor findings carried. Phase 4's live pass.**
 
 ## The rule for every phase
 
