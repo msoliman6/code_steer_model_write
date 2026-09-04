@@ -970,7 +970,7 @@ def progress_segment(r: ProgRow) -> rx.Component:
     )
 
 
-BAR_WIDTH = "40%"
+BAR_WIDTH = "300px"  # as wide as the token line beneath it
 
 
 def progress_bar() -> rx.Component:
@@ -980,16 +980,15 @@ def progress_bar() -> rx.Component:
     return rx.hstack(
         rx.hstack(rx.foreach(S.prog_rows, progress_segment), spacing="1", width=BAR_WIDTH, align="center"),
         rx.text(S.percent, **MONO, font_weight="700", font_size=BODY, min_width="52px", text_align="center"),
-        rx.spacer(),
-        rx.hstack(
+        rx.grid(
             rx.foreach(S.chips, chip),
+            columns="2",
             spacing="2",
-            wrap="wrap",
-            justify="end",
-            max_width="42%",
+            margin_left=T.SPACE["xl"],
+            align_items="center",
         ),
         spacing="3",
-        align="center",
+        align="start",
         width="100%",
         margin_top=T.SPACE["lg"],
     )
