@@ -10,7 +10,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Literal
 
-from .figure import ARROW, ARROW_W, FONT, MUTED, TEXT, W, Box, _esc, rgba
+from .figure import ARROW, ARROW_W, BAND_LIGHT, FONT, TEXT, W, _esc, rgba
 
 Theme = Literal["dark", "light"]
 
@@ -103,27 +103,55 @@ DASHBOARD = [
 ]
 
 
-def layout() -> list[Box]:
-    """(x, y, w, h, hue, lines); y flows down with one gap per row."""
-    boxes: list[Box] = []
+class Node:
+    """A glass band with the title as its label, and a smaller glass box inside for the items:
+    the workflow figure's idiom (a stage band holding its actor boxes)."""
+
+    def __init__(
+        self, x: float, y: float, w: float, hue: str, title: str, sub: str, items: list[str]
+    ) -> None:
+        self.x, self.y, self.w, self.hue, self.title, self.sub, self.items = x, y, w, hue, title, sub, items
+        self.h = 46 + (PAD * 2 + LEAD * max(len(items) - 1, 0)) + 20 if items else 62
+
+    @property
+    def inner(self) -> tuple[float, float, float, float]:
+        return self.x + 20, self.y + 46, self.w - 40, self.h - 66
+
+
+def layout() -> list[Node]:
+    nodes: list[Node] = []
     y = 30.0
-    boxes.append(Box(60, y, 880, _h(WORKFLOW), "blue", WORKFLOW))
-    y += _h(WORKFLOW) + GAP
-    hp, hm = _h(PREFECT), _h(MLFLOW)
-    boxes.append(Box(70, y, 400, hp, "gold", PREFECT))
-    boxes.append(Box(530, y, 400, hm, "violet", MLFLOW))
-    y += max(hp, hm) + GAP
-    for hue, lines in (("teal", MONITOR), ("rose", REFLEX), ("red", DASHBOARD)):
-        boxes.append(Box(240, y, 520, _h(lines), hue, lines))
-        y += _h(lines) + GAP
-    boxes.append(Box(360, y, 280, 62, "slate", ["Browser"]))
-    return boxes
+    n = Node(
+        60,
+        y,
+        880,
+        "blue",
+        "AGENT WORKFLOW",
+        "the workflow figure above · Python",
+        ["code decides every step · models fill schemas"],
+    )
+    nodes.append(n)
+    y += n.h + GAP
+    a = Node(60, y, 410, "gold", "PREFECT", "Python SDK", PREFECT[3:])
+    b = Node(530, y, 410, "violet", "MLFLOW", "Python SDK", MLFLOW[3:])
+    nodes += [a, b]
+    y += max(a.h, b.h) + GAP
+    for hue, title, sub, items in (
+        ("teal", "MONITOR.DB", "SQLite", MONITOR[3:]),
+        ("rose", "REFLEX", "Python App", REFLEX[3:]),
+        ("red", "CUSTOM DASHBOARD", "the page", DASHBOARD[2:]),
+    ):
+        n = Node(180, y, 640, hue, title, sub, items)
+        nodes.append(n)
+        y += n.h + GAP
+    nodes.append(Node(360, y, 280, "slate", "BROWSER", "", []))
+    return nodes
 
 
 def render(theme: Theme = "dark", names: dict[str, str] | None = None) -> str:  # noqa: ARG001
-    text, muted, arrow, aw = TEXT[theme], MUTED[theme], ARROW[theme], ARROW_W[theme]
-    boxes = layout()
-    H = int(boxes[-1].y + boxes[-1].h + 30)
+    text, arrow, aw = TEXT[theme], ARROW[theme], ARROW_W[theme]
+    nodes = layout()
+    H = int(nodes[-1].y + nodes[-1].h + 30)
     L = [
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}" font-family="{FONT}">',
         "<defs>",
@@ -134,29 +162,42 @@ def render(theme: Theme = "dark", names: dict[str, str] | None = None) -> str:  
         L.append(f'<rect width="{W}" height="{H}" rx="22" fill="#ffffff"/>')
     else:
         L.append("<!-- transparent canvas: the host page's dark ground shows through -->")
-    for b in boxes:
-        rgb, label, flat = HUES[b.kind]
+    for n in nodes:
+        rgb, label, flat = HUES[n.hue]
+        # the band: faint glass with a darker boundary, the title as its label
         if theme == "dark":
-            fill, stroke = rgba(rgb, 0.14), rgba(rgb, 0.7)
-        else:
-            fill, stroke = flat, "none"
-        stroke_attr = f' stroke="{stroke}" stroke-width="1.5"' if stroke != "none" else ""
-        L.append(
-            f'<rect x="{b.x:g}" y="{b.y:g}" width="{b.w:g}" height="{b.h:g}" rx="16" fill="{fill}"{stroke_attr}/>'
-        )
-        n = len(b.lines)
-        for i, ln in enumerate(b.lines):
-            if not ln:
-                continue
-            cy = b.y + PAD + i * LEAD if n > 1 else b.y + b.h / 2
-            title = i == 0
-            size = TITLE if title else (SUB if i == 1 else ITEM)
-            weight = 700 if title else (600 if i == 1 else 500)
-            col = (label if theme == "dark" else text) if title else (text if i == 1 else muted)
             L.append(
-                f'<text x="{b.x + b.w / 2:g}" y="{cy:.1f}" text-anchor="middle" dominant-baseline="central" font-size="{size}" font-weight="{weight}" fill="{col}">{_esc(ln)}</text>'
+                f'<rect x="{n.x:g}" y="{n.y:g}" width="{n.w:g}" height="{n.h:g}" rx="18" fill="{rgba(rgb, 0.07)}" stroke="{rgba(rgb, 0.5)}" stroke-width="1.5"/>'
             )
-    top, pre, ml, mon, ref, dash, browser = boxes
+        else:
+            L.append(
+                f'<rect x="{n.x:g}" y="{n.y:g}" width="{n.w:g}" height="{n.h:g}" rx="18" fill="{BAND_LIGHT}"/>'
+            )
+        lab = label if theme == "dark" else "#4b4b4b"
+        title = n.title + (f" — {n.sub.upper()}" if n.sub else "")
+        if n.items:
+            L.append(
+                f'<text x="{n.x + 22:g}" y="{n.y + 28:g}" font-size="16" font-weight="600" letter-spacing="1.5" fill="{lab}">{_esc(title)}</text>'
+            )
+        else:  # a single-line node: the title centred
+            L.append(
+                f'<text x="{n.x + n.w / 2:g}" y="{n.y + n.h / 2:g}" text-anchor="middle" dominant-baseline="central" font-size="{TITLE - 4}" font-weight="700" fill="{text}">{_esc(n.title)}</text>'
+            )
+            continue
+        # the inner box: the items
+        ix, iy, iw, ih = n.inner
+        if theme == "dark":
+            L.append(
+                f'<rect x="{ix:g}" y="{iy:g}" width="{iw:g}" height="{ih:g}" rx="14" fill="{rgba(rgb, 0.14)}" stroke="{rgba(rgb, 0.7)}" stroke-width="1.5"/>'
+            )
+        else:
+            L.append(f'<rect x="{ix:g}" y="{iy:g}" width="{iw:g}" height="{ih:g}" rx="14" fill="{flat}"/>')
+        for k, ln in enumerate(n.items):
+            cy = iy + PAD + k * LEAD if len(n.items) > 1 else iy + ih / 2
+            L.append(
+                f'<text x="{ix + iw / 2:g}" y="{cy:.1f}" text-anchor="middle" dominant-baseline="central" font-size="{ITEM}" font-weight="500" fill="{text}">{_esc(ln)}</text>'
+            )
+    top, pre, ml, mon, ref, dash, browser = nodes
 
     def seg(x1, y1, x2, y2):
         L.append(
