@@ -1520,9 +1520,13 @@ def run_tab(r, *, active_allowed: bool = True) -> rx.Component:
         rx.text(r["recipe"], **MONO, font_size=SMALL, color=T.DIM),
         spacing="2",
         align="center",
-        padding="8px 14px",
+        padding="8px 16px",
         cursor="pointer",
         on_click=S.open_run(r["dir"]),
+        # browser tabs: a divider between neighbours, the open one lifted onto the card surface
+        background=rx.cond(active, T.CARD, "transparent"),
+        border_radius="8px 8px 0 0",
+        border_right=f"1px solid {T.BORDER}",
         border_bottom=rx.cond(active, "2px solid " + S.live_hue, "2px solid transparent"),
     )
 
