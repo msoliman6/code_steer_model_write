@@ -107,7 +107,9 @@ def run(*, deep: bool = False) -> int:
     if deep:
         from . import walk
 
-        rs = walk.run("code_builder", only="happy")
+        from .recipes import registry
+
+        rs = walk.run(registry.default_name(), only="happy")
         (d.note if rs and rs[0].ok else d.halt)(
             f"walk            {'ok' if rs and rs[0].ok else 'RED'} in {rs[0].seconds if rs else 0}s -- {rs[0].detail if rs else ''}"
         )

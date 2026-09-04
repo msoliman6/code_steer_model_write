@@ -25,7 +25,7 @@ from ...spec.findings import Arbitrated, Findings
 from ...state.lock import atomic_write_text
 from ...state.run import CarriedRecord, RunPaths, RunState
 from ..base import CheckKind, EvalSpec, FigurePhrases, GateSpec, Recipe, RecipeSpec, StageSpec
-from ..code_builder.recipe import CodeBuilder
+from ..base import flagged_decisions, waste_rows
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -517,8 +517,8 @@ class Debate(Recipe):
             outcome=(st.outcome.value if st.outcome else "running"),
             verdict=f"{verdict} · rubric {metrics['rubric_total']:.2f} · {conceded}/{len(reb.items)} challenges conceded",
             carried=carried,
-            waste=CodeBuilder._waste(ctx),
-            flagged_decisions=[x["id"] for x in CodeBuilder._flagged(ctx)],
+            waste=waste_rows(ctx),
+            flagged_decisions=[x["id"] for x in flagged_decisions(ctx)],
             halts=st.resumed_count,
             resumed=st.resumed_count,
         )

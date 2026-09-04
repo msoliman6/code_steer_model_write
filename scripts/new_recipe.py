@@ -107,11 +107,21 @@ def main(name: str) -> int:
     )
     reg = ROOT / "code_steer_model_write" / "recipes" / "registry.py"
     s = reg.read_text()
-    s = s.replace('    if name == "toy":', f'    if name == "{name}":\n        from .{name}.recipe import {cls}\n\n        return {cls}()\n    if name == "toy":')
-    s = s.replace('    return ["code_builder"]', f'    return ["code_builder", "{name}"]')
+    row = f'    "{name}": ("code_steer_model_write.recipes.{name}.recipe", "{cls}"),\n'
+    if row not in s:
+        s = s.replace(
+            '_BUILTIN: dict[str, tuple[str, str]] = {\n',
+            '_BUILTIN: dict[str, tuple[str, str]] = {\n' + row,
+            1,
+        )
     reg.write_text(s)
+    print(
+        "note: a recipe that is a project of its own registers by entry point instead (docs/ADD-A-RECIPE.md)"
+    )
     print(f"created recipes/{name}, prompts/{name}, fixtures/{name}, examples/{name}; registered.")
-    print(f"next: spec.py -> fixtures (fakers) -> prompts -> `just walk {name}` green -> flip status to proven after one live pass")
+    print(
+        f"next: spec.py -> fixtures (fakers) -> prompts -> `just walk {name}` green -> flip status to proven after one live pass"
+    )
     return 0
 
 

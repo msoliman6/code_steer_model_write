@@ -10,13 +10,13 @@ from ...artifacts.debate import Case, Hypotheses
 from ...artifacts.store import Store
 from ...backends import knobs
 from ...state.run import RunPaths
-from ..code_builder.fake import _ids_of_kind
+from ..base import ids_of_kind as _ids_of_kind
 
 
 def fakers(paths: RunPaths, store: Store) -> dict[str, Callable[[Any], dict[str, Any]]]:
-    from ..code_builder.fake import fakers as cb
+    from ..common_fakers import common_fakers
 
-    base = cb(paths, store)
+    base = common_fakers(paths, store)
 
     def hypotheses(call):
         return {

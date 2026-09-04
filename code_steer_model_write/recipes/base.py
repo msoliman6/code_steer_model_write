@@ -7,6 +7,7 @@ files on disk. A recipe carries an honest `status`: unproven until one clean liv
 
 from __future__ import annotations
 
+import json
 from abc import ABC, abstractmethod
 from enum import StrEnum
 from pathlib import Path
@@ -14,8 +15,10 @@ from typing import Any, Callable, Literal
 
 from pydantic import BaseModel, Field
 
+from ..artifacts.report import WasteRow
 from ..artifacts.store import Store
 from ..driver.steps import ProgramContext, Step
+from ..ids import find_ids
 from ..gates.gate import GateBuilder
 from ..spec.base import Artifact, Problem
 from ..spec.task import TaskSpec
@@ -159,3 +162,44 @@ class Recipe(ABC):
         """Checks the recipe provides outside `self.checks` (schema validation, semantic checks,
         the review loop's arbitration rules, gates)."""
         return set()
+
+
+# ---- helpers every recipe's report and fake need; the harness owns them so no recipe imports
+# another (plan §12: a recipe package must stand alone against the template) ------------------
+
+
+def ids_of_kind(text: str, prefix: str) -> list[str]:
+    """The ids of one namespace cited in a rendered text, in order: ids_of_kind(md, "F")."""
+    return [i for i in find_ids(text) if i.startswith(prefix + "-")]
+
+
+def flagged_decisions(ctx: ProgramContext) -> list[dict[str, Any]]:
+    """The decisions a model answered in auto mode; reviewers attack these first (rule 11)."""
+    p = ctx.paths.decisions
+    return [d for d in json.loads(p.read_text()) if d.get("flagged")] if p.exists() else []
+
+
+def waste_rows(ctx: ProgramContext) -> list[WasteRow]:
+    """Per side: calls, tokens, turns, seconds and refused answers, from the event log (rule 14)."""
+    rows: dict[str, WasteRow] = {}
+    started: dict[str, float] = {}
+    for e in ctx.events.all():
+        role = e.role or ("code" if e.kind.startswith("step.") else None)
+        if role is None:
+            continue
+        row = rows.setdefault(role, WasteRow(side=role))
+        if e.kind == "call.started":
+            row.calls += 1
+            started[f"{e.step}:{e.attempt}"] = e.ts.timestamp()
+        elif e.kind == "call.usage":
+            row.input_tokens += int(e.data.get("input_tokens", 0))
+            row.output_tokens += int(e.data.get("output_tokens", 0))
+            row.turns += int(e.data.get("turns", 0))
+            row.tool_calls += int(e.data.get("tool_calls", 0))
+        elif e.kind == "call.final":
+            t0 = started.pop(f"{e.step}:{e.attempt}", None)
+            if t0 is not None:
+                row.seconds += round(e.ts.timestamp() - t0, 2)
+        elif e.kind == "step.refused":
+            row.refused_answers += 1
+    return [r for r in rows.values() if r.side != "code"]

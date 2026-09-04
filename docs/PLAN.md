@@ -863,7 +863,7 @@ below, one arrow between them.
 | what | from | to |
 |---|---|---|
 | the recipe | `recipes/code_builder/{recipe,fake}.py` | `csmw_coder/recipe.py`, `csmw_coder/fake.py` |
-| its shapes | `artifacts/plan.py`, `contract.py`, `vspec.py`, `tasks.py`, `files.py`, `results.py`, `report.py` | `csmw_coder/artifacts/` (they are the code-builder's shapes, no other recipe reads them) |
+| its shapes | `artifacts/plan.py`, `contract.py`, `vspec.py`, `tasks.py`, `files.py`, `results.py` | `csmw_coder/artifacts/` (they are the code-builder's shapes, no other recipe reads them). `artifacts/report.py` stays: every recipe's report uses its waste and carried rows |
 | its prompts, fixtures, example | `prompts/code_builder/`, `fixtures/code_builder/`, `examples/code_builder/` | the same folders in the project |
 | its walk legs | the ten code_builder legs in `walk.py` | `csmw_coder/walk_legs.py`, registered through the recipe |
 | its runs | `runs/live-1`, `runs/walk-demo` | the project's `runs/` (never committed) |
