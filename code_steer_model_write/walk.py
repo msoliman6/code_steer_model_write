@@ -440,10 +440,45 @@ def leg_gateway_drives_a_run(tmp: Path) -> str:
             assert any(a["key"] == "report" for a in arts), arts
             runs = (await c.call_tool("run_list", {})).structured_content["result"]
             assert any(r["run_id"] == "gw" and r["status"] == "COMPLETED" for r in runs), runs
+            # cancel and resume through the tools: a second run stopped at its next step boundary
+            # (a halt that is a report), then continued at the first undone step
+            task2 = dict(task, task_id="gw2")
+            h2 = (
+                await c.call_tool("workflow_run", {"task": task2, "run_dir": str(tmp / "run2")})
+            ).structured_content
+            await c.call_tool("workflow_cancel", {"run": h2["run_dir"]})
+            t0 = time.time()
+            while True:
+                s2 = (await c.call_tool("workflow_status", {"run": h2["run_dir"]})).structured_content
+                if s2["status"] in ("PAUSED", "COMPLETED", "FAILED", "STALE"):
+                    break
+                assert time.time() - t0 < 120, s2
+                await asyncio.sleep(0.3)
+            if s2["status"] == "PAUSED":
+                assert s2["halt"] and "cancel" in s2["halt"], s2
+                await c.call_tool("workflow_resume", {"run": h2["run_dir"]})
+                t0 = time.time()
+                while True:
+                    s3 = (await c.call_tool("workflow_status", {"run": h2["run_dir"]})).structured_content
+                    if s3["status"] in ("COMPLETED", "FAILED", "STALE"):
+                        break
+                    assert time.time() - t0 < 120, s3
+                    await asyncio.sleep(0.3)
+                assert s3["status"] == "COMPLETED" and s3["resumed"] == 1, s3
+                st["cancelled_then_resumed"] = True
+            else:
+                st["cancelled_then_resumed"] = (
+                    False  # the run outran the cancel; the tool still answered honestly
+                )
             return st
 
     st = asyncio.run(drive())
-    return f"run through the gateway: {st['steps_done']}/{st['steps_total']} steps · {st['verdict']} · logs paged by seq"
+    cr = (
+        "cancelled at a step boundary and resumed once"
+        if st.get("cancelled_then_resumed")
+        else "the second run outran the cancel"
+    )
+    return f"run through the gateway: {st['steps_done']}/{st['steps_total']} steps · {st['verdict']} · logs paged by seq · {cr}"
 
 
 def leg_budget_halts_then_resumes(tmp: Path) -> str:
