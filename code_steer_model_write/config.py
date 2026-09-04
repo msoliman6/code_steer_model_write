@@ -166,7 +166,7 @@ def cost_usd(model: str, input_tokens: int, output_tokens: int) -> float | None:
 
 
 def usd(x: float | None) -> str:
-    """≈ $0.12; blank when the price is unknown, never a zero that lies."""
+    """$0.12; $? when the price is unknown, never a zero that lies."""
     if x is None:
-        return ""
-    return f"≈ ${x:.2f}" if x >= 0.01 else "≈ <$0.01"
+        return "$?"
+    return f"${x:.2f}" if x >= 0.01 else "$<0.01"

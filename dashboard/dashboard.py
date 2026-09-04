@@ -970,7 +970,7 @@ def progress_segment(r: ProgRow) -> rx.Component:
     )
 
 
-BAR_WIDTH = "300px"  # as wide as the token line beneath it
+BAR_WIDTH = "470px"  # as wide as the token line beneath it: two sides with cost, and the total
 
 
 def progress_bar() -> rx.Component:
@@ -989,15 +989,12 @@ def progress_bar() -> rx.Component:
                 align="center",
             ),
         ),
-        rx.cond(
-            S.cost_total != "",
-            rx.text(S.cost_total, **MONO, color=T.MUTED, font_size=SMALL, white_space="nowrap"),
-            rx.fragment(),
-        ),
+        rx.text(f"TOT = {S.cost_total}", **MONO, font_weight="700", font_size=SMALL, white_space="nowrap"),
         spacing="4",
         justify="center",
         align="center",
         width=BAR_WIDTH,
+        white_space="nowrap",
     )
     return rx.hstack(
         rx.vstack(

@@ -16,9 +16,9 @@ def test_prefix_match_prefers_the_longest_key():
 def test_cost_and_its_words():
     assert config.cost_usd("claude-haiku-4-5", 1_000_000, 0) == 1.0
     assert config.cost_usd("no-such-model", 10, 10) is None
-    assert config.usd(None) == ""
-    assert config.usd(0.123) == "≈ $0.12"
-    assert config.usd(0.001) == "≈ <$0.01"
+    assert config.usd(None) == "$?"
+    assert config.usd(0.123) == "$0.12"
+    assert config.usd(0.001) == "$<0.01"
 
 
 def test_prices_json_overlays_the_table(tmp_path, monkeypatch):

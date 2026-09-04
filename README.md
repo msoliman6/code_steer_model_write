@@ -119,7 +119,7 @@ per task; your picks are remembered for the next run. The form derives from one 
 schema, which the CLI reads too. The layout is `docs/DASHBOARD-DESIGN.md` → *The start page*.
 
 **Estimated cost.** The dashboard prices a run's tokens on read (rule 14: tokens are the fact, dollars
-are a lookup). Unknown models show a blank. Add or correct prices without touching code with a
+are a lookup). An unknown model shows `$?` until you price it. Add or correct prices without touching code with a
 `prices.json` next to your runs (or `CSMW_PRICES_FILE`):
 
 ```json

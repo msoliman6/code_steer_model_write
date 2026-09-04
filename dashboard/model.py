@@ -118,7 +118,7 @@ class RunView(BaseModel):
     elapsed: str
     remaining: str
     tokens: dict[str, int]
-    cost: dict[str, str] = {}  # per side, '≈ $0.12' or blank when the price is unknown (rule 14)
+    cost: dict[str, str] = {}  # per side, '$0.12' or '$?' when the price is unknown (rule 14)
     cost_total: str = ""
     now_word: str
     now_text: str
