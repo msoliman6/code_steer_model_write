@@ -241,7 +241,6 @@ def side_row(model: Card, effort: Card) -> rx.Component:
                 font_weight="700",
                 font_size=BODY,
                 text_align="center",
-                text_transform="uppercase",
                 letter_spacing="0.06em",
             ),
             spacing="2",
@@ -250,7 +249,7 @@ def side_row(model: Card, effort: Card) -> rx.Component:
             width="100%",
         ),
         rx.text(
-            "NAME",
+            "Name",
             **MONO,
             color=T.MUTED,
             font_size="12px",
@@ -260,7 +259,7 @@ def side_row(model: Card, effort: Card) -> rx.Component:
         ),
         centered_select(model.options, model.value, lambda v: Start.set_value(model.key, v)),
         rx.text(
-            "EFFORT",
+            "Effort",
             **MONO,
             color=T.MUTED,
             font_size="12px",

@@ -69,7 +69,7 @@ SPEC = RecipeSpec(
     stages=[
         StageSpec(
             id="plan",
-            side_labels={"author": "writes the plan", "checker": "attacks it"},
+            side_labels={"author": "Writes the plan", "checker": "Checks the plan"},
             n=0,
             title="Plan",
             emoji="🗺",
@@ -81,7 +81,7 @@ SPEC = RecipeSpec(
         ),
         StageSpec(
             id="contracts",
-            side_labels={"author": "writes the contract", "checker": "attacks it, then audits"},
+            side_labels={"author": "Writes the contract", "checker": "Checks the contract"},
             n=1,
             title="Contracts",
             emoji="📜",
@@ -97,7 +97,7 @@ SPEC = RecipeSpec(
         ),
         StageSpec(
             id="verification",
-            side_labels={"checker": "writes the properties", "author": "reviews coverage"},
+            side_labels={"checker": "Writes the properties", "author": "Checks the properties"},
             n=2,
             title="Verification Design",
             emoji="🧪",
@@ -112,7 +112,7 @@ SPEC = RecipeSpec(
         ),
         StageSpec(
             id="build",
-            side_labels={"checker": "writes the tests", "author": "writes the source"},
+            side_labels={"checker": "Writes the tests", "author": "Writes the source"},
             n=3,
             title="Build",
             emoji="🔨",
@@ -129,7 +129,7 @@ SPEC = RecipeSpec(
         ),
         StageSpec(
             id="verify",
-            side_labels={"author": "rules on the test", "checker": "rules on the code"},
+            side_labels={"author": "Rules on the tests", "checker": "Rules on the code"},
             n=4,
             title="Verification Run",
             emoji="🚑",
