@@ -5,15 +5,13 @@ from __future__ import annotations
 
 import reflex as rx
 
-from . import theme as T
-
 
 def author_mark(size: str = "16px") -> rx.Component:
     return rx.image(src="/claude-64.png", width=size, height=size, flex_shrink="0", alt="Claude")
 
 
 def checker_mark(size: str = "16px") -> rx.Component:
-    return rx.text("☘", color=T.ACTOR["b"], font_size=size, line_height="1")
+    return rx.image(src="/codex-64.png", width=size, height=size, flex_shrink="0", alt="Codex")
 
 
 def side_mark(is_author, size: str = "16px") -> rx.Component:
