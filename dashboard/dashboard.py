@@ -971,11 +971,13 @@ def progress_segment(r: ProgRow) -> rx.Component:
 
 
 def progress_bar() -> rx.Component:
-    """tqdm, with better graphics: segments per stage and the percentage on the left, the
-    wrong-ness chips on the right of the same row."""
+    """tqdm, with better graphics: segments per stage, the percentage and elapsed on the left,
+    the wrong-ness chips on the right. The run's state is the tab dot and the control button."""
     return rx.hstack(
-        rx.hstack(rx.foreach(S.prog_rows, progress_segment), spacing="1", width="44%", align="center"),
+        rx.hstack(rx.foreach(S.prog_rows, progress_segment), spacing="1", width="40%", align="center"),
         rx.text(S.percent, **MONO, font_weight="700", font_size=BODY, min_width="44px"),
+        rx.text("·", color=T.DIM),
+        rx.text(S.elapsed, **MONO, font_weight="700", font_size=BODY),
         rx.spacer(),
         rx.foreach(S.chips, chip),
         spacing="3",
@@ -986,65 +988,27 @@ def progress_bar() -> rx.Component:
 
 
 def token_line() -> rx.Component:
-    """Centred under the bar: the token totals per side under their marks, elapsed, and the run's
-    state word in its agreed tone. The one place the state is spelled out above the fold."""
+    """One quiet line under the bar: per side, the mark, the tokens and the estimated cost when
+    the price is known; then the total. Tokens are the fact, the dollars are read from a table."""
     return rx.hstack(
         rx.foreach(
             S.token_rows,
             lambda t: rx.hstack(
-                side_mark(t.role == "author", "14px"),
-                rx.text(f"{t.label} tok", **MONO, font_weight="700", font_size=BODY, white_space="nowrap"),
+                side_mark(t.role == "author", "13px"),
+                rx.text(f"{t.label} tok", **MONO, font_weight="700", font_size=SMALL, white_space="nowrap"),
                 rx.text(t.cost, **MONO, color=T.MUTED, font_size=SMALL, white_space="nowrap"),
-                spacing="1",
+                spacing="2",
                 align="center",
             ),
         ),
         rx.cond(
             S.cost_total != "",
-            rx.hstack(
-                rx.text("·", color=T.DIM),
-                rx.text(f"{S.cost_total} total", **MONO, color=T.MUTED, font_size=SMALL),
-                spacing="3",
-                align="center",
-            ),
+            rx.text(f"{S.cost_total} in all", **MONO, color=T.MUTED, font_size=SMALL, white_space="nowrap"),
             rx.fragment(),
         ),
-        rx.text("·", color=T.DIM),
-        rx.text(S.elapsed, **MONO, font_weight="700", font_size=BODY),
-        rx.text("·", color=T.DIM),
-        run_state_pill(),
-        spacing="3",
-        justify="center",
+        spacing="5",
         align="center",
-        width="calc(44% + 56px)",
-        white_space="nowrap",
-        margin_top=T.SPACE["md"],
-    )
-
-
-def run_state_pill() -> rx.Component:
-    """The run's state word on the tint of its tone: the same colour as the tab dot, the bottom
-    bar's strip and the control button, because they all point at one fact."""
-    color = rx.match(
-        S.control_tone,
-        ("ok", T.PILL["ok"][0]),
-        ("warn", T.PILL["warn"][0]),
-        ("bad", T.PILL["bad"][0]),
-        T.PILL["neutral"][0],
-    )
-    bg = rx.match(
-        S.control_tone,
-        ("ok", T.PILL["ok"][1]),
-        ("warn", T.PILL["warn"][1]),
-        ("bad", T.PILL["bad"][1]),
-        T.PILL["neutral"][1],
-    )
-    return rx.box(
-        rx.text(S.status_word, **PILL_STYLE, color=color),
-        background=bg,
-        border_radius="8px",
-        padding="4px 11px",
-        white_space="nowrap",
+        margin_top=T.SPACE["sm"],
     )
 
 
@@ -1064,44 +1028,34 @@ def history_pill() -> rx.Component:
 
 
 def header() -> rx.Component:
-    """One centred row of pills (the run's name, its history, the settings), the Detail switch at
-    the row's right; the rail; the progress row; the token totals."""
+    """Two aligned rows of pills around the rail: identity on the left and settings on the right
+    above; the progress bar on the left and the wrong-ness chips on the right below."""
     return rx.box(
-        rx.box(
-            rx.hstack(
-                setting_pill("run", S.run_id),
-                history_pill(),
-                rx.foreach(
-                    S.model_rows,
-                    lambda m: rx.cond(
-                        m.role == "author",
-                        setting_pill("author", m.model, "a"),
-                        setting_pill("checker", m.model, "b"),
-                    ),
+        rx.hstack(
+            setting_pill("run", S.run_id),
+            history_pill(),
+            rx.spacer(),
+            rx.foreach(
+                S.model_rows,
+                lambda m: rx.cond(
+                    m.role == "author",
+                    setting_pill("author", m.model, "a"),
+                    setting_pill("checker", m.model, "b"),
                 ),
-                setting_pill("rounds", S.rounds.to_string()),
-                setting_pill("mode", S.mode),
-                spacing="2",
-                justify="center",
-                align="center",
-                width="100%",
-                wrap="wrap",
-                padding_right="120px",
             ),
-            rx.box(
-                rx.button(
-                    rx.cond(S.detail_full, "Detail: Full", "Detail: Glance"),
-                    on_click=S.toggle_detail,
-                    size="1",
-                    variant="soft",
-                    color_scheme="gray",
-                ),
-                position="absolute",
-                right="0",
-                top="0",
+            setting_pill("rounds", S.rounds.to_string()),
+            setting_pill("mode", S.mode),
+            rx.button(
+                rx.cond(S.detail_full, "Detail: Full", "Detail: Glance"),
+                on_click=S.toggle_detail,
+                size="1",
+                variant="soft",
+                color_scheme="gray",
             ),
-            position="relative",
+            spacing="2",
             width="100%",
+            align="center",
+            wrap="wrap",
         ),
         rx.hstack(
             start_box(),
