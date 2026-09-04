@@ -1,5 +1,80 @@
 # Plan: `code_steer_model_write` — a reusable template for agentic AI workflows
 
+## Version 3 — the ten layers (2026-09-04)
+
+Copied from `production_agentic_workflow/docs/V3-PLAN.md`, the single source; that
+repository's `ARCHITECTURE.md` decides every layer's tool and `profiles/CORRECTNESS.md` the
+coder's settings. A change to this section starts there. Everything below this section is
+the plan that built versions 1 and 2; it stays as the record.
+
+The coder (`csmw_coder`) on the runtime (`code_steer_model_write`), upgraded to the ten
+layers of `ARCHITECTURE.md`, each layer with the tool decided in section 7, operational end
+to end. 
+Agreed with the user on 2026-09-04. Nothing below is code; it is what the code will be.
+
+## The rule for every phase
+
+A phase is done when the offline walk is green with the new layer covered, and one live run
+of the coder passes clean from start to finish: no halt, no resume, no fix along the way. A
+halted-then-fixed run restarts from scratch. The walk before any live run; the runtime's
+bug ledger read before any fix, the class fixed and never the instance.
+
+## Per layer: today, and the change
+
+| Layer | Today | The change |
+|---|---|---|
+| L1 UI | Reflex, one run page with tabs, a start page, reads one `runs/` directory | Reads the SQLite registry across runs directories; an Evals tab fed by L8; a finished-run page rendered by Jinja2 as one self-contained file |
+| L2 control plane | `task.json`, `RecipeSpec`, entry points, four shell scripts in the plugin, a `monitor.db` written and never read | The Gateway on the official MCP SDK over stdio (workflow.list, run, status, cancel, pause, resume; run.get, logs, artifacts); the plugin manifest declares the server and the scripts go; budgets in tokens over the registry; Typer for the CLI |
+| L3 orchestration | The Driver; the runner; Prefect as a 56-line opt-in wrapper; `nohup`, `runner.json`, a `STOP` file | The Driver unchanged and without a seam. Prefect 3 promoted to Runner: a deployment per workflow, a local work pool, cancel, pause and resume through Prefect, tests and source as parallel task runs; `nohup` and `STOP` retired. Prefect's state a view, `state.json` the record |
+| L4 agent runtime | `ask.py` with five backends and a fake, all schema-only | PydanticAI as the Backend; its test model as the fake; the provider SDKs second; the CLIs kept as login backends chosen per role; the walk asserts per call that the tools given equal the tools declared |
+| L5 sandbox | None; pytest and the linters run on the host | The Sandbox interface: the subprocess tier (root, limits, `sandbox-exec` or `bwrap` when present) first; the Docker tier through the SDK second; the run-time probe; the doctor line; the profile's P9 demanded, refused in words when unmet |
+| L6 tools | None; `AgentSpec.tools` read by nothing | The ToolSpec registry over pydantic; git, pytest, ruff and pyright registered as the first tools; every invocation an event named the OpenTelemetry way; the MCP client, for later recipes |
+| L7 state | Files per run; a concrete local store; no index across directories | The three interfaces; obstore behind the ArtifactStore over the existing layout; the SQLite registry and event index; the MemoryStore interface with no implementation, dormant |
+| L8 observability | A write-only MLflow mirror; tracing off in the plugin path; no evals | MLflow 3 on the SQLite backend; the Mirror emits OpenTelemetry spans; the recipe's five eval specs as scorers; results read back for L1; tracing on in the plugin path; the price map vendored as a file |
+| L9 authorization | Scattered: the ownership diff, role assignment in the spec, tool denial in backends | The Policy and Identity interfaces; Cedar policies through `cedarpy`, validated against a schema generated from the ToolSpecs; the ownership check becomes a policy; principals minted from the RunSpec; every decision an event carried by what it allowed; default deny |
+| L10 guardrails | Schema validation and semantic checks inside `ask.py` | The Rails interface with three hooks; the existing checks as after_answer; Guardrails AI behind it, no validator active under the correctness profile; the model-less scanner as before_prompt; before_tool_call as the ToolSpec check plus the L9 decision |
+
+## The coder repository
+
+It changes little, which is the point of the seams:
+
+- The recipe declares its profile: `profiles/CORRECTNESS.md`.
+- Its review and triage steps take the Judge kind, so rule 3 is an L9 policy rather than a
+  convention.
+- Its plugin becomes a manifest that declares the MCP server; `start.sh`, `status.sh`,
+  `dashboard.sh` and `bootstrap.sh` are removed.
+- It gains walk legs that reach the new moments: a policy denial, a rail refusal, a
+  sandbox kill, a registry lookup.
+
+## The order
+
+1. **Interfaces, no new tools.** Policy, Rails, Sandbox, ToolSpec, StateStore,
+   ArtifactStore, MemoryStore, Runner, Mirror, Evaluator, Gateway: each defined, each with
+   the existing code moved behind it as its first implementation. Behaviour unchanged; the
+   walk green. Layers L5, L6, L9, L10 exist for the first time as layers.
+2. **L9 and L10.** Cedar policies behind Policy, the ownership check the first; Guardrails
+   AI behind Rails. The governance planes engage on every step of the coder.
+3. **L4.** PydanticAI behind Backend; the fake becomes its test model; the CLIs demoted.
+   The phase that retires twelve ledger rows.
+4. **L2.** The MCP gateway and the SQLite registry; the plugin's scripts removed; budgets;
+   Typer.
+5. **L3.** Prefect as Runner; `nohup` and `STOP` retired; the parallel build.
+6. **L8.** MLflow on SQLite through OpenTelemetry; the scorers; the Evals tab; tracing on.
+7. **L5.** The Docker tier, the probe, the doctor line; the coder's checks in the container.
+8. **The tool-using step kind**, across L4, L6 and L5. Not needed by the coder; needed
+   before any other recipe. The MemoryStore's LanceDB implementation belongs with the first
+   recipe that declares memory, not here.
+
+Governance before the backend on purpose: phases 1 and 2 change no model call, so a
+regression there is the runtime's and not a provider's. Phase 3 is the first phase that
+changes what a model is asked, and it lands on a runtime whose planes are already watching.
+
+## What is deliberately not in version 3
+
+Memory (dormant interface only). Cerbos, the Qdrant server, object storage, gVisor: each
+behind its seam, each with its trigger written in section 7. Any second recipe. A second
+human user.
+
 ## The 14 universal rules
 
 These open the plan, the template's `README.md` and its `CLAUDE.md`, verbatim. Every module
