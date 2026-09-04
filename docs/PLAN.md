@@ -53,8 +53,14 @@ Agreed with the user on 2026-09-04. Nothing below is code; it is what the code w
   15 min; 27 policy decisions, 34 rail verdicts, 22 tool calls in the subprocess tier. Its
   verify recorded every property missing: the JUnit path bug from live-1/live-2, now
   explained and fixed at the class (a path compared by two conventions). A schema refusal
-  recorded no verdict: fixed. **Phase 1's clean live pass is therefore still owed**: the
-  next live run must complete with a true verify verdict.
+  recorded no verdict: fixed. `live-5` (2026-09-04, phase 2 in the path: Cedar deciding,
+  Guardrails validating): COMPLETED, 27 steps, 0 halts, 0 resumes, 1 refusal (the null-run
+  rail caught a vacuous test, re-asked, recovered), 16 min; 27 decisions, 37 verdicts, 21
+  tool calls. Its verify read `missing` once more, for the second convention of the same
+  class (rootdir-prefixed, parametrized node ids); fixed at the class, and recomputed from
+  its own JUnit files the run is **8/8 pass on the source, 7/8 fail on the null, one vacuous
+  property** -- a clean pass whose verdict the parser could not read. The next live run
+  (`live-6`, phase 3) must show that verdict in the record itself.
 
 ## The rule for every phase
 

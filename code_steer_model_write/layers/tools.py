@@ -124,6 +124,7 @@ def _pytest(args: dict[str, Any]) -> Execution:
         "-q",
         "-p",
         "no:cacheprovider",
+        f"--rootdir={tests_dir.parent}",
         f"--junitxml={junit}",
         str(tests_dir),
     ]

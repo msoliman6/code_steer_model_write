@@ -257,3 +257,20 @@ def test_pycheck_compile_and_skips(tmp_path, monkeypatch):
     monkeypatch.setenv("PATH", "/usr/bin:/bin")  # no ruff, no pyright on this PATH
     r2 = check_python([good])
     assert r2.ok and set(r2.skipped) == {"ruff format", "ruff check", "pyright"}
+
+
+def test_junit_ids_are_canonical_across_rootdirs_and_parametrizations():
+    """Ledger (live-4, live-5): a node id in two conventions. pytest's rootdir may sit above the
+    build folder, and a parametrized test carries `[case]` the manifest never has. Both reduce
+    to one canonical id, and a property aggregates over its cases."""
+    from pathlib import Path
+
+    from code_steer_model_write.checks.runtests import canonical_id
+
+    root = Path("/x/runs/live-5/build")
+    assert (
+        canonical_id("runs.live-5.build.tests.test_slug", "test_P_0008_x[None]", root)
+        == "tests/test_slug.py::test_P_0008_x"
+    )
+    assert canonical_id("tests.test_slug", "test_P_0008_x", root) == "tests/test_slug.py::test_P_0008_x"
+    assert canonical_id("tests.test_slug", "test_P_0008_x[3.14]", root) == "tests/test_slug.py::test_P_0008_x"
