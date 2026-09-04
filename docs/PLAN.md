@@ -836,6 +836,18 @@ dashboard. Every stage ends with the offline walk green.
 - `python_agent_dashboard_architecture (2).md` — TaskSpec, lifecycle, page list being extended
 
 
+### Round-two additions (2026-09-04)
+
+- **ccusage as a cost cross-check for Codex.** `codex exec --json` already reports the tokens
+  the harness stores; `ccusage codex session --json` reads Codex's own local session logs and
+  applies its pricing table. A `csmw cost --ccusage <run>` could compare the page's estimate
+  (tokens × `prices.json`, cache reads billed as input, so it rounds up) with ccusage's per
+  session id, and flag a drift. Not built yet; the estimate is honest until then.
+- **The verify step records every property "missing"** on both live passes (`live-1`, `live-2`):
+  the manifest lookup in `checks/runtests.py`, the highest-value open bug.
+- **A production build of the page** (`reflex run --env prod`) for daily use: the dev server
+  compiles a route on its first visit, which is the pause you see when opening New run.
+
 ## 12. Template versus project — the split (proposal, 2026-09-04)
 
 The template is the harness: how any workflow runs. A project is one workflow: what it is. Today
