@@ -80,8 +80,12 @@ Agreed with the user on 2026-09-04. Nothing below is code; it is what the code w
   tool calls. Its verify read `missing` once more, for the second convention of the same
   class (rootdir-prefixed, parametrized node ids); fixed at the class, and recomputed from
   its own JUnit files the run is **8/8 pass on the source, 7/8 fail on the null, one vacuous
-  property** -- a clean pass whose verdict the parser could not read. The next live run
-  (`live-6`, phase 3) must show that verdict in the record itself.
+  property** -- a clean pass whose verdict the parser could not read. **`live-6`
+  (2026-09-04, phases 1-3 in the path, the CLI logins): COMPLETED, 25 steps, 0 halts, 0
+  resumes, 1 refusal (the live-3 mis-shape, now refused by the runtime's validator and
+  recovered on the re-ask), 14 min; verdict in the record: 5/5 properties pass, 5/5 fail on
+  the null, nothing carried; 25 Cedar decisions, 33 verdicts, 15 tool calls; the layer
+  assertion passes on the live record. The clean pass phases 1-3 owed.**
 
 ## The rule for every phase
 
