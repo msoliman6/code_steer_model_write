@@ -8,10 +8,11 @@ implementations. Nothing here decides sequence: the Driver has no seam.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from .policy import Identity, Policy, RunIdentity, StepPolicy
-from .rails import Rails, SchemaRails
+from .profile import CORRECTNESS, Profile
+from .rails import Rails
 from .sandbox import Sandbox, SubprocessSandbox
 from .stores import ArtifactStore, MemoryStore, NoMemory, StateStore
 from .tools import ToolRegistry, default_registry
@@ -32,22 +33,52 @@ class Layers:
     sandbox: Sandbox
     tools: ToolRegistry
     memory: MemoryStore = field(default_factory=NoMemory)
+    profile: Profile = field(default_factory=lambda: CORRECTNESS)
+
+    def installed(self) -> dict[str, str]:
+        """What sits behind each seam, for the record (`layers.installed` event)."""
+        return {
+            "profile": self.profile.name,
+            "policy": getattr(self.policy, "engine", type(self.policy).__name__),
+            "rails": getattr(self.rails, "tool", type(self.rails).__name__),
+            "sandbox": getattr(self.sandbox, "tier", type(self.sandbox).__name__),
+            "tools": ",".join(self.tools.names()),
+            "memory": type(self.memory).__name__,
+        }
 
 
 _current: Layers | None = None
 
 
-def default_layers(paths: "RunPaths | None" = None, events: "EventLog | None" = None) -> Layers:
-    """The first implementations: principals from the RunSpec, the recipe's own rules as
-    policy, schema plus semantic checks as rails, a subprocess sandbox, the four code tools."""
+def default_layers(
+    paths: "RunPaths | None" = None, events: "EventLog | None" = None, profile: Profile = CORRECTNESS
+) -> Layers:
+    """The first implementations behind each seam, chosen by the profile: Cedar as the policy
+    engine (the runtime's own rules as the fallback the profile may name), Guardrails AI
+    behind the rails, a subprocess sandbox, the four code tools. Every choice is in-process."""
     sandbox = SubprocessSandbox(events=events)
-    return Layers(
+    tools = default_registry(sandbox, events=events)
+    policy: Policy
+    if profile.policy_engine == "cedar":
+        from .cedar_policy import CedarPolicy
+
+        policy = CedarPolicy(events=events, tools=tools.names())
+    else:
+        policy = StepPolicy(events=events)
+    from .guardrails_rails import GuardrailsRails
+
+    layers = Layers(
         identity=RunIdentity(paths),
-        policy=StepPolicy(events=events),
-        rails=SchemaRails(events=events),
+        policy=policy,
+        rails=GuardrailsRails(events=events, profile=profile),
         sandbox=sandbox,
-        tools=default_registry(sandbox, events=events),
+        tools=tools,
+        profile=profile,
     )
+    if events is not None:
+        installed: dict[str, Any] = dict(layers.installed())
+        events.append("layers.installed", **installed)
+    return layers
 
 
 def install(layers: Layers) -> Layers:
@@ -66,6 +97,8 @@ def current() -> Layers:
 
 
 __all__ = [
+    "CORRECTNESS",
+    "Profile",
     "ArtifactStore",
     "Identity",
     "Layers",

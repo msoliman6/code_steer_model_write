@@ -82,7 +82,11 @@ class RunIdentity:
 
 class StepPolicy:
     """The rules that were scattered through the runtime, in one place, each with an id.
-    Every decision is appended as a `policy.decision` event when a log is attached."""
+    Every decision is appended as a `policy.decision` event when a log is attached. The
+    runtime's own engine; `cedar_policy.CedarPolicy` holds the same rules for Cedar and the
+    tests require the two to agree."""
+
+    engine = "step"
 
     RULES = {
         "P-issue": "a step is issued by the driver; any minted principal may be issued its own step",
@@ -119,6 +123,7 @@ class StepPolicy:
                 resource=resource,
                 allow=allow,
                 policy=rule,
+                engine=self.engine,
             )
         return d
 

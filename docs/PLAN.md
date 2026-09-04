@@ -34,6 +34,19 @@ Agreed with the user on 2026-09-04. Nothing below is code; it is what the code w
   `worktree.py`'s git calls and the RUN step's direct command (recorded as `run-step`).
   Runner, Gateway, Mirror and Evaluator interfaces are named in the architecture and
   arrive with their phases (5, 4, 6) rather than as empty protocols here.
+- **Phase 2 — L9 and L10 with their tools: built 2026-09-04.** `layers/profile.py` (the
+  section 5 shape, the settings the built layers read; `CORRECTNESS` as the reference),
+  `layers/cedar_policy.py` (Cedar through `cedarpy`, in-process: the nine rules as annotated
+  policies, a schema generated with the registry's tool names, `validate_policies` before the
+  first decision, default deny named `P-default-deny`, the deciding rule logged; the test runs
+  a fourteen-row decision table through Cedar and the runtime's own `StepPolicy` and requires
+  agreement), `layers/guardrails_rails.py` (Guardrails AI behind the Rails seam: every answer
+  validated against the pydantic schema by `Guard.for_pydantic`, then the semantic and step
+  checks, then the profile's validators, none under correctness; a model-less override-phrase
+  validator as before_prompt; the hub telemetry singleton built disabled with a processor-less
+  provider so nothing leaves the process). `default_layers()` chooses by the profile and
+  writes a `layers.installed` event. Dependencies: `cedarpy>=4.8`, `guardrails-ai>=0.11`
+  (114 MB on disk). Walk 13/13, tests 97, ruff and pyright clean on `layers/`.
   **Live:** `live-3` halted at contract arbitration (a refusal with no re-ask, in the CLI
   backend; fixed at the class, ledger). `live-4` (2026-09-04, Haiku 4.5 low + gpt-5.4-mini
   low, auto, one round): COMPLETED, 27 steps, 0 halts, 0 resumes, 3 refusals all recovered,

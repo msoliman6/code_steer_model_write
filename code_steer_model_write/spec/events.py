@@ -41,6 +41,7 @@ EventKind = Literal[
     "tool.called",
     "tool.result",
     "sandbox.run",
+    "layers.installed",
 ]
 
 
