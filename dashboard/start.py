@@ -216,18 +216,19 @@ GLASS_STROKE = [(k, f"1px solid {T.tint(k, 0.55)}") for k in T.STAGE_HUES]
 
 
 def side_row(model: Card, effort: Card) -> rx.Component:
-    """One block per side of a stage: what the side does here, then the model on one row and
-    the effort on the next; the box above says which stage, so the labels stay short."""
+    """One block per side of a stage: the title line (the side's glyph, what it does here, the
+    side), then Name over the model dropdown, then Effort over the effort dropdown."""
     color = rx.cond(model.side == "author", T.ACTOR["a"], T.ACTOR["b"])
     glyph = rx.cond(model.side == "author", "✳", "☘")
     return rx.vstack(
         rx.hstack(
-            rx.text(glyph, color=color, font_size=SMALL),
+            rx.text(glyph, color=color, font_size=BODY),
             rx.text(model.func, font_weight="700", font_size=SMALL),
             rx.text(model.side, **MONO, color=T.DIM, font_size=SMALL),
             spacing="2",
             align="center",
         ),
+        rx.text("Name", **MONO, color=T.MUTED, font_size=SMALL),
         rx.select(
             model.options,
             value=model.value,
@@ -235,18 +236,13 @@ def side_row(model: Card, effort: Card) -> rx.Component:
             size="1",
             width="100%",
         ),
-        rx.hstack(
-            rx.text("effort", **MONO, color=T.DIM, font_size=SMALL, min_width="52px", white_space="nowrap"),
-            rx.select(
-                effort.options,
-                value=effort.value,
-                on_change=lambda v: Start.set_value(effort.key, v),
-                size="1",
-                width="100%",
-            ),
-            spacing="2",
+        rx.text("Effort", **MONO, color=T.MUTED, font_size=SMALL, margin_top=T.SPACE["xs"]),
+        rx.select(
+            effort.options,
+            value=effort.value,
+            on_change=lambda v: Start.set_value(effort.key, v),
+            size="1",
             width="100%",
-            align="center",
         ),
         spacing="1",
         width="100%",
