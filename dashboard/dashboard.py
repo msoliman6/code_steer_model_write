@@ -356,6 +356,7 @@ class S(rx.State):
     control_label: str = ""
     control_verb: str = ""
     control_tone: str = "neutral"
+    ring: str = ""  # a finished run: "ok" clean, "warn" carried
 
     # ---- loading -------------------------------------------------------------------------
 
@@ -431,6 +432,7 @@ class S(rx.State):
             d["control_verb"],
             d["control_tone"],
         )
+        self.ring = d.get("dot_ring", "")
         self.loaded = True
 
     @rx.event
@@ -599,7 +601,10 @@ class S(rx.State):
 
     @rx.var
     def status_color(self) -> str:
-        """The agreed tones (plan §7a.1): green running, amber gate, red halted or broke, grey done."""
+        """The agreed tones (plan §7a.1): green running, amber gate, red halted or broke; a finished
+        run green when clean and amber when items were carried, the same as its tab ring."""
+        if self.control == "done":
+            return {"ok": T.OK, "warn": T.WARN}.get(self.ring, T.TEXT)
         return {"ok": T.OK, "warn": T.WARN, "bad": T.BAD}.get(self.control_tone, T.TEXT)
 
     @rx.var
@@ -757,16 +762,20 @@ def status_pill(text, tone) -> rx.Component:
     return pill(text, tone)
 
 
-def setting_pill(label: str, value) -> rx.Component:
-    """A settings pill: the label uppercase, the value as it is (a model id keeps its case)."""
+def setting_pill(label: str, value, actor: str = "") -> rx.Component:
+    """A settings pill: the label uppercase, the value as it is (a model id keeps its case). The
+    author's and the checker's pills carry their actor colour as glass; the rest stay neutral."""
+    hue = T.ACTOR.get(actor)
+    label_color = hue or T.PILL["neutral"][0]
+    background = T.tint_hex(hue, 0.14) if hue else T.PILL["neutral"][1]
     return rx.box(
         rx.hstack(
-            rx.text(label, **PILL_STYLE, color=T.PILL["neutral"][0]),
+            rx.text(label, **PILL_STYLE, color=label_color),
             rx.text(value, **MONO, font_size=SMALL, font_weight="700", color=T.TEXT),
             spacing="2",
             align="center",
         ),
-        background=T.PILL["neutral"][1],
+        background=background,
         border_radius="8px",
         padding="4px 11px",
         white_space="nowrap",
@@ -905,7 +914,7 @@ def start_box() -> rx.Component:
                     align="center",
                     justify="center",
                 ),
-                rx.text("settings", **MONO, color=T.MUTED, font_size=SMALL),
+                rx.text("Settings", **MONO, color=T.MUTED, font_size=SMALL),
                 spacing="1",
                 align="center",
             ),
@@ -956,15 +965,11 @@ def progress_segment(r: ProgRow) -> rx.Component:
 
 
 def progress_bar() -> rx.Component:
-    """tqdm, with better graphics: segments per stage, the percentage, elapsed and the run's state
-    in its tone on the left; the wrong-ness chips on the right of the same row."""
+    """tqdm, with better graphics: segments per stage and the percentage on the left, the
+    wrong-ness chips on the right of the same row."""
     return rx.hstack(
         rx.hstack(rx.foreach(S.prog_rows, progress_segment), spacing="1", width="30%", align="center"),
         rx.text(S.percent, **MONO, font_weight="700", font_size=BODY, min_width="44px"),
-        rx.text("·", color=T.DIM),
-        rx.text(S.elapsed, **MONO, font_weight="700", font_size=BODY),
-        rx.text("·", color=T.DIM),
-        rx.text(S.status_word, **MONO, font_weight="700", font_size=BODY, color=S.status_color),
         rx.spacer(),
         rx.foreach(S.chips, chip),
         spacing="3",
@@ -975,20 +980,27 @@ def progress_bar() -> rx.Component:
 
 
 def token_line() -> rx.Component:
-    """The token totals per side under their marks, beneath the progress bar. Tokens, never dollars."""
+    """Centred under the bar: the token totals per side under their marks, elapsed, and the run's
+    state word in its agreed tone. The one place the state is spelled out above the fold."""
     return rx.hstack(
         rx.foreach(
             S.token_rows,
             lambda t: rx.hstack(
                 side_mark(t.role == "author", "14px"),
-                rx.text(f"{t.label} tok", **MONO, font_weight="700", font_size=SMALL),
+                rx.text(f"{t.label} tok", **MONO, font_weight="700", font_size=BODY),
                 spacing="1",
                 align="center",
             ),
         ),
-        spacing="4",
+        rx.text("·", color=T.DIM),
+        rx.text(S.elapsed, **MONO, font_weight="700", font_size=BODY),
+        rx.text("·", color=T.DIM),
+        rx.text(S.status_word, **MONO, font_weight="700", font_size=BODY, color=S.status_color),
+        spacing="3",
+        justify="center",
         align="center",
-        margin_top=T.SPACE["sm"],
+        width="100%",
+        margin_top=T.SPACE["md"],
     )
 
 
@@ -1015,7 +1027,14 @@ def header() -> rx.Component:
             rx.hstack(
                 setting_pill("run", S.run_id),
                 history_pill(),
-                rx.foreach(S.model_rows, lambda m: setting_pill(m.role, m.model)),
+                rx.foreach(
+                    S.model_rows,
+                    lambda m: rx.cond(
+                        m.role == "author",
+                        setting_pill("author", m.model, "a"),
+                        setting_pill("checker", m.model, "b"),
+                    ),
+                ),
                 setting_pill("rounds", S.rounds.to_string()),
                 setting_pill("mode", S.mode),
                 spacing="2",
