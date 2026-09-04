@@ -66,8 +66,13 @@ def test_build_task_and_stage_roles(tmp_path):
         "build_author_effort": "low",
         "contracts_author_effort": "high",
     }
-    assert sf.missing_required({}) == ["run name", "request"] and sf.missing_required(values) == []
+    assert sf.missing_required({}) == ["name", "request"] and sf.missing_required(values) == []
     t = sf.build_task(values)
+    assert (
+        t.task_id == "t"
+        and t.inputs["brief"]["module"] == "t"
+        and sf.module_of("My Slug-Lib") == "my_slug_lib"
+    )
     assert t.mode is Mode.AUTO and t.rounds == 2 and t.inputs["brief"]["must_be_true"] == ["a", "b"]
     assert (
         sf.stage_role(t, "build", "author").model == "claude-haiku-4-5"

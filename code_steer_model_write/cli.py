@@ -147,9 +147,11 @@ def cmd_start(a: argparse.Namespace) -> int:
     task = sf.build_task(values)
     sf.save_prefs(runs_dir, values)
     run_dir = runs_dir / task.task_id
-    if RunPaths(run_dir=run_dir).state.exists():
-        print(f"refused: a run already lives at {run_dir}")
-        return 2
+    n = 2
+    while RunPaths(run_dir=run_dir).state.exists():
+        run_dir = runs_dir / f"{task.task_id}-{n}"
+        n += 1
+    task = task.model_copy(update={"task_id": run_dir.name})
     print(
         f"run {task.task_id} at {run_dir}: {task.mode} · rounds {task.rounds} · author {task.roles['author'].backend.value}/{task.roles['author'].model} · checker {task.roles['checker'].backend.value}/{task.roles['checker'].model}"
     )

@@ -134,9 +134,11 @@ class Start(rx.State):
             return
         task = sf.build_task(self.values)
         run_dir = RUNS_DIR / task.task_id
-        if RunPaths(run_dir=run_dir).state.exists():
-            self.error = f"a run already lives at {run_dir}; pick another run name"
-            return
+        n = 2
+        while RunPaths(run_dir=run_dir).state.exists():  # a second run of the same module: -2, -3, ...
+            run_dir = RUNS_DIR / f"{task.task_id}-{n}"
+            n += 1
+        task = task.model_copy(update={"task_id": run_dir.name})
         sf.save_prefs(RUNS_DIR, self.values)
         RunState.create(RunPaths(run_dir=run_dir), task)
         atomic_write_text(run_dir / "task.json", task.model_dump_json(indent=2))

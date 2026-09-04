@@ -6,6 +6,7 @@ model or effort row inherits from the plan row (`as plan`) or the checker row (`
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any, Literal
 
@@ -86,8 +87,8 @@ STAGE_DEFAULTS = {
 FIELDS: list[FormField] = [
     FormField(
         key="run_name",
-        name="run name",
-        description="the folder under runs/ and the page's title",
+        name="name",
+        description="what you are building: the importable module's name (letters, digits, underscores); it is also the run's name and its folder under runs/, and a second run of the same name gets -2",
         kind="text",
         group="brief",
         required=True,
@@ -120,14 +121,6 @@ FIELDS: list[FormField] = [
         description="a boundary, not a suggestion: never a unit, never a step; one per line",
         kind="lines",
         group="brief",
-    ),
-    FormField(
-        key="module",
-        name="module",
-        description="the importable module name the surface lives in",
-        kind="text",
-        group="brief",
-        default="slug",
     ),
     FormField(
         key="mode",
@@ -313,6 +306,12 @@ def missing_required(values: dict[str, str]) -> list[str]:
     return [f.name for f in FIELDS if f.required and not (values.get(f.key) or "").strip()]
 
 
+def module_of(name: str) -> str:
+    """The module name from the form's name: lowercase, non-identifier characters to underscores."""
+    m = re.sub(r"[^a-z0-9_]+", "_", name.strip().lower()).strip("_")
+    return m or "module"
+
+
 def build_task(values: dict[str, str], *, recipe: str = "code_builder") -> TaskSpec:
     """The TaskSpec from the form: roles from the plan row and the checker row; every other stage
     row goes into metadata.stage_settings, which the recipe applies per step."""
@@ -323,7 +322,7 @@ def build_task(values: dict[str, str], *, recipe: str = "code_builder") -> TaskS
         "context": values.get("context", ""),
         "must_be_true": lines("must_be_true"),
         "out_of_scope": lines("out_of_scope"),
-        "module": values.get("module") or "slug",
+        "module": module_of(values.get("run_name", "")),
         "surface": "",
         "known_reference": "",
         "language": "python",
