@@ -40,8 +40,8 @@ MONO = "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
 SANS = "Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif"
 
 # the five-step type scale (px); CSMW_BASE shifts all of them
-BASE = 14
-SIZE = {"eyebrow": 12, "body": 14, "title": 16, "headline": 20, "page": 28}
+BASE = 15
+SIZE = {"eyebrow": 13, "body": 15, "title": 17, "headline": 22, "page": 30}
 LETTER_SPACING_EYEBROW = "0.08em"
 
 SPACE = {"xs": "4px", "sm": "8px", "md": "12px", "lg": "20px", "xl": "32px"}
@@ -71,8 +71,8 @@ def k(n: int | float) -> str:
 
 
 SUBCARD = "#1c2026"  # a card inside a card
-SEL_FILL = "#22262c"  # the selected row: contrast, not a hue
-SEL_BORDER = "#3f444c"
+SEL_FILL = "#262b32"  # the selected row: contrast, not a hue
+SEL_BORDER = "#464c55"
 SIDEBAR_W = "240px"
 PILL = {  # the status pills: uppercase mono on a faint tint
     "ok": ("#3fb950", "rgba(63,185,80,0.14)"),

@@ -61,14 +61,39 @@ def _settings_rows(run_dir: str) -> list["SettingRow"]:
     return rows
 
 
+def _run_dot(d: Path, st: dict[str, Any]) -> tuple[str, str]:
+    """The tab's dot from the run's files: cheap, no events read. Green running, amber waiting
+    for you, red halted or broke, grey done (ringed green when clean, amber when items carried)."""
+    status = st.get("status", "")
+    if status in ("PAUSED", "FAILED", "CANCELLED") or (d / "halt.json").exists():
+        return "halted", ""
+    if status == "COMPLETED":
+        return "done", ("warn" if st.get("carried") else "ok")
+    gates = d / "gates"
+    if gates.exists() and any(
+        not (gates / (g.name[: -len(".ask.json")] + ".decision.json")).exists()
+        for g in gates.glob("*.ask.json")
+    ):
+        return "waiting", ""
+    return ("running", "") if status == "RUNNING" else ("queued", "")
+
+
 def _runs() -> list[dict[str, str]]:
     out = []
     if RUNS_DIR.exists():
         for d in sorted(RUNS_DIR.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True):
             if (d / "state.json").exists():
                 st = json.loads((d / "state.json").read_text())
+                dot, ring = _run_dot(d, st)
                 out.append(
-                    {"id": st["run_id"], "recipe": st["recipe"], "status": st["status"], "dir": str(d)}
+                    {
+                        "id": st["run_id"],
+                        "recipe": st["recipe"],
+                        "status": st["status"],
+                        "dir": str(d),
+                        "dot": dot,
+                        "ring": ring,
+                    }
                 )
     return out
 
@@ -420,6 +445,8 @@ class S(rx.State):
 
     @rx.event
     def load_runs(self):
+        if self.view_tab not in {k for k, _ in NAV}:
+            self.view_tab = "run"  # a stale pick from an earlier layout
         self.runs = _runs()
         if not self.run_dir and self.runs:
             self.run_dir = self.runs[0]["dir"]
