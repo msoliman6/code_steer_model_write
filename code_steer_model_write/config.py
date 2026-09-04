@@ -140,13 +140,19 @@ def price_table() -> dict[str, tuple[float, float]]:
     """The built-in table, overlaid with prices.json when one exists. Read on every call: a price
     is never stored with a run."""
     table = dict(PRICE_PER_MTOK)
-    path = Path(os.environ.get("CSMW_PRICES_FILE", "prices.json"))
-    if path.exists():
-        try:
-            for k, v in json.loads(path.read_text()).items():
-                table[str(k)] = (float(v[0]), float(v[1]))
-        except (ValueError, TypeError, IndexError):
-            pass  # a broken file prices nothing; the page shows blanks, never a wrong number
+    env = os.environ.get("CSMW_PRICES_FILE")
+    candidates = (
+        [Path(env)]
+        if env
+        else [Path("prices.json"), Path(Settings().runs_dir).resolve().parent / "prices.json"]
+    )
+    for path in candidates:  # the working directory's file, then the one beside the runs dir (a project's)
+        if path.exists():
+            try:
+                for k, v in json.loads(path.read_text()).items():
+                    table[str(k)] = (float(v[0]), float(v[1]))
+            except (ValueError, TypeError, IndexError):
+                pass  # a broken file prices nothing; the page shows $?, never a wrong number
     return table
 
 
