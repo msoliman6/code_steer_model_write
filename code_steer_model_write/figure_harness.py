@@ -122,10 +122,7 @@ class Node:
 def layout() -> list[Node]:
     nodes: list[Node] = []
     y = 30.0
-    n = Node(
-        60,
-        y,
-        880,
+    n = Node(190, y, 620,
         "blue",
         "AGENT WORKFLOW",
         "The workflow figure above · Python",
@@ -133,8 +130,8 @@ def layout() -> list[Node]:
     )
     nodes.append(n)
     y += n.h + GAP
-    a = Node(60, y, 410, "gold", "PREFECT", "Python SDK", PREFECT[3:])
-    b = Node(530, y, 410, "violet", "MLFLOW", "Python SDK", MLFLOW[3:])
+    a = Node(150, y, 310, "gold", "PREFECT", "Python SDK", PREFECT[3:])
+    b = Node(540, y, 310, "violet", "MLFLOW", "Python SDK", MLFLOW[3:])
     tall = max(a.h, b.h)
     a.y = y + (tall - a.h) / 2  # the two parallel blocks share one horizontal midline
     b.y = y + (tall - b.h) / 2
@@ -147,7 +144,7 @@ def layout() -> list[Node]:
         ("rose", "CUSTOM DASHBOARD", "The page", DASHBOARD[2:]),
         ("grey", "BROWSER", "Your tab", ["The page at 127.0.0.1:3007"]),
     ):
-        n = Node(180, y, 640, hue, title, sub, items)
+        n = Node(310, y, 380, hue, title, sub, items)
         nodes.append(n)
         y += n.h + GAP
     return nodes
