@@ -179,7 +179,7 @@ def render(theme: Theme = "dark", names: dict[str, str] | None = None) -> str:  
         title = n.title + (f" — {n.sub.upper()}" if n.sub else "")
         if n.items:
             L.append(
-                f'<text x="{n.x + 22:g}" y="{n.y + 28:g}" font-size="16" font-weight="600" letter-spacing="1.5" fill="{lab}">{_esc(title)}</text>'
+                f'<text x="{n.x + n.w / 2:g}" y="{n.y + 28:g}" text-anchor="middle" font-size="16" font-weight="600" letter-spacing="1.5" fill="{lab}">{_esc(title)}</text>'
             )
         else:  # a single-line node: the title centred
             L.append(
@@ -194,10 +194,13 @@ def render(theme: Theme = "dark", names: dict[str, str] | None = None) -> str:  
             )
         else:
             L.append(f'<rect x="{ix:g}" y="{iy:g}" width="{iw:g}" height="{ih:g}" rx="14" fill="{flat}"/>')
+        # the items as one left-aligned block, the block itself centred in the box
+        widest = max(len(ln) for ln in n.items) * 0.53 * ITEM
+        x0 = ix + iw / 2 - widest / 2
         for k, ln in enumerate(n.items):
             cy = iy + PAD + k * LEAD if len(n.items) > 1 else iy + ih / 2
             L.append(
-                f'<text x="{ix + 24:g}" y="{cy:.1f}" dominant-baseline="central" font-size="{ITEM}" font-weight="500" fill="{text}">{_esc(ln)}</text>'
+                f'<text x="{x0:.1f}" y="{cy:.1f}" dominant-baseline="central" font-size="{ITEM}" font-weight="500" fill="{text}">{_esc(ln)}</text>'
             )
     top, pre, ml, mon, ref, dash, browser = nodes
 
