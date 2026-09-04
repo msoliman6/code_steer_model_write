@@ -295,11 +295,19 @@ def stage_column(t: Tile) -> rx.Component:
     cards = Start.stage_cards[t.id]
     return rx.vstack(
         rx.box(
-            rx.vstack(
-                rx.text(f"{t.n} · {t.emoji}", **MONO, color=hue, font_size=SMALL),
-                rx.text(t.title, font_weight="700", font_size=f"{T.SIZE['title']}px", color=T.TEXT),
-                spacing="1",
+            rx.hstack(
+                rx.text(t.emoji, font_size=f"{T.SIZE['title']}px"),
+                rx.text(t.n, **MONO, color=hue, font_size=f"{T.SIZE['title']}px", font_weight="700"),
+                rx.text(
+                    t.title,
+                    font_weight="700",
+                    font_size=f"{T.SIZE['title']}px",
+                    color=hue,
+                    white_space="nowrap",
+                ),
+                spacing="2",
                 align="center",
+                justify="center",
             ),
             border=rx.match(t.hue, *GLASS_STROKE, f"1px solid {T.BORDER}"),
             background=rx.match(t.hue, *GLASS_FILL, T.CARD),

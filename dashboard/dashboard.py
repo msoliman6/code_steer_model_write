@@ -804,19 +804,29 @@ def stage_box(s: Stage) -> rx.Component:
         rx.box(
             rx.vstack(
                 rx.hstack(
-                    rx.text(s.n, **MONO, color=hue, font_size=SMALL),
-                    rx.text("·", color=T.DIM),
-                    rx.text(s.emoji, font_size=SMALL),
-                    rx.text(glyph, color=rx.cond(s.state == "halted", T.BAD, hue)),
+                    rx.text(s.emoji, font_size=f"{T.SIZE['title']}px"),
+                    rx.text(s.n, **MONO, color=hue, font_size=f"{T.SIZE['title']}px", font_weight="700"),
+                    rx.text(
+                        s.title,
+                        font_weight="700",
+                        font_size=f"{T.SIZE['title']}px",
+                        color=hue,
+                        white_space="nowrap",
+                    ),
                     spacing="2",
                     align="center",
+                    justify="center",
                 ),
-                rx.text(s.title, font_weight="700", font_size=f"{T.SIZE['title']}px", color=T.TEXT),
-                rx.text(
-                    rx.cond(s.rounds != "", f"{s.rounds} · {s.duration}", s.duration),
-                    **MONO,
-                    color=T.MUTED,
-                    font_size=SMALL,
+                rx.hstack(
+                    rx.text(glyph, color=rx.cond(s.state == "halted", T.BAD, hue), font_size=SMALL),
+                    rx.text(
+                        rx.cond(s.rounds != "", f"{s.rounds} · {s.duration}", s.duration),
+                        **MONO,
+                        color=T.MUTED,
+                        font_size=SMALL,
+                    ),
+                    spacing="2",
+                    align="center",
                 ),
                 spacing="1",
                 align="center",
@@ -1605,11 +1615,6 @@ def index() -> rx.Component:
                 overflow_y="auto",
             ),
             rx.cond(S.loaded, bottom_bar(), rx.fragment()),
-            rx.cond(
-                S.process == "stale",
-                rx.button("Resume", size="2", color_scheme="gray", variant="solid", on_click=S.resume_run),
-                rx.fragment(),
-            ),
             spacing="0",
             width="100%",
             min_height="100vh",
