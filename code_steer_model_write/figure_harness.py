@@ -135,8 +135,11 @@ def layout() -> list[Node]:
     y += n.h + GAP
     a = Node(60, y, 410, "gold", "PREFECT", "Python SDK", PREFECT[3:])
     b = Node(530, y, 410, "violet", "MLFLOW", "Python SDK", MLFLOW[3:])
+    tall = max(a.h, b.h)
+    a.y = y + (tall - a.h) / 2  # the two parallel blocks share one horizontal midline
+    b.y = y + (tall - b.h) / 2
     nodes += [a, b]
-    y += max(a.h, b.h) + GAP
+    y += tall + GAP
     # hot hues (gold, rose, red) never follow one another down the spine
     for hue, title, sub, items in (
         ("teal", "MONITOR.DB", "SQLite", MONITOR[3:]),

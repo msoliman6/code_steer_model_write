@@ -7,16 +7,16 @@
 <text x="500" y="58" text-anchor="middle" font-size="16" font-weight="600" letter-spacing="1.5" fill="#6ea6e8">AGENT WORKFLOW — THE WORKFLOW FIGURE ABOVE · PYTHON</text>
 <rect x="80" y="76" width="840" height="64" rx="14" fill="rgba(77,143,220,0.14)" stroke="rgba(77,143,220,0.7)" stroke-width="1.5"/>
 <text x="285.4" y="108.0" dominant-baseline="central" font-size="18" font-weight="500" fill="#e6edf3">Code decides every step · models fill schemas</text>
-<rect x="60" y="212" width="410" height="292" rx="18" fill="rgba(187,128,9,0.07)" stroke="rgba(187,128,9,0.5)" stroke-width="1.5"/>
-<text x="265" y="240" text-anchor="middle" font-size="16" font-weight="600" letter-spacing="1.5" fill="#d69a26">PREFECT — PYTHON SDK</text>
-<rect x="80" y="258" width="370" height="226" rx="14" fill="rgba(187,128,9,0.14)" stroke="rgba(187,128,9,0.7)" stroke-width="1.5"/>
-<text x="193.4" y="290.0" dominant-baseline="central" font-size="18" font-weight="500" fill="#e6edf3">Orchestration</text>
-<text x="193.4" y="317.0" dominant-baseline="central" font-size="18" font-weight="500" fill="#e6edf3">Flow/task state</text>
-<text x="193.4" y="344.0" dominant-baseline="central" font-size="18" font-weight="500" fill="#e6edf3">Dependencies</text>
-<text x="193.4" y="371.0" dominant-baseline="central" font-size="18" font-weight="500" fill="#e6edf3">Retries</text>
-<text x="193.4" y="398.0" dominant-baseline="central" font-size="18" font-weight="500" fill="#e6edf3">Failures</text>
-<text x="193.4" y="425.0" dominant-baseline="central" font-size="18" font-weight="500" fill="#e6edf3">Scheduling</text>
-<text x="193.4" y="452.0" dominant-baseline="central" font-size="18" font-weight="500" fill="#e6edf3">Cancellation</text>
+<rect x="60" y="266" width="410" height="292" rx="18" fill="rgba(187,128,9,0.07)" stroke="rgba(187,128,9,0.5)" stroke-width="1.5"/>
+<text x="265" y="294" text-anchor="middle" font-size="16" font-weight="600" letter-spacing="1.5" fill="#d69a26">PREFECT — PYTHON SDK</text>
+<rect x="80" y="312" width="370" height="226" rx="14" fill="rgba(187,128,9,0.14)" stroke="rgba(187,128,9,0.7)" stroke-width="1.5"/>
+<text x="193.4" y="344.0" dominant-baseline="central" font-size="18" font-weight="500" fill="#e6edf3">Orchestration</text>
+<text x="193.4" y="371.0" dominant-baseline="central" font-size="18" font-weight="500" fill="#e6edf3">Flow/task state</text>
+<text x="193.4" y="398.0" dominant-baseline="central" font-size="18" font-weight="500" fill="#e6edf3">Dependencies</text>
+<text x="193.4" y="425.0" dominant-baseline="central" font-size="18" font-weight="500" fill="#e6edf3">Retries</text>
+<text x="193.4" y="452.0" dominant-baseline="central" font-size="18" font-weight="500" fill="#e6edf3">Failures</text>
+<text x="193.4" y="479.0" dominant-baseline="central" font-size="18" font-weight="500" fill="#e6edf3">Scheduling</text>
+<text x="193.4" y="506.0" dominant-baseline="central" font-size="18" font-weight="500" fill="#e6edf3">Cancellation</text>
 <rect x="530" y="212" width="410" height="400" rx="18" fill="rgba(154,110,224,0.07)" stroke="rgba(154,110,224,0.5)" stroke-width="1.5"/>
 <text x="735" y="240" text-anchor="middle" font-size="16" font-weight="600" letter-spacing="1.5" fill="#b28ae8">MLFLOW — PYTHON SDK</text>
 <rect x="550" y="258" width="370" height="334" rx="14" fill="rgba(154,110,224,0.14)" stroke="rgba(154,110,224,0.7)" stroke-width="1.5"/>
@@ -68,9 +68,9 @@
 <text x="500" y="1805" text-anchor="middle" font-size="16" font-weight="600" letter-spacing="1.5" fill="#c9d1d9">BROWSER — YOUR TAB</text>
 <rect x="200" y="1823" width="600" height="64" rx="14" fill="rgba(201,209,217,0.14)" stroke="rgba(201,209,217,0.7)" stroke-width="1.5"/>
 <text x="376.0" y="1855.0" dominant-baseline="central" font-size="18" font-weight="500" fill="#e6edf3">The page at 127.0.0.1:3007</text>
-<line x1="500" y1="162" x2="265" y2="210" stroke="#c9d1d9" stroke-width="2" stroke-linecap="round" marker-end="url(#ah)"/>
+<line x1="500" y1="162" x2="265" y2="264" stroke="#c9d1d9" stroke-width="2" stroke-linecap="round" marker-end="url(#ah)"/>
 <line x1="500" y1="162" x2="735" y2="210" stroke="#c9d1d9" stroke-width="2" stroke-linecap="round" marker-end="url(#ah)"/>
-<line x1="265" y1="506" x2="500" y2="662" stroke="#c9d1d9" stroke-width="2" stroke-linecap="round" marker-end="url(#ah)"/>
+<line x1="265" y1="560" x2="500" y2="662" stroke="#c9d1d9" stroke-width="2" stroke-linecap="round" marker-end="url(#ah)"/>
 <line x1="735" y1="614" x2="500" y2="662" stroke="#c9d1d9" stroke-width="2" stroke-linecap="round" marker-end="url(#ah)"/>
 <line x1="500" y1="958" x2="500" y2="1006" stroke="#c9d1d9" stroke-width="2" stroke-linecap="round" marker-end="url(#ah)"/>
 <line x1="500" y1="1302" x2="500" y2="1350" stroke="#c9d1d9" stroke-width="2" stroke-linecap="round" marker-end="url(#ah)"/>
