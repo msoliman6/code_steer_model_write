@@ -215,39 +215,50 @@ GLASS_FILL = [(k, T.tint(k, 0.10)) for k in T.STAGE_HUES]
 GLASS_STROKE = [(k, f"1px solid {T.tint(k, 0.55)}") for k in T.STAGE_HUES]
 
 
+def centered_select(options, value, on_change, *, width: str = "100%") -> rx.Component:
+    """A dropdown whose trigger and items are centred (the stage columns are symmetric)."""
+    return rx.select.root(
+        rx.select.trigger(width=width, style={"justify_content": "center", "text_align": "center"}),
+        rx.select.content(
+            rx.foreach(options, lambda o: rx.select.item(o, value=o, style={"justify_content": "center"}))
+        ),
+        value=value,
+        on_change=on_change,
+        size="1",
+    )
+
+
 def side_row(model: Card, effort: Card) -> rx.Component:
     """One block per side of a stage, centred under the box: the side's glyph and what it does
-    here, then Name over a narrow model dropdown, then Effort over the effort dropdown."""
+    here, then Name over the model dropdown, then Effort over the effort dropdown."""
     color = rx.cond(model.side == "author", T.ACTOR["a"], T.ACTOR["b"])
     glyph = rx.cond(model.side == "author", "✳", "☘")
     return rx.vstack(
         rx.hstack(
             rx.text(glyph, color=color, font_size=BODY),
-            rx.text(model.func, font_weight="700", font_size=SMALL),
+            rx.text(model.func, font_weight="700", font_size=SMALL, text_align="center"),
             spacing="2",
             align="center",
             justify="center",
-        ),
-        rx.text("Name", **MONO, color=T.MUTED, font_size=SMALL),
-        rx.select(
-            model.options,
-            value=model.value,
-            on_change=lambda v: Start.set_value(model.key, v),
-            size="1",
             width="100%",
         ),
-        rx.text("Effort", **MONO, color=T.MUTED, font_size=SMALL, margin_top=T.SPACE["xs"]),
-        rx.select(
-            effort.options,
-            value=effort.value,
-            on_change=lambda v: Start.set_value(effort.key, v),
-            size="1",
+        rx.text("Name", **MONO, color=T.MUTED, font_size=SMALL, text_align="center", width="100%"),
+        centered_select(model.options, model.value, lambda v: Start.set_value(model.key, v)),
+        rx.text(
+            "Effort",
+            **MONO,
+            color=T.MUTED,
+            font_size=SMALL,
+            text_align="center",
             width="100%",
+            margin_top=T.SPACE["xs"],
         ),
+        centered_select(effort.options, effort.value, lambda v: Start.set_value(effort.key, v)),
         spacing="1",
-        width="78%",
+        width="76%",
         align="center",
         padding=f"{T.SPACE['sm']} 0",
+        margin="0 auto",
     )
 
 
