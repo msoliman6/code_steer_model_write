@@ -32,7 +32,7 @@ def get(name: str) -> Recipe:
     ep = _installed().get(name)
     if ep is not None:  # an installed project wins over a bundled recipe of the same name
         obj: Any = ep.load()
-        return obj if hasattr(obj, "spec") else obj()  # an instance, a class or a factory
+        return obj if isinstance(obj, Recipe) else obj()  # an instance, a class or a factory
     if name in _BUILTIN:
         module, cls = _BUILTIN[name]
         return getattr(import_module(module), cls)()

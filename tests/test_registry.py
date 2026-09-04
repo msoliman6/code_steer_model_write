@@ -39,3 +39,16 @@ def test_walk_legs_from_installed_packages(monkeypatch):
         registry, "entry_points", lambda group: [_EP("coder", legs)] if group == "csmw.walk_legs" else []
     )
     assert registry.walk_legs() == {"coder": legs}
+
+
+def test_a_recipe_class_is_instantiated(monkeypatch):
+    from code_steer_model_write.recipes.debate.recipe import Debate
+
+    registry._installed.cache_clear()
+    monkeypatch.setattr(
+        registry, "entry_points", lambda group: [_EP("d2", Debate)] if group == "csmw.recipes" else []
+    )
+    try:
+        assert isinstance(registry.get("d2"), Debate)  # the class has a spec attribute; it is still a class
+    finally:
+        registry._installed.cache_clear()
