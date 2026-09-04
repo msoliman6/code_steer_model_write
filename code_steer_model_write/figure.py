@@ -55,6 +55,19 @@ GAP, ARROW_LEN = 36, 34
 LABEL_DY, BOX_DY = 28, 40
 
 
+def _data_uri(path: Path) -> str:
+    import base64
+
+    return "data:image/png;base64," + base64.b64encode(path.read_bytes()).decode()
+
+
+_ASSETS = Path(__file__).resolve().parent.parent / "assets"
+MARKS = {  # the two sides' marks, embedded so the figure shows what the page shows
+    "a": _ASSETS / "claude-64.png",
+    "b": _ASSETS / "codex-64.png",
+}
+
+
 def rgba(rgb: tuple[int, int, int], a: float) -> str:
     return f"rgba({rgb[0]},{rgb[1]},{rgb[2]},{a})"
 
@@ -127,7 +140,7 @@ def layout(spec: RecipeSpec, *, names: dict[str, str] | None = None) -> Figure:
     gate_by_id = {g.id: g for g in spec.gates}
     for st in spec.stages:
         fig = st.figure
-        label = f"{st.emoji} {st.n} · {st.title.upper()}" + (f" — {st.qualifier}" if st.qualifier else "")
+        label = f"{st.n} · {st.title.upper()}" + (f" — {st.qualifier}" if st.qualifier else "")
         top = y
         if fig.second_line and not fig.checker:  # one wide "both" box, two lines
             f.bands.append(Band(top, BAND_H2, st.hue, label))
@@ -304,11 +317,19 @@ def render_svg(f: Figure, theme: Theme, *, names: dict[str, str] | None = None) 
         for i, ln in enumerate(b.lines):
             cy = b.y + b.h / 2 + (i - (n - 1) / 2) * 24.8
             glyph = ""
-            if i == 0 and b.glyph and b.kind in ("a", "b") and theme == "dark":
-                g, gc = ACTORS[b.kind][1], ACTORS[b.kind][2]
-                glyph = f'<tspan fill="{gc}">{g} </tspan>'
+            dx = 0.0
+            if i == 0 and b.glyph and b.kind in ("a", "b"):
+                mark = MARKS[b.kind]
+                if mark.exists():  # the side's mark, as on the page
+                    L.append(
+                        f'<image href="{_data_uri(mark)}" x="{b.x + 14:g}" y="{cy - 11:.1f}" width="22" height="22"/>'
+                    )
+                    dx = 12.0
+                elif theme == "dark":
+                    g, gc = ACTORS[b.kind][1], ACTORS[b.kind][2]
+                    glyph = f'<tspan fill="{gc}">{g} </tspan>'
             L.append(
-                f'<text x="{b.x + b.w / 2:g}" y="{cy:.1f}" text-anchor="middle" dominant-baseline="central" font-size="{b.size}" font-weight="{b.weight}" fill="{color}">{glyph}{_esc(ln)}</text>'
+                f'<text x="{b.x + b.w / 2 + dx:g}" y="{cy:.1f}" text-anchor="middle" dominant-baseline="central" font-size="{b.size}" font-weight="{b.weight}" fill="{color}">{glyph}{_esc(ln)}</text>'
             )
     for x1, y1, x2, y2, dashed, both in f.arrows:
         extra = ' marker-start="url(#ah-rev)"' if both else ""

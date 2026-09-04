@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/media/logo-freeze-swap-brand-256.png" width="120" alt="freeze and swap"></p>
+
 # code_steer_model_write
 
 **Code steers, models write.** A template for agentic AI workflows — hackathons and real

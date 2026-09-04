@@ -1401,8 +1401,8 @@ def status_dot(dot, ring) -> rx.Component:
     )
 
 
-def run_tab(r) -> rx.Component:
-    active = S.run_dir == r["dir"]
+def run_tab(r, *, active_allowed: bool = True) -> rx.Component:
+    active = (S.run_dir == r["dir"]) if active_allowed else False
     return rx.hstack(
         status_dot(r["dot"], r["ring"]),
         rx.text(
@@ -1422,9 +1422,9 @@ def run_tab(r) -> rx.Component:
     )
 
 
-def runs_tabs() -> rx.Component:
+def runs_tabs(active: bool = True) -> rx.Component:
     return rx.hstack(
-        rx.foreach(S.runs, run_tab),
+        rx.foreach(S.runs, lambda r: run_tab(r, active_allowed=active)),
         rx.spacer(),
         rx.link("New run ▸", href="/new", **MONO, font_size=SMALL, color=T.TEXT, padding="8px 14px"),
         width="100%",

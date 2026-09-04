@@ -26,6 +26,7 @@ def test_dark_figure_matches_reference_geometry():
         r'viewBox="0 0 1000 (\d+)"', ref
     ).group(1)
     assert _colours(new) <= _colours(ref), _colours(new) - _colours(ref)
+    assert new.count("<image") == 12  # the two marks in every actor box
     for label in (
         "🗺 0 · PLAN",
         "📜 1 · CONTRACTS",
@@ -44,7 +45,7 @@ def test_dark_figure_matches_reference_geometry():
 
 def test_light_figure_is_flat_and_both_themes_render():
     light = figure_svg("code_builder", "light")
-    assert 'fill="#ffffff"' in light and "rgba(" not in light and "✳" not in light
+    assert 'fill="#ffffff"' in light and "rgba(" not in light and "✳" not in light and "<image" in light
     assert _rects(light) == _rects(figure_svg("code_builder", "dark"))
 
 
