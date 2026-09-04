@@ -20,6 +20,7 @@ from code_steer_model_write.state.lock import atomic_write_text
 from code_steer_model_write.state.run import RunPaths, RunState
 
 from . import theme as T
+from .glyphs import author_mark, checker_mark, side_mark
 
 RUNS_DIR = Path(os.environ.get("CSMW_RUNS_DIR", "runs"))
 MONO = {"font_family": T.MONO}
@@ -256,11 +257,10 @@ def side_row(model: Card, effort: Card, hue) -> rx.Component:
     """One block per side of a stage: the side's glyph and what it does here, the model, the
     effort; a rule on the left in the side's colour, dropdown borders in the stage's tint."""
     color = rx.cond(model.side == "author", T.ACTOR["a"], T.ACTOR["b"])
-    glyph = rx.cond(model.side == "author", "✳", "☘")
     border = rx.match(hue, *STAGE_SELECT_BORDER, f"1px solid {T.BORDER}")
     return rx.vstack(
         rx.hstack(
-            rx.text(glyph, color=color, font_size=BODY),
+            side_mark(model.side == "author"),
             rx.text(
                 model.func,
                 font_weight="700",
@@ -321,10 +321,9 @@ def side_column(cards, side: str, title: str) -> rx.Component:
     """A side's column above the rail as glass in its actor colour: the glyph and title, then
     backend, model, effort."""
     color = T.ACTOR["a"] if side == "author" else T.ACTOR["b"]
-    glyph = "✳" if side == "author" else "☘"
     return rx.vstack(
         rx.hstack(
-            rx.text(glyph, color=color, font_size=BODY),
+            author_mark() if side == "author" else checker_mark(),
             rx.text(
                 title,
                 font_weight="700",
