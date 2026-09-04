@@ -11,24 +11,39 @@ from .figure import ACTORS, ARROW, ARROW_W, FONT, FOOT, MUTED, TEXT, W, Box, _es
 
 Theme = Literal["dark", "light"]
 
+# The two bands are the point of this figure: the recipe is a project (its own repo, a package the
+# harness discovers); everything under it is the template, installed as a dependency.
+# (label, y0, y1, rgb)
+BANDS = [
+    ("THE PROJECT · a recipe package in its own repo", 112, 218, (163, 113, 247)),
+    ("THE TEMPLATE · the harness, installed as a package", 246, 1016, (139, 148, 158)),
+]
 # (kind, x, y, w, h, lines)
 BOXES = [
-    ("you", 390, 34, 220, 50, ["TaskSpec · the start page"]),
+    ("you", 120, 34, 420, 50, ["TaskSpec · the start page, or a task.json handed in"]),
+    (
+        "both",
+        60,
+        146,
+        880,
+        60,
+        ["recipe · stages · prompts · schemas · fixtures · checks · walk legs · the workflow figure"],
+    ),
     (
         "code",
         60,
-        130,
+        280,
         880,
         96,
         ["driver · code decides every step", "next · done · undo · halt as a report · resume from disk"],
     ),
-    ("a", 60, 272, 270, 72, ["author side", "Claude · anthropic · agent sdk · claude -p"]),
-    ("b", 365, 272, 270, 72, ["checker side", "Codex · codex exec · litellm"]),
-    ("code", 670, 272, 270, 72, ["fake backend", "the offline walk · zero tokens"]),
+    ("a", 60, 422, 270, 72, ["author side", "Claude · anthropic · agent sdk · claude -p"]),
+    ("b", 365, 422, 270, 72, ["checker side", "Codex · codex exec · litellm"]),
+    ("code", 670, 422, 270, 72, ["fake backend", "the offline walk · zero tokens"]),
     (
         "freeze",
         200,
-        392,
+        542,
         600,
         54,
         ["ask() · one schema per call · re-ask with the exact problems · never a tool"],
@@ -36,36 +51,38 @@ BOXES = [
     (
         "code",
         60,
-        494,
+        644,
         420,
         72,
         ["events.jsonl · the one owner", "state.json · artifacts/vNNN.json · gates/ · review/"],
     ),
-    ("both", 520, 494, 420, 72, ["MLflow · a sink", "spans per step and call · tokens per role · evals"]),
-    ("code", 60, 612, 270, 54, ["Prefect · a task per step · cancel"]),
-    ("code", 365, 612, 270, 54, ["monitor.db · the runs index"]),
-    ("code", 670, 612, 270, 54, ["view model · built from the files"]),
-    ("you", 300, 712, 400, 54, ["Reflex page · rail · NOW · gates · evidence"]),
-    ("output", 390, 812, 220, 50, ["your browser"]),
+    ("both", 520, 644, 420, 72, ["MLflow · a sink", "spans per step and call · tokens per role · evals"]),
+    ("code", 60, 762, 270, 54, ["Prefect · wraps the loop · cancel"]),
+    ("code", 365, 762, 270, 54, ["monitor.db · the runs index"]),
+    ("code", 670, 762, 270, 54, ["view model · built from the files"]),
+    ("you", 300, 862, 400, 54, ["Reflex page · rail · gates · evidence"]),
+    ("output", 390, 962, 220, 50, ["your browser"]),
 ]
 ARROWS = [
-    (500, 84, 500, 128, False),
-    (500, 226, 195, 270, False),
-    (500, 226, 500, 270, False),
-    (500, 226, 805, 270, False),
-    (195, 344, 380, 390, False),
-    (500, 344, 500, 390, False),
-    (805, 344, 620, 390, False),
-    (500, 446, 270, 492, False),
-    (480, 530, 518, 530, True),
-    (270, 566, 195, 610, False),
-    (270, 566, 500, 610, False),
-    (270, 566, 805, 610, False),
-    (500, 666, 500, 710, False),
-    (805, 666, 640, 710, False),
-    (500, 766, 500, 810, False),
+    (500, 84, 500, 144, False),
+    (500, 206, 500, 278, False),
+    (500, 376, 195, 420, False),
+    (500, 376, 500, 420, False),
+    (500, 376, 805, 420, False),
+    (195, 494, 380, 540, False),
+    (500, 494, 500, 540, False),
+    (805, 494, 620, 540, False),
+    (500, 596, 270, 642, False),
+    (480, 680, 518, 680, True),
+    (270, 716, 195, 760, False),
+    (270, 716, 500, 760, False),
+    (270, 716, 805, 760, False),
+    (500, 816, 500, 860, False),
+    (805, 816, 640, 860, False),
+    (500, 916, 500, 960, False),
 ]
 FOOT_LINES = [
+    "The project owns what the workflow is; the template owns how any workflow runs.",
     "One owner per fact: state.json owns status, events.jsonl owns what happened, the pydantic class owns every shape.",
     "MLflow, Prefect and monitor.db are sinks and views; nothing the driver needs is read back from them.",
     "The fake backend answers every schema offline, so every branch is walked before a token is spent.",
@@ -75,7 +92,7 @@ FOOT_LINES = [
 def render(theme: Theme = "dark", names: dict[str, str] | None = None) -> str:
     names = names or {"a": "Claude", "b": "Codex"}
     text, muted, foot, arrow, aw = TEXT[theme], MUTED[theme], FOOT[theme], ARROW[theme], ARROW_W[theme]
-    H = 812 + 50 + 14 + 24 * (len(FOOT_LINES) - 1) + 26
+    H = 962 + 50 + 14 + 24 * (len(FOOT_LINES) - 1) + 26
     L = [
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}" font-family="{FONT}">',
         "<defs>",
@@ -87,7 +104,15 @@ def render(theme: Theme = "dark", names: dict[str, str] | None = None) -> str:
         L.append(f'<rect width="{W}" height="{H}" rx="22" fill="#ffffff"/>')
     else:
         L.append("<!-- transparent canvas: the host page's dark ground shows through -->")
-    from .figure import LIGHT_FILL, _box_style
+    from .figure import LIGHT_FILL, MARKS, _box_style, _data_uri
+
+    for label, y0, y1, rgb in BANDS:
+        L.append(
+            f'<rect x="40" y="{y0}" width="920" height="{y1 - y0}" rx="18" fill="{rgba(rgb, 0.05)}" stroke="{rgba(rgb, 0.55)}" stroke-width="1.5" stroke-dasharray="7 6"/>'
+        )
+        L.append(
+            f'<text x="62" y="{y0 + 22}" font-size="13" font-weight="600" letter-spacing="1.5" fill="{muted}">{_esc(label)}</text>'
+        )
 
     for kind, x, y, w, h, lines in BOXES:
         b = Box(
@@ -110,12 +135,20 @@ def render(theme: Theme = "dark", names: dict[str, str] | None = None) -> str:
             cy = y + h / 2 + (i - (n - 1) / 2) * 24
             color = "#ffffff" if (kind == "freeze" and theme == "dark") else text
             glyph = ""
-            if i == 0 and kind in ("a", "b") and theme == "dark":
-                glyph = f'<tspan fill="{ACTORS[kind][2]}">{ACTORS[kind][1]} </tspan>'
+            dx = 0.0
+            if i == 0 and kind in ("a", "b"):
+                mark = MARKS[kind]
+                if mark.exists():  # the side's mark, as on the page
+                    L.append(
+                        f'<image href="{_data_uri(mark)}" x="{x + w / 2 - 70:g}" y="{cy - 11:.1f}" width="22" height="22"/>'
+                    )
+                    dx = 12.0
+                elif theme == "dark":
+                    glyph = f'<tspan fill="{ACTORS[kind][2]}">{ACTORS[kind][1]} </tspan>'
             size = b.size if i == 0 else 15
             col = color if i == 0 else muted
             L.append(
-                f'<text x="{x + w / 2:g}" y="{cy:.1f}" text-anchor="middle" dominant-baseline="central" font-size="{size}" font-weight="{b.weight if i == 0 else 500}" fill="{col}">{glyph}{_esc(ln)}</text>'
+                f'<text x="{x + w / 2 + dx:g}" y="{cy:.1f}" text-anchor="middle" dominant-baseline="central" font-size="{size}" font-weight="{b.weight if i == 0 else 500}" fill="{col}">{glyph}{_esc(ln)}</text>'
             )
     for x1, y1, x2, y2, both in ARROWS:
         extra = ' marker-start="url(#ah-rev)"' if both else ""
