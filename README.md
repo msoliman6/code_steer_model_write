@@ -1,26 +1,28 @@
-<p align="center"><img src="docs/media/logo-freeze-swap-brand-256.png" width="120" alt="freeze and swap"></p>
+<p align="center"><picture>
+<source media="(prefers-color-scheme: dark)" srcset="docs/media/banner-dark.svg">
+<img src="docs/media/banner.svg" alt="Code steers, models write" width="720">
+</picture></p>
+
 <p align="center">
-<img alt="Python 3.11+" src="https://img.shields.io/badge/python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white">
-<img alt="Pydantic v2" src="https://img.shields.io/badge/pydantic-v2-E92063?style=flat-square&logo=pydantic&logoColor=white">
-<img alt="Prefect" src="https://img.shields.io/badge/prefect-orchestration-070E10?style=flat-square&logo=prefect&logoColor=white">
-<img alt="MLflow" src="https://img.shields.io/badge/mlflow-traces%20and%20evals-0194E2?style=flat-square&logo=mlflow&logoColor=white">
-<img alt="Reflex" src="https://img.shields.io/badge/reflex-dashboard-5646ED?style=flat-square">
-<img alt="SQLite" src="https://img.shields.io/badge/sqlite-monitor.db-003B57?style=flat-square&logo=sqlite&logoColor=white">
+<img alt="license: MIT" src="https://img.shields.io/badge/license-MIT-d4a72c?style=for-the-badge">
+<img alt="python: 3.11+" src="https://img.shields.io/badge/python-3.11%2B-3776AB?style=for-the-badge&logo=python&logoColor=white">
+<img alt="pydantic: v2" src="https://img.shields.io/badge/pydantic-v2-E92063?style=for-the-badge&logo=pydantic&logoColor=white">
+<img alt="orchestration: prefect" src="https://img.shields.io/badge/orchestration-prefect-4f46e5?style=for-the-badge&logo=prefect&logoColor=white">
+<img alt="traces and evals: mlflow" src="https://img.shields.io/badge/traces%20and%20evals-mlflow-0194E2?style=for-the-badge&logo=mlflow&logoColor=white">
+<img alt="dashboard: reflex" src="https://img.shields.io/badge/dashboard-reflex-5646ED?style=for-the-badge">
 </p>
 <p align="center">
-<img alt="Author: Claude" src="https://img.shields.io/badge/author-Claude-db6d28?style=flat-square">
-<img alt="Checker: Codex" src="https://img.shields.io/badge/checker-Codex-2fa39a?style=flat-square">
-<img alt="Backends" src="https://img.shields.io/badge/backends-anthropic%20sdk%20%C2%B7%20agent%20sdk%20%C2%B7%20litellm%20%C2%B7%20claude%20cli%20%C2%B7%20codex%20cli-555?style=flat-square">
-</p>
-<p align="center">
-<img alt="Code check: ruff" src="https://img.shields.io/badge/code%20check-ruff-D7FF64?style=flat-square&logo=ruff&logoColor=black">
-<img alt="Code check: pyright" src="https://img.shields.io/badge/code%20check-pyright-1E90FF?style=flat-square">
-<img alt="Verification: pytest" src="https://img.shields.io/badge/verification-pytest%20%C2%B7%20null%20run-0A9EDC?style=flat-square&logo=pytest&logoColor=white">
-<img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-lightgrey?style=flat-square">
+<img alt="author: Claude" src="https://img.shields.io/badge/author-Claude-db6d28?style=for-the-badge">
+<img alt="checker: Codex" src="https://img.shields.io/badge/checker-Codex-2fa39a?style=for-the-badge">
+<img alt="code check: ruff" src="https://img.shields.io/badge/code%20check-ruff-D7FF64?style=for-the-badge&logo=ruff&logoColor=black">
+<img alt="code check: pyright" src="https://img.shields.io/badge/code%20check-pyright-1E90FF?style=for-the-badge">
+<img alt="verification: pytest" src="https://img.shields.io/badge/verification-pytest-0A9EDC?style=for-the-badge&logo=pytest&logoColor=white">
+<img alt="ui state: sqlite" src="https://img.shields.io/badge/ui%20state-sqlite-003B57?style=for-the-badge&logo=sqlite&logoColor=white">
 </p>
 
+<p align="center"><a href="#the-14-universal-rules">The 14 rules</a> · <a href="#the-workflow">The workflow</a> · <a href="#the-harness">The harness</a> · <a href="#install">Install</a> · <a href="#first-run">First run</a> · <a href="#settings-you-choose-once">Settings</a> · <a href="#read-more">Read more</a></p>
 
-# code_steer_model_write
+<p align="center"><i>Independent open-source project. Not affiliated with or endorsed by Anthropic or OpenAI.<br>Claude and Claude Code are trademarks of Anthropic; Codex and GPT are trademarks of OpenAI. Prefect, MLflow, Reflex, ruff, pyright and pytest belong to their owners.</i></p>
 
 **Code steers, models write.** A template for agentic AI workflows — hackathons and real
 projects — that is versatile, reliable and fast to start.
