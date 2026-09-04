@@ -6,7 +6,7 @@
 <p align="center">
 <img alt="license: MIT" src="https://img.shields.io/badge/license-MIT-d4a72c?style=for-the-badge">
 <img alt="python: 3.11+" src="https://img.shields.io/badge/python-3.11%2B-3776AB?style=for-the-badge&logo=python&logoColor=white">
-<img alt="pydantic: v2" src="https://img.shields.io/badge/pydantic-v2-E92063?style=for-the-badge&logo=pydantic&logoColor=white">
+<img alt="schemas: pydantic v2" src="https://img.shields.io/badge/schemas-pydantic%20v2-E92063?style=for-the-badge&logo=pydantic&logoColor=white">
 <img alt="orchestration: prefect" src="https://img.shields.io/badge/orchestration-prefect-4f46e5?style=for-the-badge&logo=prefect&logoColor=white">
 <img alt="traces and evals: mlflow" src="https://img.shields.io/badge/traces%20and%20evals-mlflow-0194E2?style=for-the-badge&logo=mlflow&logoColor=white">
 <img alt="dashboard: reflex" src="https://img.shields.io/badge/dashboard-reflex-5646ED?style=for-the-badge">
@@ -18,6 +18,13 @@
 <img alt="code check: pyright" src="https://img.shields.io/badge/code%20check-pyright-1E90FF?style=for-the-badge">
 <img alt="verification: pytest" src="https://img.shields.io/badge/verification-pytest-0A9EDC?style=for-the-badge&logo=pytest&logoColor=white">
 <img alt="ui state: sqlite" src="https://img.shields.io/badge/ui%20state-sqlite-003B57?style=for-the-badge&logo=sqlite&logoColor=white">
+</p>
+<p align="center">
+<img alt="sdk: anthropic" src="https://img.shields.io/badge/sdk-anthropic-db6d28?style=for-the-badge">
+<img alt="sdk: claude agent" src="https://img.shields.io/badge/sdk-claude%20agent-db6d28?style=for-the-badge">
+<img alt="sdk: litellm" src="https://img.shields.io/badge/sdk-litellm-555?style=for-the-badge">
+<img alt="cli: claude code" src="https://img.shields.io/badge/cli-claude%20code-db6d28?style=for-the-badge">
+<img alt="cli: codex" src="https://img.shields.io/badge/cli-codex-2fa39a?style=for-the-badge">
 </p>
 
 <p align="center"><a href="#the-14-universal-rules">The 14 rules</a> · <a href="#the-workflow">The workflow</a> · <a href="#the-harness">The harness</a> · <a href="#install">Install</a> · <a href="#first-run">First run</a> · <a href="#settings-you-choose-once">Settings</a> · <a href="#read-more">Read more</a></p>
