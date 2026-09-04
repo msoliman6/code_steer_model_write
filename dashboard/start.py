@@ -153,10 +153,16 @@ class Start(rx.State):
         return rx.redirect("/")
 
 
-def centered_select(options, value, on_change, *, width: str = "100%") -> rx.Component:
-    """A dropdown whose trigger and items are centred (the stage columns are symmetric)."""
+def centered_select(
+    options, value, on_change, *, width: str = "100%", border: str | None = None
+) -> rx.Component:
+    """A dropdown whose trigger and items are centred; the border may carry a hue's tint."""
+    style = {"justify_content": "center", "text_align": "center"}
+    if border:
+        style["border"] = border
+        style["box_shadow"] = "none"
     return rx.select.root(
-        rx.select.trigger(width=width, style={"justify_content": "center", "text_align": "center"}),
+        rx.select.trigger(width=width, style=style),
         rx.select.content(
             rx.foreach(options, lambda o: rx.select.item(o, value=o, style={"justify_content": "center"}))
         ),
@@ -242,11 +248,15 @@ GLASS_FILL = [(k, T.tint(k, 0.10)) for k in T.STAGE_HUES]
 GLASS_STROKE = [(k, f"1px solid {T.tint(k, 0.55)}") for k in T.STAGE_HUES]
 
 
-def side_row(model: Card, effort: Card) -> rx.Component:
-    """One block per side of a stage, centred under the box: the side's glyph and what it does
-    here, then Name over the model dropdown, then Effort over the effort dropdown."""
+STAGE_SELECT_BORDER = [(k, f"1px solid {T.tint(k, 0.45)}") for k in T.STAGE_HUES]
+
+
+def side_row(model: Card, effort: Card, hue) -> rx.Component:
+    """One block per side of a stage: the side's glyph and what it does here, the model, the
+    effort; a rule on the left in the side's colour, dropdown borders in the stage's tint."""
     color = rx.cond(model.side == "author", T.ACTOR["a"], T.ACTOR["b"])
     glyph = rx.cond(model.side == "author", "✳", "☘")
+    border = rx.match(hue, *STAGE_SELECT_BORDER, f"1px solid {T.BORDER}")
     return rx.vstack(
         rx.hstack(
             rx.text(glyph, color=color, font_size=BODY),
@@ -264,13 +274,16 @@ def side_row(model: Card, effort: Card) -> rx.Component:
             justify="center",
             width="100%",
         ),
-        centered_select(model.options, model.value, lambda v: Start.set_value(model.key, v)),
-        centered_select(effort.options, effort.value, lambda v: Start.set_value(effort.key, v)),
+        centered_select(model.options, model.value, lambda v: Start.set_value(model.key, v), border=border),
+        centered_select(
+            effort.options, effort.value, lambda v: Start.set_value(effort.key, v), border=border
+        ),
         spacing="1",
         width="86%",
         align="center",
-        padding=f"{T.SPACE['sm']} 0",
         margin="0 auto",
+        padding=f"{T.SPACE['sm']} 0 {T.SPACE['sm']} 10px",
+        border_left="2px solid " + color,
     )
 
 
@@ -293,8 +306,8 @@ def stage_column(t: Tile) -> rx.Component:
             padding=T.SPACE["md"],
             width="100%",
         ),
-        rx.cond(cards.length() >= 2, side_row(cards[0], cards[1]), rx.fragment()),
-        rx.cond(cards.length() >= 4, side_row(cards[2], cards[3]), rx.fragment()),
+        rx.cond(cards.length() >= 2, side_row(cards[0], cards[1], t.hue), rx.fragment()),
+        rx.cond(cards.length() >= 4, side_row(cards[2], cards[3], t.hue), rx.fragment()),
         spacing="3",
         width="100%",
         flex="1 1 0",
@@ -304,24 +317,43 @@ def stage_column(t: Tile) -> rx.Component:
 
 
 def side_column(cards, side: str, title: str) -> rx.Component:
-    """A side's column above the rail: the glyph and title, then backend, model, effort."""
+    """A side's column above the rail as glass in its actor colour: the glyph and title, then
+    backend, model, effort."""
     color = T.ACTOR["a"] if side == "author" else T.ACTOR["b"]
     glyph = "✳" if side == "author" else "☘"
     return rx.vstack(
         rx.hstack(
             rx.text(glyph, color=color, font_size=BODY),
-            rx.text(title, font_weight="700", font_size=BODY, text_align="center", white_space="nowrap"),
+            rx.text(
+                title,
+                font_weight="700",
+                font_size=BODY,
+                color=color,
+                text_align="center",
+                white_space="nowrap",
+            ),
             spacing="2",
             align="center",
             justify="center",
             width="100%",
         ),
-        rx.foreach(cards, lambda c: centered_select(c.options, c.value, lambda v: Start.set_value(c.key, v))),
+        rx.foreach(
+            cards,
+            lambda c: centered_select(
+                c.options,
+                c.value,
+                lambda v: Start.set_value(c.key, v),
+                border=f"1px solid {T.tint_hex(color, 0.45)}",
+            ),
+        ),
         spacing="2",
-        width="210px",
+        width="250px",
         align="center",
         margin="0 auto",
-        padding=f"{T.SPACE['sm']} 0",
+        padding=T.SPACE["md"],
+        background=T.tint_hex(color, 0.10),
+        border=f"1px solid {T.tint_hex(color, 0.55)}",
+        border_radius=T.RADIUS["box"],
     )
 
 

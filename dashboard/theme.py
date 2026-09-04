@@ -82,6 +82,13 @@ PILL = {  # the status pills: uppercase mono on a faint tint
 }
 
 
+def tint_hex(hex_color: str, alpha: float) -> str:
+    """rgba() from a #rrggbb token; the actor colours as glass."""
+    h = hex_color.lstrip("#")
+    r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+    return f"rgba({r},{g},{b},{alpha})"
+
+
 def tint(hue: str, alpha: float) -> str:
     r, g, b = STAGE_RGB[hue]
     return f"rgba({r},{g},{b},{alpha})"
