@@ -239,7 +239,7 @@ def side_row(model: Card, effort: Card) -> rx.Component:
             rx.text(
                 model.func,
                 font_weight="700",
-                font_size=SMALL,
+                font_size=BODY,
                 text_align="center",
                 white_space="nowrap",
                 overflow="hidden",
@@ -253,7 +253,7 @@ def side_row(model: Card, effort: Card) -> rx.Component:
         centered_select(model.options, model.value, lambda v: Start.set_value(model.key, v)),
         centered_select(effort.options, effort.value, lambda v: Start.set_value(effort.key, v)),
         spacing="1",
-        width="76%",
+        width="86%",
         align="center",
         padding=f"{T.SPACE['sm']} 0",
         margin="0 auto",
