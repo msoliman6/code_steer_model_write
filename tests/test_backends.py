@@ -281,3 +281,42 @@ def test_wire_schema_ref_stands_alone(finding_models):
         if "$ref" in node:
             assert list(node) == ["$ref"], node
     assert "allOf" not in json.dumps(s)
+
+
+def test_claude_cli_hands_back_the_last_answer_when_its_harness_gives_up(tmp_path, monkeypatch):
+    """Ledger: a refusal with no re-ask (live-3, 2026-09-04). The CLI validated the answer itself,
+    re-prompted three times, then reported error_max_turns and dropped the answer; the runtime's
+    validator never saw it. Now the last StructuredOutput input is the answer, so the one
+    validator refuses it with its own problems and the re-ask loop rules on repetition."""
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    nested = {"artifact": {"decisions": [{"id": "F-0001"}], "artifact": {"block": "b"}}}
+    asst = json.dumps(
+        {
+            "type": "assistant",
+            "message": {"content": [{"type": "tool_use", "name": "StructuredOutput", "input": nested}]},
+        }
+    )
+    rejected = json.dumps(
+        {
+            "type": "user",
+            "message": {
+                "content": [{"type": "tool_result", "content": "Output does not match required schema"}]
+            },
+        }
+    )
+    result = json.dumps(
+        {
+            "type": "result",
+            "subtype": "error_max_turns",
+            "is_error": True,
+            "num_turns": 4,
+            "usage": {"input_tokens": 5, "output_tokens": 2},
+        }
+    )
+    lines = "\n".join([f"echo '{asst}'", f"echo '{rejected}'"] * 3 + [f"echo '{result}'"])
+    _exe(bin_dir / "claude", f"cat > /dev/null\n{lines}\n")
+    monkeypatch.setenv("PATH", f"{bin_dir}:{os.environ['PATH']}")
+    r = ClaudeCliBackend().complete(_call(), lambda f: None)
+    assert r.status == "final" and r.parsed == nested, r
+    assert r.usage.input_tokens == 5

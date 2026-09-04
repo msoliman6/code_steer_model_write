@@ -57,7 +57,9 @@ def _claude_parse(obj: dict[str, Any]) -> list[Fact]:
                         Fact(kind="write", text=name, data={"path": inp.get("file_path", ""), "tool": name})
                     )
                 elif name == "StructuredOutput":
-                    out.append(Fact(kind="final", text="structured output", data={}))
+                    # the answer the model gave, kept so the runtime's one validator can rule
+                    # on it even when the CLI's own harness rejected it (see complete())
+                    out.append(Fact(kind="final", text="structured output", data={"input": inp}))
                 else:
                     out.append(Fact(kind="tool", text=name, data={"tool": name}))
             elif bt == "thinking":
@@ -67,25 +69,29 @@ def _claude_parse(obj: dict[str, Any]) -> list[Fact]:
         return out or [Fact(kind="turn", text="assistant")]
     if t == "result":
         u = obj.get("usage", {}) or {}
+        # usage on every exit, the failed ones included (ARCHITECTURE.md section 4, L8/L4;
+        # ledger: an accounting path skipped on one exit)
+        usage = Fact(
+            kind="usage",
+            data={
+                "input_tokens": int(u.get("input_tokens", 0)),
+                "output_tokens": int(u.get("output_tokens", 0)),
+                "cache_read_tokens": int(u.get("cache_read_input_tokens", 0)),
+                "turns": int(obj.get("num_turns", 1)),
+                "tool_calls": 0,
+            },
+        )
         if obj.get("is_error"):
             return [
+                usage,
                 Fact(
                     kind="error",
                     text=str(obj.get("result") or obj.get("terminal_reason") or "is_error")[:200],
                     data={"subtype": obj.get("subtype")},
-                )
+                ),
             ]
         return [
-            Fact(
-                kind="usage",
-                data={
-                    "input_tokens": int(u.get("input_tokens", 0)),
-                    "output_tokens": int(u.get("output_tokens", 0)),
-                    "cache_read_tokens": int(u.get("cache_read_input_tokens", 0)),
-                    "turns": int(obj.get("num_turns", 1)),
-                    "tool_calls": 0,
-                },
-            ),
+            usage,
             Fact(
                 kind="final" if obj.get("subtype") == "success" else "error",
                 text=str(obj.get("subtype")),
@@ -160,10 +166,27 @@ class ClaudeCliBackend:
                 facts=run.tail,
             )
         last = run.last_json or {}
+        harness_retry = last.get("subtype") in ("error_max_turns", "error_max_structured_output_retries")
+        if last.get("type") == "result" and harness_retry:
+            # The CLI validates structured output itself and re-prompts; when it gives up it
+            # reports an error and drops the answer. Two validators is a second owner (rule 4),
+            # and a refusal the runtime never saw is a refusal with no re-ask (ledger). So the
+            # model's last answer is the answer: the runtime validates it, refuses it with its
+            # own problems, inlines them in the re-ask, and stops when they repeat.
+            answers = [f.data["input"] for f in run.facts if f.kind == "final" and "input" in f.data]
+            if answers:
+                return CallResult(
+                    status="final",
+                    raw_text=json.dumps(answers[-1]),
+                    parsed=answers[-1],
+                    usage=usage,
+                    model_used=call.model,
+                    facts=run.tail,
+                )
         if last.get("type") == "result" and last.get("is_error"):
             return CallResult(
                 status="error",
-                reason=str(last.get("result") or last.get("terminal_reason"))[:300],
+                reason=str(last.get("result") or last.get("terminal_reason") or last.get("subtype"))[:300],
                 usage=usage,
                 facts=run.tail,
             )

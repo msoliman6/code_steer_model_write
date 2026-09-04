@@ -8,6 +8,8 @@ once-only class promotes it to a heading of its own.
 
 | date | where | what happened | class | fix |
 |---|---|---|---|---|
+| 09-04 | live-3 / contract-arbitrate-r1 | the model nested its answer under an extra `artifact` key; `claude -p` validated it itself, re-prompted three times, hit `--max-turns` and reported `error_max_turns` with no answer; the run halted `backend` and the runtime's validator never saw the answer | a refusal with no re-ask (two validators: the CLI's ran first and dropped the answer); also a policy that cannot tell progress from repetition (the CLI's retries), a message that hides the reason (the halt said `max_turns`, not the schema problems) | the backend keeps every `StructuredOutput` input and, when the CLI ends in `error_max_turns` or `error_max_structured_output_retries`, returns the last one as the answer; the one validator refuses it with its own problems, the re-ask inlines them, and stops on repetition (`backends/cli.py`) |
+| 09-04 | live-3 / the same call | the failed result line carried usage the parser dropped, so the halt's call had zero tokens | an accounting path skipped on one exit | the usage fact is emitted on every result line, `is_error` included (`backends/cli.py`) |
 
 ## The classes, and the mechanism behind each
 - **a second owner of a fact** — two places compute the same thing (a validator beside the spec, a
