@@ -43,7 +43,7 @@
 <text x="224" y="904.0" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Selected run state</text>
 <rect x="180" y="1008" width="640" height="292" rx="18" fill="#f2f4f7"/>
 <text x="202" y="1036" font-size="16" font-weight="600" letter-spacing="1.5" fill="#4b4b4b">REFLEX — PYTHON APP</text>
-<rect x="200" y="1054" width="600" height="226" rx="14" fill="#f9dbe8"/>
+<rect x="200" y="1054" width="600" height="226" rx="14" fill="#dbe3ee"/>
 <text x="224" y="1086.0" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Task creation</text>
 <text x="224" y="1113.0" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Run controls</text>
 <text x="224" y="1140.0" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Live monitoring</text>
@@ -53,7 +53,7 @@
 <text x="224" y="1248.0" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Artifacts</text>
 <rect x="180" y="1352" width="640" height="373" rx="18" fill="#f2f4f7"/>
 <text x="202" y="1380" font-size="16" font-weight="600" letter-spacing="1.5" fill="#4b4b4b">CUSTOM DASHBOARD — THE PAGE</text>
-<rect x="200" y="1398" width="600" height="307" rx="14" fill="#dbe3ee"/>
+<rect x="200" y="1398" width="600" height="307" rx="14" fill="#f9dbe8"/>
 <text x="224" y="1430.0" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Overview</text>
 <text x="224" y="1457.0" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Workflow DAG</text>
 <text x="224" y="1484.0" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Agent status</text>

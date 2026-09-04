@@ -140,8 +140,8 @@ def layout() -> list[Node]:
     # hot hues (gold, rose, red) never follow one another down the spine
     for hue, title, sub, items in (
         ("teal", "MONITOR.DB", "SQLite", MONITOR[3:]),
-        ("rose", "REFLEX", "Python App", REFLEX[3:]),
-        ("slate", "CUSTOM DASHBOARD", "The page", DASHBOARD[2:]),
+        ("slate", "REFLEX", "Python App", REFLEX[3:]),
+        ("rose", "CUSTOM DASHBOARD", "The page", DASHBOARD[2:]),
         ("grey", "BROWSER", "Your tab", ["The page at 127.0.0.1:3007"]),
     ):
         n = Node(180, y, 640, hue, title, sub, items)

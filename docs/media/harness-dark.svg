@@ -41,9 +41,9 @@
 <text x="224" y="850.0" dominant-baseline="central" font-size="18" font-weight="500" fill="#e6edf3">Custom messages</text>
 <text x="224" y="877.0" dominant-baseline="central" font-size="18" font-weight="500" fill="#e6edf3">Graph positions</text>
 <text x="224" y="904.0" dominant-baseline="central" font-size="18" font-weight="500" fill="#e6edf3">Selected run state</text>
-<rect x="180" y="1008" width="640" height="292" rx="18" fill="rgba(232,99,159,0.07)" stroke="rgba(232,99,159,0.5)" stroke-width="1.5"/>
-<text x="202" y="1036" font-size="16" font-weight="600" letter-spacing="1.5" fill="#e8639f">REFLEX — PYTHON APP</text>
-<rect x="200" y="1054" width="600" height="226" rx="14" fill="rgba(232,99,159,0.14)" stroke="rgba(232,99,159,0.7)" stroke-width="1.5"/>
+<rect x="180" y="1008" width="640" height="292" rx="18" fill="rgba(139,148,158,0.07)" stroke="rgba(139,148,158,0.5)" stroke-width="1.5"/>
+<text x="202" y="1036" font-size="16" font-weight="600" letter-spacing="1.5" fill="#9aa4ae">REFLEX — PYTHON APP</text>
+<rect x="200" y="1054" width="600" height="226" rx="14" fill="rgba(139,148,158,0.14)" stroke="rgba(139,148,158,0.7)" stroke-width="1.5"/>
 <text x="224" y="1086.0" dominant-baseline="central" font-size="18" font-weight="500" fill="#e6edf3">Task creation</text>
 <text x="224" y="1113.0" dominant-baseline="central" font-size="18" font-weight="500" fill="#e6edf3">Run controls</text>
 <text x="224" y="1140.0" dominant-baseline="central" font-size="18" font-weight="500" fill="#e6edf3">Live monitoring</text>
@@ -51,9 +51,9 @@
 <text x="224" y="1194.0" dominant-baseline="central" font-size="18" font-weight="500" fill="#e6edf3">Experiments</text>
 <text x="224" y="1221.0" dominant-baseline="central" font-size="18" font-weight="500" fill="#e6edf3">Evaluations</text>
 <text x="224" y="1248.0" dominant-baseline="central" font-size="18" font-weight="500" fill="#e6edf3">Artifacts</text>
-<rect x="180" y="1352" width="640" height="373" rx="18" fill="rgba(139,148,158,0.07)" stroke="rgba(139,148,158,0.5)" stroke-width="1.5"/>
-<text x="202" y="1380" font-size="16" font-weight="600" letter-spacing="1.5" fill="#9aa4ae">CUSTOM DASHBOARD — THE PAGE</text>
-<rect x="200" y="1398" width="600" height="307" rx="14" fill="rgba(139,148,158,0.14)" stroke="rgba(139,148,158,0.7)" stroke-width="1.5"/>
+<rect x="180" y="1352" width="640" height="373" rx="18" fill="rgba(232,99,159,0.07)" stroke="rgba(232,99,159,0.5)" stroke-width="1.5"/>
+<text x="202" y="1380" font-size="16" font-weight="600" letter-spacing="1.5" fill="#e8639f">CUSTOM DASHBOARD — THE PAGE</text>
+<rect x="200" y="1398" width="600" height="307" rx="14" fill="rgba(232,99,159,0.14)" stroke="rgba(232,99,159,0.7)" stroke-width="1.5"/>
 <text x="224" y="1430.0" dominant-baseline="central" font-size="18" font-weight="500" fill="#e6edf3">Overview</text>
 <text x="224" y="1457.0" dominant-baseline="central" font-size="18" font-weight="500" fill="#e6edf3">Workflow DAG</text>
 <text x="224" y="1484.0" dominant-baseline="central" font-size="18" font-weight="500" fill="#e6edf3">Agent status</text>
