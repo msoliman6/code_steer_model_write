@@ -21,6 +21,7 @@ from code_steer_model_write.state.lock import atomic_write_text
 from code_steer_model_write.state.run import RunPaths
 
 from . import theme as T
+from .glyphs import side_mark
 from .model import build_view, render_artifact
 from .start import start_page
 
@@ -424,6 +425,12 @@ class S(rx.State):
             ProgRow(hue=st["hue"], frac=float(f))
             for st, f in zip(d["stages"], self.stage_progress, strict=False)
         ]
+        self.control, self.control_label, self.control_verb, self.control_tone = (
+            d["control"],
+            d["control_label"],
+            d["control_verb"],
+            d["control_tone"],
+        )
         self.loaded = True
 
     @rx.event
@@ -779,20 +786,20 @@ def stage_box(s: Stage) -> rx.Component:
     return rx.vstack(
         rx.hstack(
             rx.text(s.n, **MONO, color=hue, font_size=SMALL),
-            rx.text("·", color=T.DIM),
-            rx.text(s.author, **MONO, color=T.MUTED, font_size=SMALL),
-            rx.spacer(),
             rx.foreach(
                 s.tokens,
-                lambda t: rx.text(
-                    f"{t.role} {t.label}", **MONO, color=T.MUTED, font_size=SMALL, white_space="nowrap"
+                lambda t: rx.hstack(
+                    side_mark(t.role == "author", "14px"),
+                    rx.text(t.label, **MONO, color=T.MUTED, font_size=SMALL, white_space="nowrap"),
+                    spacing="1",
+                    align="center",
                 ),
             ),
             width="100%",
-            wrap="wrap",
-            row_gap="0",
-            min_height="36px",
-            align="start",
+            spacing="3",
+            min_height="22px",
+            align="center",
+            justify="center",
         ),
         rx.box(
             rx.vstack(
