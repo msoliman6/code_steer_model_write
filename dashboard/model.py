@@ -456,9 +456,7 @@ def build_view(run_dir: Path | str) -> RunView:
         remaining="steps" if running else "",
         tokens=tokens_by_role,
         now_word=now_word,
-        now_text=(now_text[:1].upper() + now_text[1:])
-        if now_text
-        else now_text,  # a sentence starts with a capital
+        now_text=now_text,
         now_role=now_role,
         stages=stages,
         current_stage=current,
