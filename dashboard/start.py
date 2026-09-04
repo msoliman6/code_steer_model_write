@@ -224,7 +224,7 @@ def centered_select(options, value, on_change, *, width: str = "100%") -> rx.Com
         ),
         value=value,
         on_change=on_change,
-        size="1",
+        size="2",
     )
 
 
