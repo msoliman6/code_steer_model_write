@@ -617,15 +617,24 @@ honours `STOP` between steps. The same rows drive the tab dots.
 
 ### 7a.2 The run page header, as settled on 2026-09-03
 
-Rows, top to bottom: (1) one row of pills, identity on the left (`RUN`, `RECIPE`, `START fresh |
-resumed ×n`) and settings on the right (`AUTHOR`, `CHECKER`, `ROUNDS`, `MODE`, then the Detail
-switch); (2) the rail, the Start box in rose (the mark's pink, a hue no stage uses), every note
-under a box centred and clamped to two lines; (3) after a gap, the progress row: segments, the
-percentage, elapsed and the run's state word, all bold, the state in its agreed tone from
-§7a.1, and the wrong-ness chips on the right of the same row; (4) the token totals per side under
-their vendor marks. The run's state is spelled out in exactly two places: this progress row and
-the bottom bar's pill-button; the bottom bar's left side is the sentence only. The brand tile and
-the browser-tab icon are the same PNG (blue → purple → pink, the SHAP palette).
+Two aligned rows of pills around the rail. Above: identity on the left (`RUN <name>`, then
+`FRESH RUN` green or `RESUMED ×n` amber) and settings on the right (`AUTHOR`, `CHECKER` in their
+actor colour as glass, `ROUNDS`, `MODE`, then the Detail switch). The recipe is not repeated: the
+tab carries it. Then the rail: the Start box in rose (the mark's pink, a hue no stage uses), every
+note under a box centred and clamped to two lines. Then, after a gap, the progress row: segments,
+the percentage and elapsed in bold on the left under the identity pills, the wrong-ness chips on
+the right under the settings pills. Then one quiet line: per side the mark, the tokens and the
+estimated cost when the price is known, and the total.
+
+The run's state is shown by colour in exactly three places that always agree: the tab dot, the
+bottom bar's strip and the bottom bar's pill-button (§7a.1). A finished run takes the colour of
+its verdict, green clean or amber carried, in all three. No state word sits in the header.
+
+Cost (rule 14): tokens are the stored fact; a price is looked up on read from `config.price_table()`,
+the built-in list overlaid by a `prices.json` (`{"model-id": [usd_per_mtok_in, usd_per_mtok_out]}`,
+path `CSMW_PRICES_FILE`, default `prices.json` in the working directory). A key matches whole
+dash-separated parts only, so an unpriced model shows a blank, never a borrowed number. The
+brand tile and the browser-tab icon are the same PNG (blue → purple → pink).
 
 ## 7b. The workflow figure (generated per project, first thing)
 

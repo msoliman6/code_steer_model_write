@@ -118,6 +118,16 @@ contract and verification rows carrying the judgment, the build on the cheapest 
 per task; your picks are remembered for the next run. The form derives from one settings
 schema, which the CLI reads too. The layout is `docs/DASHBOARD-DESIGN.md` → *The start page*.
 
+**Estimated cost.** The dashboard prices a run's tokens on read (rule 14: tokens are the fact, dollars
+are a lookup). Unknown models show a blank. Add or correct prices without touching code with a
+`prices.json` next to your runs (or `CSMW_PRICES_FILE`):
+
+```json
+{"gpt-5.4-mini": [0.25, 2.0], "claude-haiku-4-5": [1.0, 5.0]}
+```
+
+Values are USD per million input and output tokens.
+
 ## Read more
 
 - [docs/PLAN.md](docs/PLAN.md) — the full design: backbone, schemas, verification, recipes, dashboard, figure, build order
