@@ -858,12 +858,12 @@ below, one arrow between them.
 | figures | `figure.py` (RecipeSpec → workflow SVG), `figure_harness.py` | generated from the spec, so a project's figure is one command |
 | tooling | `cli.py`, `doctor.py`, `walk.py` (the leg runner and the generic legs), `scripts/`, `justfile`, `copier.yml`, docs, tests of all the above | |
 
-### 12.2 What moves to the project repo (`csmw-coder`, name open)
+### 12.2 What moves to the project repo (`csmw_coder`, github.com/msoliman6/csmw_coder)
 
 | what | from | to |
 |---|---|---|
 | the recipe | `recipes/code_builder/{recipe,fake}.py` | `csmw_coder/recipe.py`, `csmw_coder/fake.py` |
-| its shapes | `artifacts/plan.py`, `contract.py`, `vspec.py`, `tasks.py`, `files.py`, `results.py` | `csmw_coder/artifacts/` (they are the code-builder's shapes, no other recipe reads them). `artifacts/report.py` stays: every recipe's report uses its waste and carried rows |
+| its shapes | — | they stay: `artifacts/plan.py`, `contract.py`, `vspec.py`, `tasks.py`, `files.py`, `results.py` are what the code-check toolkit (`checks/nullimpl.py`, `checks/runtests.py`) consumes, and the toolkit stays (decided 2026-09-04); `report.py` too, every recipe's report uses its rows |
 | its prompts, fixtures, example | `prompts/code_builder/`, `fixtures/code_builder/`, `examples/code_builder/` | the same folders in the project |
 | its walk legs | the ten code_builder legs in `walk.py` | `csmw_coder/walk_legs.py`, registered through the recipe |
 | its runs | `runs/live-1`, `runs/walk-demo` | the project's `runs/` (never committed) |
@@ -871,7 +871,7 @@ below, one arrow between them.
 | its tests | the code-builder parts of `tests/test_walk.py`, `tests/test_figure.py`, `tests/test_settings_form.py` | the project's `tests/` |
 
 The project's `pyproject.toml` depends on `code_steer_model_write` and declares
-`[project.entry-points."csmw.recipes"] code_builder = "csmw_coder.recipe:RECIPE"`. Installing
+`[project.entry-points."csmw.recipes"] code_builder = "csmw_coder.recipe:CodeBuilder"` and the walk legs under `csmw.walk_legs`. Installing
 the project is what makes `csmw walk code_builder`, the start page and the run page know it.
 
 ### 12.3 What the split forces the template to fix first — done 2026-09-04
