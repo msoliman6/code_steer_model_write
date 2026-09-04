@@ -615,6 +615,18 @@ The state comes from one place, `dashboard/model.py::run_control(...)`, which re
 the runner record, the halt, the gates and the `STOP` file; the runner (`driver/runner.py`)
 honours `STOP` between steps. The same rows drive the tab dots.
 
+### 7a.2 The run page header, as settled on 2026-09-03
+
+Rows, top to bottom: (1) one row of pills, identity on the left (`RUN`, `RECIPE`, `START fresh |
+resumed ×n`) and settings on the right (`AUTHOR`, `CHECKER`, `ROUNDS`, `MODE`, then the Detail
+switch); (2) the rail, the Start box in rose (the mark's pink, a hue no stage uses), every note
+under a box centred and clamped to two lines; (3) after a gap, the progress row: segments, the
+percentage, elapsed and the run's state word, all bold, the state in its agreed tone from
+§7a.1, and the wrong-ness chips on the right of the same row; (4) the token totals per side under
+their vendor marks. The run's state is spelled out in exactly two places: this progress row and
+the bottom bar's pill-button; the bottom bar's left side is the sentence only. The brand tile and
+the browser-tab icon are the same PNG (blue → purple → pink, the SHAP palette).
+
 ## 7b. The workflow figure (generated per project, first thing)
 
 Every project gets a figure of how its workflow operates, in the style of freeze-and-swap's
