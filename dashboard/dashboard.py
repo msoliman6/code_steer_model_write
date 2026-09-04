@@ -867,12 +867,12 @@ def stage_box(s: Stage) -> rx.Component:
 def start_box() -> rx.Component:
     selected = S.selected == "start"
     return rx.vstack(
-        rx.text("· settings", **MONO, color=T.MUTED, font_size=SMALL, min_height="36px"),
+        rx.box(min_height="22px"),
         rx.box(
             rx.vstack(
                 rx.text("▸", color=T.MUTED),
                 rx.text("Start", font_weight="700", font_size=f"{T.SIZE['title']}px", color=T.TEXT),
-                rx.text("brief · settings", **MONO, color=T.MUTED, font_size=SMALL),
+                rx.text("settings", **MONO, color=T.MUTED, font_size=SMALL),
                 spacing="1",
                 align="center",
             ),
