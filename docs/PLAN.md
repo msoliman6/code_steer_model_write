@@ -12,6 +12,29 @@ layers of `ARCHITECTURE.md`, each layer with the tool decided in section 7, oper
 to end. 
 Agreed with the user on 2026-09-04. Nothing below is code; it is what the code will be.
 
+## Status
+
+- **Phase 1 — interfaces, no new tools: built 2026-09-04.** `code_steer_model_write/layers/`:
+  `policy.py` (L9: `Identity`, `Policy`; `RunIdentity` mints principals from the RunSpec,
+  `StepPolicy` holds the nine rules the runtime had scattered, every decision a
+  `policy.decision` event with a code-assigned id), `rails.py` (L10: `Rails` with the three
+  hooks; `SchemaRails` runs the schema's semantic checks and the step's checks as
+  after_answer, records before_prompt and before_tool_call), `sandbox.py` (L5: `Sandbox`;
+  `SubprocessSandbox` with a root, a timeout, resource limits on request, the files touched,
+  a `sandbox.run` event), `tools.py` (L6: `ToolSpec`, `ToolRegistry`; git, pytest, ruff and
+  pyright registered; `tool.called` / `tool.result` events with the OpenTelemetry names),
+  `stores.py` (L7: `StateStore`, `ArtifactStore`, `MemoryStore` as protocols the existing
+  `EventLog` and `Store` satisfy; `NoMemory` for P14). The runner installs the set at
+  construction and asks L9 at issue and at execute; `ask()` asks the rails before the prompt
+  and after the answer; the checks reach pytest, ruff, pyright and git only through the
+  registry; the ownership check is an L9 write decision. The walk asserts the wiring
+  (`assert_layers`): every started step had an allowing decision before it, every answer a
+  verdict, every tool call a result and a sandbox run. Walk 13/13, tests 92 passed, ruff and
+  pyright clean on the new and changed modules. Behaviour unchanged. Not yet behind a seam:
+  `worktree.py`'s git calls and the RUN step's direct command (recorded as `run-step`).
+  Runner, Gateway, Mirror and Evaluator interfaces are named in the architecture and
+  arrive with their phases (5, 4, 6) rather than as empty protocols here.
+
 ## The rule for every phase
 
 A phase is done when the offline walk is green with the new layer covered, and one live run

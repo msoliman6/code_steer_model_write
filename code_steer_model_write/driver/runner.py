@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import os
 import socket
-import subprocess
 import threading
 import time
 import traceback
@@ -21,6 +20,8 @@ from ..ask import Accepted, CallContext, FnCheck, ask
 from ..backends.base import Backend
 from ..config import RoleSpec
 from ..events import EventLog
+from ..layers import Layers, default_layers, install
+from ..layers.sandbox import Execution
 from ..prompts import fill, load
 from ..spec.base import CheckContext
 from ..state.run import Outcome, RunnerRecord, RunPaths, RunState, RunStatus, runner_alive
@@ -54,6 +55,7 @@ class Runner:
         state = RunState.load(paths)
         self.events = EventLog(paths.events, state.run_id)
         self.driver = Driver(paths, program, self.events)
+        self.layers: Layers = install(default_layers(paths, self.events))
 
     # ---- lifecycle -----------------------------------------------------------------------
 
@@ -183,7 +185,18 @@ class Runner:
             state=self.driver.state, paths=self.paths, store=self.driver.store, step=step, events=self.events
         )
 
+    def _principal(self, step: Step):
+        return self.layers.identity.side(step.role) if step.role else self.layers.identity.user()
+
     def _execute(self, step: Step) -> Outcome | None:
+        # L9 at issue (section 2: a step is issued -> may this side author or judge this artifact?)
+        who = self._principal(step)
+        action = "author" if step.kind is StepKind.AUTHOR else "issue"
+        d = self.layers.policy.decide(who, action, step.land or step.key, {"kind": step.kind.value})
+        if not d:
+            return self._halt(
+                Halt(step=step.key, reason=HaltReason.BROKE, message=f"denied: {d.reason}", resumable=False)
+            )
         self.driver.start(step.key)
         ctx = self._ctx(step)
         try:
@@ -241,6 +254,7 @@ class Runner:
             scope_root=self.paths.resolve(step.cwd) if step.needs_tools and step.cwd else None,
             check_ctx=CheckContext(known_ids=known, step=step.key, extra=dict(step.check_extra)),
             fixture=step.fixture,
+            rails=self.layers.rails,
         )
         r = ask(prompt, schema, role=step.role, ctx=cctx, checks=checks)
         if isinstance(r, Accepted):
@@ -272,22 +286,30 @@ class Runner:
         cwd = self.paths.resolve(step.cwd) if step.cwd else self.paths.run_dir
         self.paths.streams.mkdir(parents=True, exist_ok=True)
         out_path = self.paths.streams / f"{step.key}.out.txt"
-        t0 = time.time()
-        proc = subprocess.run(step.command, cwd=cwd, capture_output=True, text=True)
+        # L9 at execute, then L5 (section 2: nothing enters L5 except through L6; a RUN step is
+        # the one legacy path that hands L5 a command directly -- recorded as such)
+        d = self.layers.policy.decide(
+            self._principal(step), "execute", step.key, {"root": self.paths.run_dir, "cwd": cwd}
+        )
+        if not d:
+            return self._halt(
+                Halt(step=step.key, reason=HaltReason.BROKE, message=f"denied: {d.reason}", resumable=False)
+            )
+        proc = self.layers.sandbox.run(
+            Execution(command=step.command, root=self.paths.run_dir, cwd=cwd, step=step.key, tool="run-step")
+        )
         out_path.write_text(
             proc.stdout + ("\n--- stderr ---\n" + proc.stderr if proc.stderr else ""), encoding="utf-8"
         )
-        self.events.append(
-            "call.final", step=step.key, exit_code=proc.returncode, seconds=round(time.time() - t0, 2)
-        )
-        if proc.returncode != 0:
+        self.events.append("call.final", step=step.key, exit_code=proc.exit_code, seconds=proc.seconds)
+        if proc.exit_code != 0:
             tail = (proc.stderr or proc.stdout).strip().splitlines()[-6:]
             return self._halt(
                 Halt(
                     step=step.key,
                     reason=HaltReason.RUN_FAILED,
                     command=step.command,
-                    message=f"exit {proc.returncode}",
+                    message=f"exit {proc.exit_code}",
                     facts=[{"line": ln} for ln in tail],
                 )
             )

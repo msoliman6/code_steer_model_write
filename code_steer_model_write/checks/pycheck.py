@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import py_compile
 import shutil
-import subprocess
 from pathlib import Path
 
 from pydantic import BaseModel, Field
@@ -36,31 +35,42 @@ def compile_problems(files: list[Path]) -> list[Problem]:
     return out
 
 
+def _tools():
+    from ..layers import current
+
+    return current().tools
+
+
+def _root(files: list[Path]) -> Path:
+    return files[0].parent if files else Path.cwd()
+
+
 def ruff_format(files: list[Path]) -> bool:
     if not shutil.which("ruff"):
         return False
-    subprocess.run(["ruff", "format", "--isolated", "-q", *map(str, files)], capture_output=True, text=True)
+    _tools().invoke("ruff", {"argv": ["format", "--isolated", "-q"], "files": files, "root": _root(files)})
     return True
 
 
 def ruff_problems(files: list[Path]) -> tuple[list[Problem], bool]:
     if not shutil.which("ruff"):
         return [], False
-    r = subprocess.run(
-        [
-            "ruff",
-            "check",
-            "--isolated",
-            "--output-format",
-            "concise",
-            "--select",
-            ",".join(RUFF_SELECT),
-            "--ignore",
-            ",".join(RUFF_IGNORE),
-            *map(str, files),
-        ],
-        capture_output=True,
-        text=True,
+    r = _tools().invoke(
+        "ruff",
+        {
+            "argv": [
+                "check",
+                "--isolated",
+                "--output-format",
+                "concise",
+                "--select",
+                ",".join(RUFF_SELECT),
+                "--ignore",
+                ",".join(RUFF_IGNORE),
+            ],
+            "files": files,
+            "root": _root(files),
+        },
     )
     out: list[Problem] = []
     for ln in r.stdout.splitlines():
@@ -75,7 +85,7 @@ def ruff_problems(files: list[Path]) -> tuple[list[Problem], bool]:
 def pyright_problems(files: list[Path]) -> tuple[list[Problem], bool]:
     if not shutil.which("pyright"):
         return [], False
-    r = subprocess.run(["pyright", "--outputjson", *map(str, files)], capture_output=True, text=True)
+    r = _tools().invoke("pyright", {"files": files, "root": _root(files)})
     out: list[Problem] = []
     try:
         import json

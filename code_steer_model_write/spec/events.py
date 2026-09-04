@@ -34,6 +34,13 @@ EventKind = Literal[
     "round.closed",
     "artifact.written",
     "halt",
+    # the planes and the seams (ARCHITECTURE.md section 2, invariant 5: every decision and
+    # every verdict is an event, with an id the thing it allowed carries)
+    "policy.decision",
+    "rail.verdict",
+    "tool.called",
+    "tool.result",
+    "sandbox.run",
 ]
 
 

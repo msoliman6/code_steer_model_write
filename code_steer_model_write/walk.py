@@ -108,6 +108,51 @@ def kinds(paths: RunPaths) -> list[str]:
 Leg = Callable[[Path], str]  # returns a detail string; raises AssertionError on failure
 
 
+def assert_layers(paths: RunPaths, *, expect_tools: bool) -> str:
+    """The seams are wired (ARCHITECTURE.md section 4, across layers 1): every step that
+    started had an allowing policy decision before it; every accepted answer had an
+    after_answer verdict; every before_prompt hook was asked; every tool call was logged
+    before it ran and ran in the sandbox. A hook that was never called is a known gap."""
+    evs = events(paths)
+    seq_of_decision: dict[str, int] = {}
+    for e in evs:
+        if e.kind == "policy.decision" and e.data.get("allow"):
+            seq_of_decision.setdefault(e.data["resource"], e.seq)
+    started = [e for e in evs if e.kind == "step.started"]
+    assert started, "no step started"
+    decisions = [e for e in evs if e.kind == "policy.decision"]
+    assert len(decisions) >= len(started), f"{len(decisions)} decisions for {len(started)} started steps"
+    for st in started:
+        before = [d for d in decisions if d.seq < st.seq and d.data.get("allow")]
+        assert before, f"step {st.step} started with no allowing decision before it"
+    finals = [e for e in evs if e.kind == "call.final" and e.role]
+    verdicts = [e for e in evs if e.kind == "rail.verdict"]
+    assert {v.data["hook"] for v in verdicts} >= {"before_prompt", "after_answer"}, (
+        "a rail hook was never asked"
+    )
+    assert sum(1 for v in verdicts if v.data["hook"] == "after_answer") >= len(finals), (
+        "an answer had no verdict"
+    )
+    assert all(v.data.get("accept") is not False or v.data["problems"] for v in verdicts), (
+        "a refusal with no problems"
+    )
+    called = [e for e in evs if e.kind == "tool.called"]
+    results = [e for e in evs if e.kind == "tool.result"]
+    runs = [e for e in evs if e.kind == "sandbox.run"]
+    assert len(called) == len(results), "a tool call without its result"
+    assert len(runs) >= len(called), "a tool call that did not run in the sandbox"
+    if expect_tools:
+        assert called, "no tool call was logged on a run that executes code"
+        assert {c.data["gen_ai.tool.name"] for c in called} >= {"pytest"}, (
+            "pytest did not go through the registry"
+        )
+    for c, r in zip(called, results, strict=True):
+        assert c.data["gen_ai.tool.call.id"] == r.data["gen_ai.tool.call.id"], (
+            "a result with the wrong call id"
+        )
+    return f"{len(decisions)} decisions, {len(verdicts)} verdicts, {len(called)} tool calls in the {runs[0].data['tier'] if runs else 'no'} tier"
+
+
 def leg_happy(tmp: Path) -> str:
     paths, recipe, task = start("code_builder", tmp / "run")
     out = make_runner(paths, recipe, task).drive()
@@ -125,7 +170,8 @@ def leg_happy(tmp: Path) -> str:
         if e.kind == "call.started":
             assert e.data["tools"] == [], "a tool-less step carried tools"
     assert st.completed_at is not None
-    return f"{len(st.steps)} steps, {len(res['properties'])} properties pass, 0 halts"
+    layers = assert_layers(paths, expect_tools=True)
+    return f"{len(st.steps)} steps, {len(res['properties'])} properties pass, 0 halts; {layers}"
 
 
 def leg_refuse_recover(tmp: Path) -> str:
@@ -283,7 +329,8 @@ def leg_debate_happy(tmp: Path) -> str:
     assert "supported" in rep["verdict"] and (paths.run_dir / "evals.json").exists()
     keys = list(RunState.load(paths).steps)
     assert "p1-support" in keys and "p1-challenge" in keys and "p2-rebuttal" in keys and "p3-judge" in keys
-    return f"{len(keys)} steps · {rep['verdict']}"
+    layers = assert_layers(paths, expect_tools=False)
+    return f"{len(keys)} steps · {rep['verdict']} · {layers}"
 
 
 def leg_debate_undecided_to_human(tmp: Path) -> str:

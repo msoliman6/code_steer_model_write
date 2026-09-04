@@ -4,8 +4,6 @@ substring match (rule 7)."""
 
 from __future__ import annotations
 
-import subprocess
-import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -14,18 +12,12 @@ from ..artifacts.results import PropertyResult, Results
 
 def _pytest(tests_dir: Path, src_dir: Path, junit: Path, *, timeout: int = 300) -> dict[str, tuple[str, str]]:
     """node id -> (status, message). Runs pytest with `src_dir` first on the path."""
-    env = {"PYTHONPATH": str(src_dir), "PYTHONDONTWRITEBYTECODE": "1", "PATH": "/usr/bin:/bin"}
-    cmd = [
-        sys.executable,
-        "-m",
-        "pytest",
-        "-q",
-        "-p",
-        "no:cacheprovider",
-        f"--junitxml={junit}",
-        str(tests_dir),
-    ]
-    subprocess.run(cmd, cwd=tests_dir.parent, capture_output=True, text=True, env=env, timeout=timeout)
+    from ..layers import current
+
+    # L6 -> L5: the registered pytest tool runs in the sandbox with an explicit environment
+    current().tools.invoke(
+        "pytest", {"tests_dir": tests_dir, "src_dir": src_dir, "junit": junit, "timeout": timeout}
+    )
     out: dict[str, tuple[str, str]] = {}
     if not junit.exists():
         return out

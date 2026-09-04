@@ -62,3 +62,7 @@ Every module docstring, check and walk leg cites the rule number it enforces.
 - Tokens, never dollars, are the measure of cost.
 - Done means one run start to finish with no halt, no resume, no fix along the way. The run's
   verdict (failing tests, carried findings) is a result, not a bug.
+
+- The seams are `code_steer_model_write/layers/` (ARCHITECTURE.md section 6 in
+  `production_agentic_workflow`): a check or a step never shells out, reads a policy or judges
+  content directly; it goes through `layers.current()`. A tool is chosen behind an interface.

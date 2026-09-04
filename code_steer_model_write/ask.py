@@ -20,6 +20,7 @@ from .config import MAX_TURNS, RE_ASK_MAX, RoleSpec
 from .events import EventLog
 from .prompts import FilledPrompt, re_ask_suffix
 from .spec.base import Artifact, CheckContext, Problem
+from .layers.rails import Rails
 
 A = TypeVar("A", bound=Artifact)
 
@@ -55,6 +56,7 @@ class CallContext(BaseModel):
     fixture: str | None = None
     stall_seconds: int = 180
     re_ask_max: int = RE_ASK_MAX
+    rails: Any = None  # Rails (L10); None means the default SchemaRails with no event log
 
 
 class Accepted(BaseModel, Generic[A]):
@@ -103,6 +105,23 @@ def ask(
     total = Usage(turns=0)
     facts: list[Fact] = []
     user = prompt.user
+    rails: Rails = ctx.rails
+    if rails is None:
+        from .layers import current
+
+        rails = current().rails
+    gate_in = rails.before_prompt(prompt.system + "\n" + prompt.user, step=ctx.step, role=role)
+    if not gate_in:
+        strs = [str(p) for p in gate_in.problems]
+        ev.append("step.refused", step=ctx.step, role=role, attempt=0, problems=strs)
+        return Refused(
+            problems_by_attempt=[strs],
+            last_answer=None,
+            reason="cap",
+            facts=[],
+            message="the before_prompt rail refused the input",
+            usage=total,
+        )
     for attempt in range(1, ctx.re_ask_max + 1):
         if attempt > 1:
             user = prompt.user + re_ask_suffix(problems_by_attempt[-1], last_answer)
@@ -182,12 +201,9 @@ def ask(
             value = None
             problems = _schema_problems(e)
         if not problems:
-            problems = list(value.semantic_problems(ctx.check_ctx))  # type: ignore[union-attr]
-        if not problems:
-            for chk in checks:
-                problems = list(chk.run(value, ctx.check_ctx))  # type: ignore[arg-type]
-                if problems:
-                    break
+            # L10 after_answer: the schema's semantic checks, then the step's checks (rule 7)
+            verdict = rails.after_answer(value, ctx.check_ctx, step=ctx.step, role=role, checks=checks)  # type: ignore[arg-type]
+            problems = list(verdict.problems)
         ev.append(
             "check.result", step=ctx.step, role=role, attempt=attempt, problems=[str(p) for p in problems]
         )
