@@ -945,5 +945,8 @@ Decisions taken without the user (he asked to wake up to a plugin):
 - **Defaults**: Claude Code (claude-sonnet-5, low) as author, OpenAI Codex (gpt-5.4-mini, low) as
   checker, auto mode, one round, one fix round.
 
-Verified: `claude plugin validate --strict` passes; the scripts start, run to COMPLETED and report
-on the fake sides; the plugin installs, updates (0.1.1) and bootstraps.
+Verified 2026-09-04: `claude plugin validate --strict` passes; the plugin installs and updates
+(0.1.2); and `claude -p '/csmw-coder:build ...'` from an empty directory composed a faithful task
+from the request, started the run, answered with the one line, and the run completed (fake sides,
+19 steps, 5/5 properties). The recorded live run `slug` on the coder's own page: 25 steps, no halt,
+7/7 properties pass, 3 carried.
