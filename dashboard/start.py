@@ -153,14 +153,15 @@ class Start(rx.State):
         return rx.redirect("/")
 
 
-def centered_select(
-    options, value, on_change, *, width: str = "100%", border: str | None = None
-) -> rx.Component:
-    """A dropdown whose trigger and items are centred; the border may carry a hue's tint."""
-    style = {"justify_content": "center", "text_align": "center"}
-    if border:
-        style["border"] = border
-        style["box_shadow"] = "none"
+def centered_select(options, value, on_change, *, width: str = "100%", border=None) -> rx.Component:
+    """A dropdown whose trigger and items are centred; the border may carry a hue's tint (a
+    string or a Var; the neutral border when none is given)."""
+    style = {
+        "justify_content": "center",
+        "text_align": "center",
+        "border": border if border is not None else f"1px solid {T.BORDER}",
+        "box_shadow": "none",
+    }
     return rx.select.root(
         rx.select.trigger(width=width, style=style),
         rx.select.content(
