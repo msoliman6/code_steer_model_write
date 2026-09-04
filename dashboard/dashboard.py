@@ -1509,6 +1509,11 @@ def index() -> rx.Component:
                 overflow_y="auto",
             ),
             rx.cond(S.loaded, bottom_bar(), rx.fragment()),
+            rx.cond(
+                S.process == "stale",
+                rx.button("Resume", size="2", color_scheme="gray", variant="solid", on_click=S.resume_run),
+                rx.fragment(),
+            ),
             spacing="0",
             width="100%",
             min_height="100vh",
