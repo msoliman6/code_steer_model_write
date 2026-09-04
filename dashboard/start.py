@@ -216,17 +216,17 @@ GLASS_STROKE = [(k, f"1px solid {T.tint(k, 0.55)}") for k in T.STAGE_HUES]
 
 
 def side_row(model: Card, effort: Card) -> rx.Component:
-    """One block per side of a stage: the title line (the side's glyph, what it does here, the
-    side), then Name over the model dropdown, then Effort over the effort dropdown."""
+    """One block per side of a stage, centred under the box: the side's glyph and what it does
+    here, then Name over a narrow model dropdown, then Effort over the effort dropdown."""
     color = rx.cond(model.side == "author", T.ACTOR["a"], T.ACTOR["b"])
     glyph = rx.cond(model.side == "author", "✳", "☘")
     return rx.vstack(
         rx.hstack(
             rx.text(glyph, color=color, font_size=BODY),
             rx.text(model.func, font_weight="700", font_size=SMALL),
-            rx.text(model.side, **MONO, color=T.DIM, font_size=SMALL),
             spacing="2",
             align="center",
+            justify="center",
         ),
         rx.text("Name", **MONO, color=T.MUTED, font_size=SMALL),
         rx.select(
@@ -245,8 +245,9 @@ def side_row(model: Card, effort: Card) -> rx.Component:
             width="100%",
         ),
         spacing="1",
-        width="100%",
-        align="start",
+        width="78%",
+        align="center",
+        padding=f"{T.SPACE['sm']} 0",
     )
 
 

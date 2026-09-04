@@ -1450,9 +1450,9 @@ def brand() -> rx.Component:
             justify_content="center",
         ),
         rx.vstack(
-            rx.text("code steers", font_weight="700", font_size=BODY, line_height="1.15"),
-            rx.text("models write", font_weight="700", font_size=BODY, line_height="1.15"),
-            rx.text("run control", color=T.MUTED, font_size=SMALL),
+            rx.text("Code Steers", font_weight="700", font_size=BODY, line_height="1.15"),
+            rx.text("Models Write", font_weight="700", font_size=BODY, line_height="1.15"),
+            rx.text("Run control", color=T.MUTED, font_size=SMALL),
             spacing="0",
             align="start",
         ),
