@@ -5,6 +5,11 @@ Prompt sentences, docs and walk probes derive their numbers from here; nothing r
 
 from __future__ import annotations
 
+import os
+from pathlib import Path
+
+import json
+
 from enum import StrEnum
 from typing import Literal
 
@@ -107,11 +112,64 @@ def review_round_open(n: int, cap: int) -> Literal["answered", "closing", "close
 
 
 # Tokens are the honest measure; a price is looked up on read and may be unknown (rule 14).
-PRICE_PER_MTOK: dict[str, tuple[float, float]] = {}
+# USD per million tokens (input, output), public list prices; a key matches a model id by prefix
+# so a dated id such as claude-haiku-4-5-20251001 finds claude-haiku-4-5. Cached reads are billed
+# as input here, which rounds the estimate up, never down. Extend or correct the table without
+# touching code: a prices.json next to the runs dir (or CSMW_PRICES_FILE) with the same shape.
+PRICE_PER_MTOK: dict[str, tuple[float, float]] = {
+    "claude-haiku-4-5": (1.0, 5.0),
+    "claude-sonnet-4-5": (3.0, 15.0),
+    "claude-sonnet-4": (3.0, 15.0),
+    "claude-opus-4-1": (15.0, 75.0),
+    "claude-opus-4": (15.0, 75.0),
+    "claude-3-5-haiku": (0.8, 4.0),
+    "gpt-5-nano": (0.05, 0.4),
+    "gpt-5-mini": (0.25, 2.0),
+    "gpt-5": (1.25, 10.0),
+    "gpt-4.1-nano": (0.1, 0.4),
+    "gpt-4.1-mini": (0.4, 1.6),
+    "gpt-4.1": (2.0, 8.0),
+    "gpt-4o-mini": (0.15, 0.6),
+    "gpt-4o": (2.5, 10.0),
+    "o4-mini": (1.1, 4.4),
+    "o3": (2.0, 8.0),
+}
+
+
+def price_table() -> dict[str, tuple[float, float]]:
+    """The built-in table, overlaid with prices.json when one exists. Read on every call: a price
+    is never stored with a run."""
+    table = dict(PRICE_PER_MTOK)
+    path = Path(os.environ.get("CSMW_PRICES_FILE", "prices.json"))
+    if path.exists():
+        try:
+            for k, v in json.loads(path.read_text()).items():
+                table[str(k)] = (float(v[0]), float(v[1]))
+        except (ValueError, TypeError, IndexError):
+            pass  # a broken file prices nothing; the page shows blanks, never a wrong number
+    return table
+
+
+def price_of(model: str) -> tuple[float, float] | None:
+    """The longest key that prefixes the model id, so gpt-5-mini wins over gpt-5."""
+    table = price_table()
+    best = max(
+        (k for k in table if model == k or model.startswith(k + "-") or model.startswith(k)),
+        key=len,
+        default=None,
+    )
+    return table[best] if best else None
 
 
 def cost_usd(model: str, input_tokens: int, output_tokens: int) -> float | None:
-    p = PRICE_PER_MTOK.get(model)
+    p = price_of(model)
     if p is None:
         return None
     return (input_tokens * p[0] + output_tokens * p[1]) / 1_000_000
+
+
+def usd(x: float | None) -> str:
+    """≈ $0.12; blank when the price is unknown, never a zero that lies."""
+    if x is None:
+        return ""
+    return f"≈ ${x:.2f}" if x >= 0.01 else "≈ <$0.01"

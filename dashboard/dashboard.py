@@ -111,6 +111,7 @@ class TokenRow:
     role: str = ""
     n: int = 0
     label: str = ""  # K / M
+    cost: str = ""
 
 
 @dataclasses.dataclass
@@ -345,6 +346,7 @@ class S(rx.State):
     carried: list[CarriedRow] = []
     model_rows: list[ModelRow] = []
     token_rows: list[TokenRow] = []
+    cost_total: str = ""
     flagged: list[str] = []
     report_md: str = ""
     settings_rows: list[SettingRow] = []
@@ -413,7 +415,11 @@ class S(rx.State):
             for c in d["carried"]
         ]
         self.model_rows = [ModelRow(role=k, model=m) for k, m in d["models"].items()]
-        self.token_rows = [TokenRow(role=k, n=n, label=T.k(n)) for k, n in d["tokens"].items()]
+        self.token_rows = [
+            TokenRow(role=k, n=n, label=T.k(n), cost=d.get("cost", {}).get(k, ""))
+            for k, n in d["tokens"].items()
+        ]
+        self.cost_total = d.get("cost_total", "")
         self.artifacts = [ArtRow(**a) for a in d["artifacts"]]
         self.runs = _runs()
         self.artifact_md = {k: render_artifact(self.run_dir, k) for k in self.open_paths}
@@ -433,6 +439,8 @@ class S(rx.State):
             d["control_tone"],
         )
         self.ring = d.get("dot_ring", "")
+        if self.control == "done" and self.ring:
+            self.control_tone = self.ring  # one colour for every indication of a finished run
         self.loaded = True
 
     @rx.event
@@ -603,9 +611,7 @@ class S(rx.State):
     def status_color(self) -> str:
         """The agreed tones (plan §7a.1): green running, amber gate, red halted or broke; a finished
         run green when clean and amber when items were carried, the same as its tab ring."""
-        if self.control == "done":
-            return {"ok": T.OK, "warn": T.WARN}.get(self.ring, T.TEXT)
-        return {"ok": T.OK, "warn": T.WARN, "bad": T.BAD}.get(self.control_tone, T.TEXT)
+        return {"ok": T.OK, "warn": T.WARN, "bad": T.BAD}.get(self.control_tone, T.DIM)
 
     @rx.var
     def now_color(self) -> str:
@@ -988,19 +994,56 @@ def token_line() -> rx.Component:
             lambda t: rx.hstack(
                 side_mark(t.role == "author", "14px"),
                 rx.text(f"{t.label} tok", **MONO, font_weight="700", font_size=BODY),
+                rx.text(t.cost, **MONO, color=T.MUTED, font_size=SMALL),
                 spacing="1",
                 align="center",
             ),
         ),
+        rx.cond(
+            S.cost_total != "",
+            rx.hstack(
+                rx.text("·", color=T.DIM),
+                rx.text(f"{S.cost_total} total", **MONO, color=T.MUTED, font_size=SMALL),
+                spacing="3",
+                align="center",
+            ),
+            rx.fragment(),
+        ),
         rx.text("·", color=T.DIM),
         rx.text(S.elapsed, **MONO, font_weight="700", font_size=BODY),
         rx.text("·", color=T.DIM),
-        rx.text(S.status_word, **MONO, font_weight="700", font_size=BODY, color=S.status_color),
+        run_state_pill(),
         spacing="3",
         justify="center",
         align="center",
-        width="100%",
+        width="calc(30% + 56px)",
         margin_top=T.SPACE["md"],
+    )
+
+
+def run_state_pill() -> rx.Component:
+    """The run's state word on the tint of its tone: the same colour as the tab dot, the bottom
+    bar's strip and the control button, because they all point at one fact."""
+    color = rx.match(
+        S.control_tone,
+        ("ok", T.PILL["ok"][0]),
+        ("warn", T.PILL["warn"][0]),
+        ("bad", T.PILL["bad"][0]),
+        T.PILL["neutral"][0],
+    )
+    bg = rx.match(
+        S.control_tone,
+        ("ok", T.PILL["ok"][1]),
+        ("warn", T.PILL["warn"][1]),
+        ("bad", T.PILL["bad"][1]),
+        T.PILL["neutral"][1],
+    )
+    return rx.box(
+        rx.text(S.status_word, **PILL_STYLE, color=color),
+        background=bg,
+        border_radius="8px",
+        padding="4px 11px",
+        white_space="nowrap",
     )
 
 
@@ -1455,11 +1498,13 @@ def providers_panel() -> rx.Component:
 
 
 def status_dot(dot, ring) -> rx.Component:
-    color = rx.match(dot, ("running", T.OK), ("waiting", T.WARN), ("halted", T.BAD), T.DIM)
-    ring_css = rx.match(ring, ("ok", f"0 0 0 2px {T.OK}55"), ("warn", f"0 0 0 2px {T.WARN}66"), "none")
-    return rx.box(
-        width="9px", height="9px", border_radius="50%", background=color, box_shadow=ring_css, flex_shrink="0"
+    """Green running, amber waiting, red halted; a finished run in the colour of its verdict, green
+    clean or amber carried, the same colour the page uses everywhere for that run's state."""
+    done_color = rx.match(ring, ("ok", T.OK), ("warn", T.WARN), T.DIM)
+    color = rx.match(
+        dot, ("running", T.OK), ("waiting", T.WARN), ("halted", T.BAD), ("done", done_color), T.DIM
     )
+    return rx.box(width="9px", height="9px", border_radius="50%", background=color, flex_shrink="0")
 
 
 def run_tab(r, *, active_allowed: bool = True) -> rx.Component:
@@ -1601,7 +1646,7 @@ def run_control_button() -> rx.Component:
 def bottom_bar() -> rx.Component:
     """The next thing the run wants from you, and the one control that acts on it."""
     return rx.hstack(
-        rx.box(width="3px", height="36px", background=S.live_hue, border_radius="2px"),
+        rx.box(width="3px", height="36px", background=S.status_color, border_radius="2px"),
         rx.text(S.now_text, font_weight="600", font_size=BODY),
         rx.spacer(),
         rx.cond(
