@@ -260,10 +260,11 @@ def side_row(model: Card, effort: Card) -> rx.Component:
         ),
         centered_select(model.options, model.value, lambda v: Start.set_value(model.key, v)),
         rx.text(
-            "Effort",
+            "EFFORT",
             **MONO,
             color=T.MUTED,
-            font_size=SMALL,
+            font_size="12px",
+            letter_spacing="0.08em",
             text_align="center",
             width="100%",
             margin_top=T.SPACE["xs"],
