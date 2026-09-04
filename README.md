@@ -1,4 +1,23 @@
 <p align="center"><img src="docs/media/logo-freeze-swap-brand-256.png" width="120" alt="freeze and swap"></p>
+<p align="center">
+<img alt="Python 3.11+" src="https://img.shields.io/badge/python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white">
+<img alt="Pydantic v2" src="https://img.shields.io/badge/pydantic-v2-E92063?style=flat-square&logo=pydantic&logoColor=white">
+<img alt="Prefect" src="https://img.shields.io/badge/prefect-orchestration-070E10?style=flat-square&logo=prefect&logoColor=white">
+<img alt="MLflow" src="https://img.shields.io/badge/mlflow-traces%20%C2%B7%20evals-0194E2?style=flat-square&logo=mlflow&logoColor=white">
+<img alt="Reflex" src="https://img.shields.io/badge/reflex-dashboard-5646ED?style=flat-square">
+<img alt="SQLite" src="https://img.shields.io/badge/sqlite-monitor.db-003B57?style=flat-square&logo=sqlite&logoColor=white">
+<br>
+<img alt="Claude" src="https://img.shields.io/badge/author-Claude-db6d28?style=flat-square">
+<img alt="Codex" src="https://img.shields.io/badge/checker-Codex-2fa39a?style=flat-square">
+<img alt="Backends" src="https://img.shields.io/badge/backends-anthropic%20sdk%20%C2%B7%20agent%20sdk%20%C2%B7%20litellm%20%C2%B7%20claude%20%2Dp%20%C2%B7%20codex%20exec-555?style=flat-square">
+<br>
+<img alt="Code checks: ruff" src="https://img.shields.io/badge/agent%20code%20checked%20by-ruff-D7FF64?style=flat-square&logo=ruff&logoColor=black">
+<img alt="Code checks: pyright" src="https://img.shields.io/badge/agent%20code%20checked%20by-pyright-1E90FF?style=flat-square">
+<img alt="Code checks: pytest" src="https://img.shields.io/badge/agent%20code%20verified%20by-pytest%20%C2%B7%20null%20run-0A9EDC?style=flat-square&logo=pytest&logoColor=white">
+<img alt="Offline walk" src="https://img.shields.io/badge/offline%20walk-13%20legs%20%C2%B7%20zero%20tokens-3fb950?style=flat-square">
+<img alt="License MIT" src="https://img.shields.io/badge/license-MIT-lightgrey?style=flat-square">
+</p>
+
 
 # code_steer_model_write
 
