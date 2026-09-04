@@ -381,11 +381,8 @@ def _stage_meta(f: FormField) -> dict[str, str]:
     stage = f.group.split(":", 1)[1]
     side = "checker" if f.key.endswith(("_checker_model", "_checker_effort")) else "author"
     st = next(x for x in recipes.get(RECIPE).spec.stages if x.id == stage)
-    return {
-        "side": side,
-        "func": "writer" if st.author == side else "checker",
-        "field": "effort" if f.key.endswith("_effort") else "model",
-    }
+    func = st.side_labels.get(side) or ("writer" if st.author == side else "checker")
+    return {"side": side, "func": func, "field": "effort" if f.key.endswith("_effort") else "model"}
 
 
 def form_model(values: dict[str, str]) -> list[dict[str, Any]]:
