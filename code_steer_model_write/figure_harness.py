@@ -10,19 +10,31 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Literal
 
-from .figure import ARROW, ARROW_W, FONT, LIGHT_FILL, MUTED, TEXT, W, Box, _box_style, _esc
+from .figure import ARROW, ARROW_W, FONT, MUTED, TEXT, W, Box, _esc, rgba
 
 Theme = Literal["dark", "light"]
 
-LEAD = 23.0  # line height inside a box
-PAD = 26.0  # top and bottom padding inside a box
+# one hue per node, the workflow figure's palette plus rose; nothing shares a colour
+HUES = {
+    "blue": ((77, 143, 220), "#6ea6e8", "#dbe3ee"),
+    "gold": ((187, 128, 9), "#d69a26", "#fbf0c4"),
+    "violet": ((154, 110, 224), "#b28ae8", "#e6e2f5"),
+    "teal": ((47, 163, 154), "#43bdb2", "#d4efe8"),
+    "rose": ((232, 99, 159), "#e8639f", "#f9dbe8"),
+    "red": ((208, 74, 69), "#e06661", "#fbe1cc"),
+    "slate": ((139, 148, 158), "#9aa4ae", "#e9e9e9"),
+}
+TITLE, SUB, ITEM = 26, 18, 18  # font sizes
+LEAD = 27.0  # line height inside a box
+PAD = 32.0  # top and bottom padding inside a box
+GAP = 52.0  # between rows, room for the arrow
 
 
 def _h(lines: list[str]) -> float:
     return PAD * 2 + LEAD * (len(lines) - 1)
 
 
-# (kind, x, w, lines) in reading order; y is computed from the gaps
+WORKFLOW = ["AGENT WORKFLOW", "the workflow figure above · Python"]
 PREFECT = [
     "PREFECT",
     "Python SDK",
@@ -89,23 +101,22 @@ DASHBOARD = [
     "Live activity",
     "Errors",
 ]
-GAP = 44.0  # between rows, room for a 34px arrow and its gaps
 
 
 def layout() -> list[Box]:
+    """(x, y, w, h, hue, lines); y flows down with one gap per row."""
     boxes: list[Box] = []
     y = 30.0
-    top = ["AGENT WORKFLOW", "Python"]
-    boxes.append(Box(60, y, 880, _h(top), "code", top, weight=700, size=20))
-    y += _h(top) + GAP
+    boxes.append(Box(60, y, 880, _h(WORKFLOW), "blue", WORKFLOW))
+    y += _h(WORKFLOW) + GAP
     hp, hm = _h(PREFECT), _h(MLFLOW)
-    boxes.append(Box(130, y, 320, hp, "code", PREFECT, weight=700, size=20))
-    boxes.append(Box(550, y, 320, hm, "both", MLFLOW, weight=700, size=20))
+    boxes.append(Box(70, y, 400, hp, "gold", PREFECT))
+    boxes.append(Box(530, y, 400, hm, "violet", MLFLOW))
     y += max(hp, hm) + GAP
-    for kind, lines in (("both", MONITOR), ("you", REFLEX), ("you", DASHBOARD)):
-        boxes.append(Box(300, y, 400, _h(lines), kind, lines, weight=700, size=20))
+    for hue, lines in (("teal", MONITOR), ("rose", REFLEX), ("red", DASHBOARD)):
+        boxes.append(Box(240, y, 520, _h(lines), hue, lines))
         y += _h(lines) + GAP
-    boxes.append(Box(390, y, 220, 50, "output", ["Browser"], weight=600, size=19))
+    boxes.append(Box(360, y, 280, 62, "slate", ["Browser"]))
     return boxes
 
 
@@ -124,12 +135,14 @@ def render(theme: Theme = "dark", names: dict[str, str] | None = None) -> str:  
     else:
         L.append("<!-- transparent canvas: the host page's dark ground shows through -->")
     for b in boxes:
-        fill, stroke, sw = _box_style(b, theme)
-        if theme == "light" and b.kind in ("a", "b", "you", "both", "code"):
-            fill = LIGHT_FILL[b.kind]
-        stroke_attr = f' stroke="{stroke}" stroke-width="{sw}"' if stroke != "none" else ""
+        rgb, label, flat = HUES[b.kind]
+        if theme == "dark":
+            fill, stroke = rgba(rgb, 0.14), rgba(rgb, 0.7)
+        else:
+            fill, stroke = flat, "none"
+        stroke_attr = f' stroke="{stroke}" stroke-width="1.5"' if stroke != "none" else ""
         L.append(
-            f'<rect x="{b.x:g}" y="{b.y:g}" width="{b.w:g}" height="{b.h:g}" rx="14" fill="{fill}"{stroke_attr}/>'
+            f'<rect x="{b.x:g}" y="{b.y:g}" width="{b.w:g}" height="{b.h:g}" rx="16" fill="{fill}"{stroke_attr}/>'
         )
         n = len(b.lines)
         for i, ln in enumerate(b.lines):
@@ -137,13 +150,12 @@ def render(theme: Theme = "dark", names: dict[str, str] | None = None) -> str:  
                 continue
             cy = b.y + PAD + i * LEAD if n > 1 else b.y + b.h / 2
             title = i == 0
-            size = b.size if title else 15
-            weight = b.weight if title else 500
-            col = text if (title or i == 1 and b.kind == "output") else (muted if i >= 2 else text)
+            size = TITLE if title else (SUB if i == 1 else ITEM)
+            weight = 700 if title else (600 if i == 1 else 500)
+            col = (label if theme == "dark" else text) if title else (text if i == 1 else muted)
             L.append(
                 f'<text x="{b.x + b.w / 2:g}" y="{cy:.1f}" text-anchor="middle" dominant-baseline="central" font-size="{size}" font-weight="{weight}" fill="{col}">{_esc(ln)}</text>'
             )
-    # arrows: workflow -> prefect and mlflow (fan-out), both -> monitor.db (fan-in), then the spine
     top, pre, ml, mon, ref, dash, browser = boxes
 
     def seg(x1, y1, x2, y2):
@@ -151,13 +163,11 @@ def render(theme: Theme = "dark", names: dict[str, str] | None = None) -> str:  
             f'<line x1="{x1:g}" y1="{y1:g}" x2="{x2:g}" y2="{y2:g}" stroke="{arrow}" stroke-width="{aw}" stroke-linecap="round" marker-end="url(#ah)"/>'
         )
 
-    cx = top.x + top.w / 2
-    yb = top.y + top.h + 2
-    for b in (pre, ml):
+    cx, yb = top.x + top.w / 2, top.y + top.h + 2
+    for b in (pre, ml):  # fan-out
         seg(cx, yb, b.x + b.w / 2, b.y - 2)
-    ym = mon.y - 2
-    for b in (pre, ml):
-        seg(b.x + b.w / 2, b.y + b.h + 2, mon.x + mon.w / 2, ym)
+    for b in (pre, ml):  # fan-in
+        seg(b.x + b.w / 2, b.y + b.h + 2, mon.x + mon.w / 2, mon.y - 2)
     for a, b in ((mon, ref), (ref, dash), (dash, browser)):
         seg(a.x + a.w / 2, a.y + a.h + 2, b.x + b.w / 2, b.y - 2)
     L.append("</svg>")

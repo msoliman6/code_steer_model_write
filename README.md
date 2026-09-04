@@ -74,20 +74,25 @@ designed in `docs/PLAN.md` §5.2 and not built yet; `just new-recipe` is the way
 
 Two diagrams, both generated from the code so they cannot drift from it (`just figure`):
 
-**The system** — how a workflow operates, stage by stage, who writes and who checks:
+## The workflow
+
+The block diagram of the workflow itself, generated from the recipe (`csmw figure code_builder`):
+what each stage does, who writes and who attacks, where code freezes, merges and runs.
 
 <p align="center"><picture>
 <source media="(prefers-color-scheme: dark)" srcset="docs/media/workflow-dark.svg">
 <img src="docs/media/workflow.svg" alt="How the code-builder workflow operates" width="820">
 </picture></p>
 
-**The harness** — how the runtime is wired. The agent workflow is Python; it feeds Prefect and
-MLflow through their SDKs; both feed `monitor.db`; Reflex is the human control plane; the custom
-dashboard is what you look at.
+## The harness
+
+The harness operates on top of the workflow: the workflow figure above is the top box of this
+one. The agent workflow is Python; it feeds Prefect and MLflow through their SDKs; both feed
+`monitor.db`; Reflex is the human control plane; the custom dashboard is what you look at.
 
 <p align="center"><picture>
 <source media="(prefers-color-scheme: dark)" srcset="docs/media/harness-dark.svg">
-<img src="docs/media/harness.svg" alt="How the runtime is wired" width="620">
+<img src="docs/media/harness.svg" alt="How the runtime is wired" width="760">
 </picture></p>
 
 ### Clean responsibility split
