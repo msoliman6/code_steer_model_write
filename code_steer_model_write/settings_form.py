@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import re
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Literal
 
@@ -73,7 +74,22 @@ def _stage_side_rows(recipe_name: str) -> list[FormField]:
     return out
 
 
-RECIPE = "code_builder"
+def recipe_names() -> list[str]:
+    from .recipes import registry as recipes
+
+    return recipes.names()
+
+
+def default_recipe() -> str:
+    from .recipes import registry as recipes
+
+    return recipes.default_name()
+
+
+def recipe_of(values: dict[str, str]) -> str:
+    """The recipe the form is for: the `recipe` value, else the default one."""
+    return values.get("recipe") or default_recipe()
+
 
 # the pre-selected setup (the one-round average task): the checker at high effort, the contract
 # and verification rows carrying the judgment, the build on the cheapest model
@@ -84,7 +100,14 @@ STAGE_DEFAULTS = {
     "build_author_effort": "low",
 }
 
-FIELDS: list[FormField] = [
+UNIVERSAL_FIELDS: list[FormField] = [
+    FormField(
+        key="recipe",
+        name="recipe",
+        description="the workflow to run; every installed recipe package is listed, the bundled debate last",
+        options=recipe_names(),
+        default=default_recipe(),
+    ),
     FormField(
         key="run_name",
         name="name",
@@ -178,21 +201,31 @@ FIELDS: list[FormField] = [
         options=CHECKER_EFFORT,
         default="high",
     ),
-    *_stage_side_rows(RECIPE),
 ]
-for _f in FIELDS:
-    if _f.key in STAGE_DEFAULTS:
-        _f.default = STAGE_DEFAULTS[_f.key]
 
+
+@lru_cache(maxsize=None)
+def fields_for(recipe_name: str) -> list[FormField]:
+    """The universal fields, then the per-stage rows of that recipe."""
+    out = [*UNIVERSAL_FIELDS, *_stage_side_rows(recipe_name)]
+    for f in out:
+        if f.key in STAGE_DEFAULTS:
+            f.default = STAGE_DEFAULTS[f.key]
+    return out
+
+
+def all_fields() -> list[FormField]:
+    """Every field any installed recipe can show, once each; the union that saved preferences,
+    the CLI's `--set` and the run page's settings panel are keyed by."""
+    seen: dict[str, FormField] = {}
+    for name in recipe_names():
+        for f in fields_for(name):
+            seen.setdefault(f.key, f)
+    return list(seen.values())
+
+
+FIELDS: list[FormField] = all_fields()
 BY_KEY = {f.key: f for f in FIELDS}
-STAGE_OF_KEY = {
-    "plan": "plan",
-    "contracts": "contracts",
-    "verification": "verification",
-    "build": "build",
-    "verify_author": "verify",
-    "verify_checker": "verify",
-}
 
 
 def sentence(text: str) -> str:
@@ -303,7 +336,9 @@ def resolve(values: dict[str, str]) -> dict[str, str]:
 
 
 def missing_required(values: dict[str, str]) -> list[str]:
-    return [f.name for f in FIELDS if f.required and not (values.get(f.key) or "").strip()]
+    return [
+        f.name for f in fields_for(recipe_of(values)) if f.required and not (values.get(f.key) or "").strip()
+    ]
 
 
 def module_of(name: str) -> str:
@@ -312,9 +347,10 @@ def module_of(name: str) -> str:
     return m or "module"
 
 
-def build_task(values: dict[str, str], *, recipe: str = "code_builder") -> TaskSpec:
+def build_task(values: dict[str, str], *, recipe: str | None = None) -> TaskSpec:
     """The TaskSpec from the form: roles from the plan row and the checker row; every other stage
     row goes into metadata.stage_settings, which the recipe applies per step."""
+    recipe = recipe or recipe_of(values)
     v = resolve(values)
     lines = lambda key: [ln.strip() for ln in (values.get(key) or "").splitlines() if ln.strip()]  # noqa: E731
     brief = {
@@ -337,7 +373,7 @@ def build_task(values: dict[str, str], *, recipe: str = "code_builder") -> TaskS
         ),
     }
     stage_settings: dict[str, dict[str, dict[str, str]]] = {}
-    for f in FIELDS:
+    for f in fields_for(recipe):
         if f.group.startswith("stage:") and f.key.endswith("_model"):
             stage = f.group.split(":", 1)[1]
             role = "checker" if f.key.endswith("_checker_model") else "author"
@@ -370,7 +406,7 @@ def stage_role(task: TaskSpec, stage: str, role: str) -> RoleSpec:
     )
 
 
-def _stage_meta(f: FormField) -> dict[str, str]:
+def _stage_meta(f: FormField, recipe_name: str) -> dict[str, str]:
     """For a per-stage row: the side (author/checker), its function on that stage (writer or
     checker), and the field (model/effort); the page lays the pair out on one line."""
     if not f.group.startswith("stage:"):
@@ -379,7 +415,7 @@ def _stage_meta(f: FormField) -> dict[str, str]:
 
     stage = f.group.split(":", 1)[1]
     side = "checker" if f.key.endswith(("_checker_model", "_checker_effort")) else "author"
-    st = next(x for x in recipes.get(RECIPE).spec.stages if x.id == stage)
+    st = next(x for x in recipes.get(recipe_name).spec.stages if x.id == stage)
     func = st.side_labels.get(side) or ("writer" if st.author == side else "checker")
     return {"side": side, "func": func, "field": "effort" if f.key.endswith("_effort") else "model"}
 
@@ -389,8 +425,9 @@ def form_model(values: dict[str, str]) -> list[dict[str, Any]]:
     catalogues per backend, efforts per model). A selected value the options no longer hold
     falls back to the first option, so the page never shows a chip that cannot be sent."""
     v = {**defaults(), **values}
+    recipe = recipe_of(v)
     out = []
-    for f in FIELDS:
+    for f in fields_for(recipe):
         opts = options_for(f.key, v)
         val = v.get(f.key, f.default)
         if f.kind == "chips" and opts and val not in opts:
@@ -408,7 +445,7 @@ def form_model(values: dict[str, str]) -> list[dict[str, Any]]:
                 "discovery": (
                     providers.for_backend(v[MODEL_ROWS[f.key]]).model_discovery if f.key in MODEL_ROWS else ""
                 ),
-                **_stage_meta(f),
+                **_stage_meta(f, recipe),
             }
         )
     return out

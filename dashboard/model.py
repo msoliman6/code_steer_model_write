@@ -443,7 +443,7 @@ def build_view(run_dir: Path | str) -> RunView:
             fracs.append(0.0)
     progress = round(sum(fracs) / max(len(fracs), 1), 3) if fracs else 0.0
     cost_by_role = {r: config.cost_usd(models.get(r, ""), io[0], io[1]) for r, io in io_by_role.items()}
-    arts = list_artifacts(paths, spec, step_phase)
+    arts = list_artifacts(paths, spec, step_phase, evs)
     return RunView(
         run_id=st.run_id,
         recipe=st.recipe,
@@ -534,33 +534,28 @@ def run_dot(
     return "queued", ""
 
 
-def list_artifacts(paths: RunPaths, spec, step_phase: dict[str, str]) -> list[ArtifactRef]:
+def list_artifacts(
+    paths: RunPaths, spec, step_phase: dict[str, str], events: list[Event] | None = None
+) -> list[ArtifactRef]:
     """Every record a stage produced, in order, as a clickable reference; the page renders it
-    as markdown on demand with the same renderer the models read (rule 2)."""
+    as markdown on demand with the same renderer the models read (rule 2). Which stage owns an
+    artifact is read from the `artifact.written` events (the step that wrote it and that step's
+    phase), so no recipe has to be named here."""
     run = paths.run_dir
     out: list[ArtifactRef] = []
-    stage_of_key = {
-        "brief": "plan",
-        "ledger": "plan",
-        "plan": "plan",
-        "contract": "contracts",
-        "vspec": "verification",
-        "tasks": "verification",
-        "results": "verify",
-        "report": "verify",
-        "hypotheses": "hypotheses",
-        "support": "cases",
-        "challenge": "cases",
-        "rebuttal": "rebuttal",
-        "ruling": "judgment",
-    }
-    loop_stage = {
-        "plan": "plan",
-        "contract": "contracts",
-        "contract_audit": "contracts",
-        "vspec": "verification",
-        "hypotheses": "hypotheses",
-    }
+    first = spec.stages[0].id
+    stage_of_key: dict[str, str] = {}
+    for e in events or []:
+        if e.kind != "artifact.written" or not e.step:
+            continue
+        parts = Path(str(e.data.get("path", ""))).parts
+        if "artifacts" in parts and parts.index("artifacts") + 1 < len(parts):
+            key = parts[parts.index("artifacts") + 1]
+            stage_of_key.setdefault(key, _stage_of(step_phase.get(e.step, ""), spec) or first)
+
+    def loop_stage(loop: str) -> str:  # a review loop is named after the artifact it attacks
+        return stage_of_key.get(loop) or stage_of_key.get(loop.split("_")[0], first)
+
     stages = {s.id for s in spec.stages}
     if paths.artifacts.exists():
         for d in sorted(paths.artifacts.iterdir()):
@@ -576,7 +571,7 @@ def list_artifacts(paths: RunPaths, spec, step_phase: dict[str, str]) -> list[Ar
     rev = run / "review"
     if rev.exists():
         for loop in sorted(rev.iterdir()):
-            st = loop_stage.get(loop.name, spec.stages[0].id)
+            st = loop_stage(loop.name)
             for f in sorted(loop.glob("round-*.findings.json")):
                 n = f.name.split("-")[1].split(".")[0]
                 out.append(

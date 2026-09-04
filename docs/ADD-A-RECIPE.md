@@ -22,3 +22,24 @@
 8. Register evals; run one clean live pass on small models; flip `status` to `proven`.
 
 The figure regenerates from the spec: `just figure <name>`.
+
+
+## A recipe in its own repo (the normal case)
+
+A project is a package that depends on the template and registers its recipe by entry point;
+nothing in the template names it. In the project's `pyproject.toml`:
+
+```toml
+[project]
+dependencies = ["code_steer_model_write"]
+
+[project.entry-points."csmw.recipes"]
+coder = "csmw_coder.recipe:CodeBuilder"      # a Recipe class, instance or factory
+
+[project.entry-points."csmw.walk_legs"]
+coder = "csmw_coder.walk_legs:LEGS"           # {leg name: function(tmp_dir) -> detail}
+```
+
+After `pip install -e .` the recipe appears in `csmw walk coder`, on the start page's recipe
+dropdown (first, ahead of the bundled debate) and on the run page. Its prompts, fixtures and
+example task live in the project; `csmw figure coder` writes its workflow figure.

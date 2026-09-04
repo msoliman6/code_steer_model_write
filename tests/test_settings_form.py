@@ -12,8 +12,11 @@ def test_fields_are_one_owner_and_render_as_cards():
         if f.kind == "chips":
             assert f.default in f.options, f.key
             assert f.description
-    cards = sf.form_model({})
-    assert [c["key"] for c in cards] == keys and all(c["value"] == sf.BY_KEY[c["key"]].default for c in cards)
+    cards = sf.form_model({})  # the default recipe's fields, in order
+    shown = [f.key for f in sf.fields_for(sf.default_recipe())]
+    assert [c["key"] for c in cards] == shown and all(
+        c["value"] == sf.BY_KEY[c["key"]].default for c in cards
+    )
     assert [c["key"] for c in cards if c["group"] == "stage:contracts"] == [
         "contracts_author_model",
         "contracts_author_effort",
@@ -91,3 +94,17 @@ def test_build_task_and_stage_roles(tmp_path):
     assert sf.load_prefs(tmp_path / "runs")[
         "build_author_model"
     ] == "claude-haiku-4-5" and "request" not in sf.load_prefs(tmp_path / "runs")
+
+
+def test_fields_follow_the_recipe():
+    from code_steer_model_write import settings_form as sf
+
+    debate = {f.key for f in sf.fields_for("debate")}
+    coder = {f.key for f in sf.fields_for("code_builder")}
+    assert "recipe" in debate and "recipe" in coder
+    assert "build_author_model" in coder and "build_author_model" not in debate
+    assert any(k.startswith("hypotheses_") for k in debate)
+    rows = sf.form_model({"recipe": "debate"})
+    assert not any(r["key"].startswith("build_") for r in rows)
+    task = sf.build_task({**sf.defaults(), "recipe": "debate", "run_name": "x", "request": "why"})
+    assert task.recipe == "debate"

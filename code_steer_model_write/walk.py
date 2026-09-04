@@ -355,10 +355,11 @@ LEGS: dict[str, dict[str, Leg]] = {
 
 
 def run(recipe: str = "all", *, only: str | None = None, keep: bool = False) -> list[LegResult]:
-    names = list(LEGS) if recipe == "all" else [recipe]
+    legs = {**LEGS, **registry.walk_legs()}  # bundled legs, then the installed recipes' own
+    names = list(legs) if recipe == "all" else [recipe]
     results: list[LegResult] = []
     for rn in names:
-        for leg_name, fn in LEGS[rn].items():
+        for leg_name, fn in legs[rn].items():
             if only and leg_name != only:
                 continue
             tmp = Path(tempfile.mkdtemp(prefix=f"csmw-walk-{rn}-{leg_name}-"))

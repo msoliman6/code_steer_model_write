@@ -874,7 +874,7 @@ The project's `pyproject.toml` depends on `code_steer_model_write` and declares
 `[project.entry-points."csmw.recipes"] code_builder = "csmw_coder.recipe:RECIPE"`. Installing
 the project is what makes `csmw walk code_builder`, the start page and the run page know it.
 
-### 12.3 What the split forces the template to fix first
+### 12.3 What the split forces the template to fix first — done 2026-09-04
 
 These are the places the template still assumes the code-builder. Each is a small change and a
 test, done before anything moves so the move is a pure relocation.

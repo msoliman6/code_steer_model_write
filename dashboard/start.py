@@ -75,13 +75,26 @@ class Start(rx.State):
         self.cards = [Card(**c) for c in sf.form_model(self.values)]
         self.tiles = [
             Tile(n=s.n, id=s.id, title=s.title, emoji=s.emoji, hue=s.hue, author=s.author, checker=s.checker)
-            for s in registry.get("code_builder").spec.stages
+            for s in registry.get(sf.recipe_of(self.values)).spec.stages
         ]
 
     @rx.event
     def set_value(self, key: str, value: str):
         self.values = {**self.values, key: value}
         self.cards = [Card(**c) for c in sf.form_model(self.values)]
+        if key == "recipe":  # the rail follows the recipe
+            self.tiles = [
+                Tile(
+                    n=s.n,
+                    id=s.id,
+                    title=s.title,
+                    emoji=s.emoji,
+                    hue=s.hue,
+                    author=s.author,
+                    checker=s.checker,
+                )
+                for s in registry.get(sf.recipe_of(self.values)).spec.stages
+            ]
 
     @rx.var
     def universal_cards(self) -> list[Card]:
@@ -93,7 +106,8 @@ class Start(rx.State):
 
     @rx.var
     def run_cards(self) -> list[Card]:
-        return [c for c in self.cards if c.key in ("mode", "rounds")]
+        keys = ("recipe", "mode", "rounds") if len(sf.recipe_names()) > 1 else ("mode", "rounds")
+        return [c for c in self.cards if c.key in keys]
 
     @rx.var
     def author_cards(self) -> list[Card]:
