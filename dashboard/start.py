@@ -87,6 +87,24 @@ class Start(rx.State):
         return [c for c in self.cards if not c.group.startswith("stage:")]
 
     @rx.var
+    def brief_cards(self) -> list[Card]:
+        return [c for c in self.cards if c.group == "brief"]
+
+    @rx.var
+    def run_cards(self) -> list[Card]:
+        return [c for c in self.cards if c.key in ("mode", "rounds")]
+
+    @rx.var
+    def author_cards(self) -> list[Card]:
+        by = {c.key: c for c in self.cards}
+        return [by[k] for k in ("author_backend", "author_model", "author_effort") if k in by]
+
+    @rx.var
+    def checker_cards(self) -> list[Card]:
+        by = {c.key: c for c in self.cards}
+        return [by[k] for k in ("checker_backend", "checker_model", "checker_effort") if k in by]
+
+    @rx.var
     def stage_cards(self) -> dict[str, list[Card]]:
         out: dict[str, list[Card]] = {}
         for c in self.cards:
@@ -133,17 +151,24 @@ class Start(rx.State):
         return rx.redirect("/")
 
 
-def dropdown(card: Card, *, width: str = "280px") -> rx.Component:
-    """One dropdown per setting (§7c): a model row lists the provider's catalogue for the chosen
-    backend; an effort row lists the chosen model's efforts; the value is what is sent."""
-    return rx.hstack(
-        rx.select(
-            card.options,
-            value=card.value,
-            on_change=lambda v: Start.set_value(card.key, v),
-            size="2",
-            width=width,
+def centered_select(options, value, on_change, *, width: str = "100%") -> rx.Component:
+    """A dropdown whose trigger and items are centred (the stage columns are symmetric)."""
+    return rx.select.root(
+        rx.select.trigger(width=width, style={"justify_content": "center", "text_align": "center"}),
+        rx.select.content(
+            rx.foreach(options, lambda o: rx.select.item(o, value=o, style={"justify_content": "center"}))
         ),
+        value=value,
+        on_change=on_change,
+        size="2",
+    )
+
+
+def dropdown(card: Card, *, width: str = "280px") -> rx.Component:
+    """One dropdown per setting (§7c), its text centred; a model row lists the provider's
+    catalogue for the chosen backend, an effort row the chosen model's efforts."""
+    return rx.hstack(
+        centered_select(card.options, card.value, lambda v: Start.set_value(card.key, v), width=width),
         rx.cond(
             card.discovery != "", rx.text(card.discovery, **MONO, color=T.DIM, font_size=SMALL), rx.fragment()
         ),
@@ -215,19 +240,6 @@ GLASS_FILL = [(k, T.tint(k, 0.10)) for k in T.STAGE_HUES]
 GLASS_STROKE = [(k, f"1px solid {T.tint(k, 0.55)}") for k in T.STAGE_HUES]
 
 
-def centered_select(options, value, on_change, *, width: str = "100%") -> rx.Component:
-    """A dropdown whose trigger and items are centred (the stage columns are symmetric)."""
-    return rx.select.root(
-        rx.select.trigger(width=width, style={"justify_content": "center", "text_align": "center"}),
-        rx.select.content(
-            rx.foreach(options, lambda o: rx.select.item(o, value=o, style={"justify_content": "center"}))
-        ),
-        value=value,
-        on_change=on_change,
-        size="2",
-    )
-
-
 def side_row(model: Card, effort: Card) -> rx.Component:
     """One block per side of a stage, centred under the box: the side's glyph and what it does
     here, then Name over the model dropdown, then Effort over the effort dropdown."""
@@ -289,6 +301,52 @@ def stage_column(t: Tile) -> rx.Component:
     )
 
 
+def side_column(cards, side: str, title: str) -> rx.Component:
+    """A side's column above the rail: the glyph and title, then backend, model, effort."""
+    color = T.ACTOR["a"] if side == "author" else T.ACTOR["b"]
+    glyph = "✳" if side == "author" else "☘"
+    return rx.vstack(
+        rx.hstack(
+            rx.text(glyph, color=color, font_size=BODY),
+            rx.text(title, font_weight="700", font_size=BODY, text_align="center", white_space="nowrap"),
+            spacing="2",
+            align="center",
+            justify="center",
+            width="100%",
+        ),
+        rx.foreach(cards, lambda c: centered_select(c.options, c.value, lambda v: Start.set_value(c.key, v))),
+        spacing="2",
+        width="60%",
+        align="center",
+        margin="0 auto",
+        padding=f"{T.SPACE['sm']} 0",
+    )
+
+
+def sides_card() -> rx.Component:
+    return rx.box(
+        rx.hstack(
+            rx.text("The two sides.", font_weight="700", font_size=BODY),
+            rx.text(
+                "Backend, model and effort for the author and the checker; every stage row below inherits these unless it says otherwise.",
+                color=T.MUTED,
+                font_size=BODY,
+            ),
+            spacing="2",
+        ),
+        rx.hstack(
+            side_column(Start.author_cards, "author", "Author"),
+            rx.box(width="1px", height="120px", background=T.BORDER),
+            side_column(Start.checker_cards, "checker", "Checker"),
+            spacing="4",
+            width="100%",
+            align="center",
+            margin_top=T.SPACE["md"],
+        ),
+        **CARD,
+    )
+
+
 def stages_rail() -> rx.Component:
     return rx.box(
         rx.hstack(
@@ -339,7 +397,9 @@ def start_form() -> rx.Component:
                 ),
                 spacing="2",
             ),
-            rx.foreach(Start.universal_cards, card_view),
+            rx.foreach(Start.brief_cards, card_view),
+            rx.foreach(Start.run_cards, card_view),
+            sides_card(),
             stages_rail(),
             rx.hstack(
                 rx.button(
