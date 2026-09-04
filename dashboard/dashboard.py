@@ -445,7 +445,7 @@ class S(rx.State):
         self.cost_total = d.get("cost_total", "")
         self.cost_note = d.get("cost_note", "")
         self.artifacts = [ArtRow(**a) for a in d["artifacts"]]
-        self.runs = _runs()
+        self.runs = self._visible_runs()
         self.artifact_md = {k: render_artifact(self.run_dir, k) for k in self.open_paths}
         self.flagged = d["flagged"]
         self.report_md = d.get("report_md") or ""
@@ -496,7 +496,7 @@ class S(rx.State):
     def load_runs(self):
         if self.view_tab not in {k for k, _ in NAV}:
             self.view_tab = "run"  # a stale pick from an earlier layout
-        self.runs = [r for r in _runs() if r["dir"] not in self._hidden()]
+        self.runs = self._visible_runs()
         if self.run_dir and self.run_dir not in {r["dir"] for r in self.runs}:
             self.run_dir = ""
         if not self.run_dir and self.runs:
@@ -504,6 +504,12 @@ class S(rx.State):
         self.hash_ = ""  # a page load rebuilds the view even when nothing on disk moved
         if self.run_dir:
             self._apply(self.run_dir)
+
+    def _visible_runs(self) -> list[dict[str, str]]:
+        """The one owner of the tab strip's list (ledger: a second owner of a fact -- the poll's
+        refresh once rebuilt it without the hidden filter, so a closed tab came back a tick later)."""
+        hidden = self._hidden()
+        return [r for r in _runs() if r["dir"] not in hidden]
 
     def _hidden(self) -> set[str]:
         try:
@@ -1052,8 +1058,8 @@ BAR_WIDTH = "470px"  # as wide as the token line beneath it: two sides with cost
 
 def progress_bar() -> rx.Component:
     """tqdm, with better graphics. A tight two-row column on the left: the segments per stage with
-    the percentage, and beneath it the tokens and estimated cost per side centred under the bar
-    with elapsed under the percentage. Beside it the wrong-ness chips in two rows. The run's state
+    the percentage and the elapsed time beside it, and beneath it the tokens and estimated cost
+    per side centred under the bar. Beside it the wrong-ness chips in two rows. The run's state
     is the tab dot and the control button, not a word here."""
     tokens = rx.hstack(
         rx.foreach(
@@ -1091,30 +1097,26 @@ def progress_bar() -> rx.Component:
                 rx.hstack(
                     rx.foreach(S.prog_rows, progress_segment), spacing="1", width=BAR_WIDTH, align="center"
                 ),
-                rx.text(
-                    S.percent,
-                    **MONO,
-                    font_weight="700",
-                    font_size=BODY,
-                    min_width="52px",
-                    text_align="center",
+                # the percentage and the elapsed time side by side on the bar's row, so the cost
+                # line beneath has the whole width and nothing overlaps its "at API rates"
+                rx.hstack(
+                    rx.text(S.percent, **MONO, font_weight="700", font_size=BODY, white_space="nowrap"),
+                    rx.text(
+                        S.elapsed,
+                        **MONO,
+                        font_weight="700",
+                        font_size=SMALL,
+                        color=T.MUTED,
+                        white_space="nowrap",
+                    ),
+                    spacing="2",
+                    align="baseline",
+                    flex_shrink="0",
                 ),
                 spacing="3",
                 align="center",
             ),
-            rx.hstack(
-                tokens,
-                rx.text(
-                    S.elapsed,
-                    **MONO,
-                    font_weight="700",
-                    font_size=SMALL,
-                    min_width="52px",
-                    text_align="center",
-                ),
-                spacing="3",
-                align="center",
-            ),
+            tokens,
             spacing="0",
             align="start",
         ),
@@ -1312,12 +1314,25 @@ def step_row(r: StepRow) -> rx.Component:
     )
     return rx.grid(
         rx.text(glyph, **MONO, color=color, font_size=BODY, text_align="center"),
-        rx.text(r.step, **MONO, color=color, font_size=BODY, white_space="nowrap"),
+        # the key column fits the longest key a recipe mints (contract_audit-arbitrate-r1);
+        # a longer one clips with an ellipsis and shows whole on hover, never under the pill
+        rx.text(
+            r.step,
+            **MONO,
+            color=color,
+            font_size=BODY,
+            white_space="nowrap",
+            overflow="hidden",
+            text_overflow="ellipsis",
+            title=r.step,
+        ),
         rx.box(side, opacity=rx.cond(r.status == "pending", "0.55", "1")),
         rx.text(rx.cond(r.tokens > 0, f"{r.label} tok", ""), **MONO, color=T.MUTED, font_size=SMALL),
         rx.text(rx.cond(r.seconds > 0, f"{r.seconds}s", ""), **MONO, color=T.MUTED, font_size=SMALL),
         rx.text(r.status, **MONO, color=color, font_size=SMALL),
-        grid_template_columns="18px 220px auto 90px 70px 80px",
+        # the side column is one fixed width, so tokens, seconds and status line up down the
+        # list whatever pill a row carries (author, checker, you, code)
+        grid_template_columns="18px 264px 216px 90px 70px 80px",
         column_gap="14px",
         align_items="center",
         width="100%",
@@ -1609,8 +1624,13 @@ def run_tab(r, *, active_allowed: bool = True) -> rx.Component:
             font_size=BODY,
             color=rx.cond(active, T.TEXT, T.MUTED),
             font_weight=rx.cond(active, "700", "400"),
+            # a browser tab: the label clips before the row wraps
+            white_space="nowrap",
+            overflow="hidden",
+            text_overflow="ellipsis",
+            min_width="0",
         ),
-        rx.text(r["recipe"], **MONO, font_size=SMALL, color=T.DIM),
+        rx.text(r["recipe"], **MONO, font_size=SMALL, color=T.DIM, white_space="nowrap", flex_shrink="0"),
         rx.text(
             "×",
             **MONO,
@@ -1626,6 +1646,12 @@ def run_tab(r, *, active_allowed: bool = True) -> rx.Component:
         padding="8px 12px 8px 16px",
         cursor="pointer",
         on_click=S.open_run(r["dir"]),
+        # like a browser's tabs: the strip is one row; a tab shrinks to a floor, never wraps
+        flex="0 1 auto",
+        min_width="96px",
+        max_width="260px",
+        overflow="hidden",
+        title=r["id"],
         # browser tabs: a divider between neighbours, the open one lifted onto the card surface
         background=rx.cond(active, T.CARD, "transparent"),
         border_radius="8px 8px 0 0",
@@ -1636,13 +1662,32 @@ def run_tab(r, *, active_allowed: bool = True) -> rx.Component:
 
 def runs_tabs(active: bool = True) -> rx.Component:
     return rx.hstack(
-        rx.foreach(S.runs, lambda r: run_tab(r, active_allowed=active)),
-        rx.spacer(),
-        rx.link("New run ▸", href="/new", **MONO, font_size=SMALL, color=T.TEXT, padding="8px 14px"),
+        rx.hstack(
+            rx.foreach(S.runs, lambda r: run_tab(r, active_allowed=active)),
+            spacing="0",
+            align="end",
+            # one row that scrolls sideways when the tabs outgrow it, never a second line
+            flex="1 1 0",
+            min_width="0",
+            overflow_x="auto",
+            overflow_y="hidden",
+            flex_wrap="nowrap",
+        ),
+        rx.link(
+            "New run ▸",
+            href="/new",
+            **MONO,
+            font_size=SMALL,
+            color=T.TEXT,
+            padding="8px 14px",
+            white_space="nowrap",
+            flex_shrink="0",
+        ),
         width="100%",
         border_bottom=f"1px solid {T.BORDER}",
         align="end",
         spacing="0",
+        flex_wrap="nowrap",
     )
 
 
@@ -1671,7 +1716,10 @@ def nav_row(key: str, label: str, *, active_key=None, href: str | None = None) -
         width="100%",
         background=rx.cond(active, T.SEL_FILL, "transparent"),
         border=rx.cond(active, f"1px solid {T.SEL_BORDER}", "1px solid transparent"),
-        on_click=None if href else S.set_view(key),
+        # a view row sets the view; when it is also a link (from another page, e.g. /new) it
+        # does both, so the rail always moves the page (ledger: an effect with no owner --
+        # the row changed a state nobody on that page rendered)
+        on_click=S.set_view(key) if key in {k for k, _ in NAV} else None,
     )
     return rx.link(row, href=href, width="100%", underline="none") if href else row
 
@@ -1704,7 +1752,8 @@ def brand() -> rx.Component:
 
 def sidebar(active: str | None = None) -> rx.Component:
     """The shell's left column: the brand, the views of a run, then the links (New run)."""
-    rows = [nav_row(k, v, active_key=active) if active else nav_row(k, v) for k, v in NAV]
+    # on the run page the view rows switch the view in place; on any other page they link home
+    rows = [nav_row(k, v, active_key=active, href="/") if active else nav_row(k, v) for k, v in NAV]
     rows += [nav_row(k, v, active_key=active or "", href=h) for k, v, h in NAV_LINKS]
     return rx.vstack(
         brand(),

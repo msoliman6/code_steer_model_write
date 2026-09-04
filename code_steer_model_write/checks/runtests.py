@@ -14,6 +14,7 @@ def _pytest(tests_dir: Path, src_dir: Path, junit: Path, *, timeout: int = 300) 
     """node id -> (status, message). Runs pytest with `src_dir` first on the path."""
     from ..layers import current
 
+    junit = junit.resolve()  # one canonical form, the same the tool writes (section 4, L7)
     # L6 -> L5: the registered pytest tool runs in the sandbox with an explicit environment
     current().tools.invoke(
         "pytest", {"tests_dir": tests_dir, "src_dir": src_dir, "junit": junit, "timeout": timeout}

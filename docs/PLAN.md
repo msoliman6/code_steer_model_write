@@ -34,6 +34,14 @@ Agreed with the user on 2026-09-04. Nothing below is code; it is what the code w
   `worktree.py`'s git calls and the RUN step's direct command (recorded as `run-step`).
   Runner, Gateway, Mirror and Evaluator interfaces are named in the architecture and
   arrive with their phases (5, 4, 6) rather than as empty protocols here.
+  **Live:** `live-3` halted at contract arbitration (a refusal with no re-ask, in the CLI
+  backend; fixed at the class, ledger). `live-4` (2026-09-04, Haiku 4.5 low + gpt-5.4-mini
+  low, auto, one round): COMPLETED, 27 steps, 0 halts, 0 resumes, 3 refusals all recovered,
+  15 min; 27 policy decisions, 34 rail verdicts, 22 tool calls in the subprocess tier. Its
+  verify recorded every property missing: the JUnit path bug from live-1/live-2, now
+  explained and fixed at the class (a path compared by two conventions). A schema refusal
+  recorded no verdict: fixed. **Phase 1's clean live pass is therefore still owed**: the
+  next live run must complete with a true verify verdict.
 
 ## The rule for every phase
 

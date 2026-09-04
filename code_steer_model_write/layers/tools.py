@@ -109,9 +109,13 @@ def _git(args: dict[str, Any]) -> Execution:
 
 
 def _pytest(args: dict[str, Any]) -> Execution:
-    tests_dir = Path(args["tests_dir"])
-    src_dir = Path(args["src_dir"])
-    junit = Path(args["junit"])
+    # absolute, every one: pytest runs with its own cwd and the check reads with the process's;
+    # a relative junit path would land under the wrong root and read as "missing" (ledger: a
+    # path compared by two conventions; live-1, live-2, live-4)
+    tests_dir = Path(args["tests_dir"]).resolve()
+    src_dir = Path(args["src_dir"]).resolve()
+    junit = Path(args["junit"]).resolve()
+    junit.parent.mkdir(parents=True, exist_ok=True)
     env = {"PYTHONPATH": str(src_dir), "PYTHONDONTWRITEBYTECODE": "1", "PATH": "/usr/bin:/bin"}
     cmd = [
         sys.executable,

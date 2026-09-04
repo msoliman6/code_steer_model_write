@@ -200,6 +200,7 @@ def ask(
         except ValidationError as e:
             value = None
             problems = _schema_problems(e)
+            rails.schema_refused(problems, step=ctx.step, role=role)
         if not problems:
             # L10 after_answer: the schema's semantic checks, then the step's checks (rule 7)
             verdict = rails.after_answer(value, ctx.check_ctx, step=ctx.step, role=role, checks=checks)  # type: ignore[arg-type]

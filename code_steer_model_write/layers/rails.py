@@ -31,6 +31,7 @@ class Verdict(BaseModel):
 
 class Rails(Protocol):
     def before_prompt(self, text: str, *, step: str, role: str) -> Verdict: ...
+    def schema_refused(self, problems: Sequence[Problem], *, step: str, role: str) -> Verdict: ...
     def after_answer(
         self, value: Artifact, ctx: CheckContext, *, step: str, role: str, checks: Sequence[Any] = ()
     ) -> Verdict: ...
@@ -57,6 +58,15 @@ class SchemaRails:
     def before_prompt(self, text: str, *, step: str, role: str) -> Verdict:
         # model-less by decision (7.4): no scanner in phase 1; the hook exists and is recorded
         return self._record(Verdict(hook="before_prompt", accept=True, rail="none"), step=step, role=role)
+
+    def schema_refused(self, problems: Sequence[Problem], *, step: str, role: str) -> Verdict:
+        """The validator refused before any semantic check ran: still an after_answer verdict,
+        so every answer has one (the walk asserts it; live-4 showed the gap)."""
+        return self._record(
+            Verdict(hook="after_answer", accept=False, problems=list(problems), rail="schema"),
+            step=step,
+            role=role,
+        )
 
     def after_answer(
         self, value: Artifact, ctx: CheckContext, *, step: str, role: str, checks: Sequence[Any] = ()
