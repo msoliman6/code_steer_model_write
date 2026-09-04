@@ -22,7 +22,8 @@ HUES = {
     "teal": ((47, 163, 154), "#43bdb2", "#d4efe8"),
     "rose": ((232, 99, 159), "#e8639f", "#f9dbe8"),
     "red": ((208, 74, 69), "#e06661", "#fbe1cc"),
-    "slate": ((139, 148, 158), "#9aa4ae", "#e9e9e9"),
+    "slate": ((139, 148, 158), "#9aa4ae", "#dbe3ee"),
+    "grey": ((201, 209, 217), "#c9d1d9", "#e9e9e9"),
 }
 TITLE, SUB, ITEM = 26, 18, 18  # font sizes
 LEAD = 27.0  # line height inside a box
@@ -39,53 +40,53 @@ PREFECT = [
     "PREFECT",
     "Python SDK",
     "",
-    "orchestration",
-    "flow/task state",
-    "dependencies",
-    "retries",
-    "failures",
-    "scheduling",
-    "cancellation",
+    "Orchestration",
+    "Flow/task state",
+    "Dependencies",
+    "Retries",
+    "Failures",
+    "Scheduling",
+    "Cancellation",
 ]
 MLFLOW = [
     "MLFLOW",
     "Python SDK",
     "",
-    "agent traces",
-    "spans",
+    "Agent traces",
+    "Spans",
     "LLM calls",
-    "tool calls",
-    "retrieval",
-    "tokens / cost",
-    "latency",
-    "evaluations",
+    "Tool calls",
+    "Retrieval",
+    "Tokens / cost",
+    "Latency",
+    "Evaluations",
     "ML experiments",
-    "params / metrics",
-    "artifacts/models",
+    "Params / metrics",
+    "Artifacts/models",
 ]
 MONITOR = [
     "monitor.db",
     "SQLite",
     "",
-    "dashboard-only state",
-    "- agent progress",
-    "- current activity",
-    "- UI labels",
-    "- custom messages",
-    "- graph positions",
-    "- selected run state",
+    "Dashboard-only state",
+    "Agent progress",
+    "Current activity",
+    "UI labels",
+    "Custom messages",
+    "Graph positions",
+    "Selected run state",
 ]
 REFLEX = [
     "REFLEX",
     "Python App",
     "",
-    "task creation",
-    "run controls",
-    "live monitoring",
-    "traces",
-    "experiments",
-    "evaluations",
-    "artifacts",
+    "Task creation",
+    "Run controls",
+    "Live monitoring",
+    "Traces",
+    "Experiments",
+    "Evaluations",
+    "Artifacts",
 ]
 DASHBOARD = [
     "CUSTOM DASHBOARD",
@@ -136,15 +137,16 @@ def layout() -> list[Node]:
     b = Node(530, y, 410, "violet", "MLFLOW", "Python SDK", MLFLOW[3:])
     nodes += [a, b]
     y += max(a.h, b.h) + GAP
+    # hot hues (gold, rose, red) never follow one another down the spine
     for hue, title, sub, items in (
         ("teal", "MONITOR.DB", "SQLite", MONITOR[3:]),
         ("rose", "REFLEX", "Python App", REFLEX[3:]),
-        ("red", "CUSTOM DASHBOARD", "the page", DASHBOARD[2:]),
+        ("slate", "CUSTOM DASHBOARD", "The page", DASHBOARD[2:]),
+        ("grey", "BROWSER", "Your tab", ["The page at 127.0.0.1:3007"]),
     ):
         n = Node(180, y, 640, hue, title, sub, items)
         nodes.append(n)
         y += n.h + GAP
-    nodes.append(Node(360, y, 280, "slate", "BROWSER", "", []))
     return nodes
 
 

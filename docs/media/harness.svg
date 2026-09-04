@@ -1,8 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1869" width="1000" height="1869" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1937" width="1000" height="1937" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
 <defs>
 <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#9a9a9a"/></marker>
 </defs>
-<rect width="1000" height="1869" rx="22" fill="#ffffff"/>
+<rect width="1000" height="1937" rx="22" fill="#ffffff"/>
 <rect x="60" y="30" width="880" height="130" rx="18" fill="#f2f4f7"/>
 <text x="82" y="58" font-size="16" font-weight="600" letter-spacing="1.5" fill="#4b4b4b">AGENT WORKFLOW — THE WORKFLOW FIGURE ABOVE · PYTHON</text>
 <rect x="80" y="76" width="840" height="64" rx="14" fill="#dbe3ee"/>
@@ -10,50 +10,50 @@
 <rect x="60" y="212" width="410" height="292" rx="18" fill="#f2f4f7"/>
 <text x="82" y="240" font-size="16" font-weight="600" letter-spacing="1.5" fill="#4b4b4b">PREFECT — PYTHON SDK</text>
 <rect x="80" y="258" width="370" height="226" rx="14" fill="#fbf0c4"/>
-<text x="265" y="290.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">orchestration</text>
-<text x="265" y="317.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">flow/task state</text>
-<text x="265" y="344.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">dependencies</text>
-<text x="265" y="371.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">retries</text>
-<text x="265" y="398.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">failures</text>
-<text x="265" y="425.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">scheduling</text>
-<text x="265" y="452.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">cancellation</text>
+<text x="265" y="290.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Orchestration</text>
+<text x="265" y="317.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Flow/task state</text>
+<text x="265" y="344.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Dependencies</text>
+<text x="265" y="371.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Retries</text>
+<text x="265" y="398.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Failures</text>
+<text x="265" y="425.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Scheduling</text>
+<text x="265" y="452.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Cancellation</text>
 <rect x="530" y="212" width="410" height="400" rx="18" fill="#f2f4f7"/>
 <text x="552" y="240" font-size="16" font-weight="600" letter-spacing="1.5" fill="#4b4b4b">MLFLOW — PYTHON SDK</text>
 <rect x="550" y="258" width="370" height="334" rx="14" fill="#e6e2f5"/>
-<text x="735" y="290.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">agent traces</text>
-<text x="735" y="317.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">spans</text>
+<text x="735" y="290.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Agent traces</text>
+<text x="735" y="317.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Spans</text>
 <text x="735" y="344.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">LLM calls</text>
-<text x="735" y="371.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">tool calls</text>
-<text x="735" y="398.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">retrieval</text>
-<text x="735" y="425.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">tokens / cost</text>
-<text x="735" y="452.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">latency</text>
-<text x="735" y="479.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">evaluations</text>
+<text x="735" y="371.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Tool calls</text>
+<text x="735" y="398.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Retrieval</text>
+<text x="735" y="425.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Tokens / cost</text>
+<text x="735" y="452.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Latency</text>
+<text x="735" y="479.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Evaluations</text>
 <text x="735" y="506.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">ML experiments</text>
-<text x="735" y="533.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">params / metrics</text>
-<text x="735" y="560.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">artifacts/models</text>
+<text x="735" y="533.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Params / metrics</text>
+<text x="735" y="560.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Artifacts/models</text>
 <rect x="180" y="664" width="640" height="292" rx="18" fill="#f2f4f7"/>
 <text x="202" y="692" font-size="16" font-weight="600" letter-spacing="1.5" fill="#4b4b4b">MONITOR.DB — SQLITE</text>
 <rect x="200" y="710" width="600" height="226" rx="14" fill="#d4efe8"/>
-<text x="500" y="742.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">dashboard-only state</text>
-<text x="500" y="769.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">- agent progress</text>
-<text x="500" y="796.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">- current activity</text>
-<text x="500" y="823.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">- UI labels</text>
-<text x="500" y="850.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">- custom messages</text>
-<text x="500" y="877.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">- graph positions</text>
-<text x="500" y="904.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">- selected run state</text>
+<text x="500" y="742.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Dashboard-only state</text>
+<text x="500" y="769.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Agent progress</text>
+<text x="500" y="796.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Current activity</text>
+<text x="500" y="823.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">UI labels</text>
+<text x="500" y="850.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Custom messages</text>
+<text x="500" y="877.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Graph positions</text>
+<text x="500" y="904.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Selected run state</text>
 <rect x="180" y="1008" width="640" height="292" rx="18" fill="#f2f4f7"/>
 <text x="202" y="1036" font-size="16" font-weight="600" letter-spacing="1.5" fill="#4b4b4b">REFLEX — PYTHON APP</text>
 <rect x="200" y="1054" width="600" height="226" rx="14" fill="#f9dbe8"/>
-<text x="500" y="1086.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">task creation</text>
-<text x="500" y="1113.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">run controls</text>
-<text x="500" y="1140.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">live monitoring</text>
-<text x="500" y="1167.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">traces</text>
-<text x="500" y="1194.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">experiments</text>
-<text x="500" y="1221.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">evaluations</text>
-<text x="500" y="1248.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">artifacts</text>
+<text x="500" y="1086.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Task creation</text>
+<text x="500" y="1113.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Run controls</text>
+<text x="500" y="1140.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Live monitoring</text>
+<text x="500" y="1167.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Traces</text>
+<text x="500" y="1194.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Experiments</text>
+<text x="500" y="1221.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Evaluations</text>
+<text x="500" y="1248.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Artifacts</text>
 <rect x="180" y="1352" width="640" height="373" rx="18" fill="#f2f4f7"/>
 <text x="202" y="1380" font-size="16" font-weight="600" letter-spacing="1.5" fill="#4b4b4b">CUSTOM DASHBOARD — THE PAGE</text>
-<rect x="200" y="1398" width="600" height="307" rx="14" fill="#fbe1cc"/>
+<rect x="200" y="1398" width="600" height="307" rx="14" fill="#dbe3ee"/>
 <text x="500" y="1430.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Overview</text>
 <text x="500" y="1457.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Workflow DAG</text>
 <text x="500" y="1484.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Agent status</text>
@@ -64,8 +64,10 @@
 <text x="500" y="1619.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Costs / tokens</text>
 <text x="500" y="1646.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Live activity</text>
 <text x="500" y="1673.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Errors</text>
-<rect x="360" y="1777" width="280" height="62" rx="18" fill="#f2f4f7"/>
-<text x="500" y="1808" text-anchor="middle" dominant-baseline="central" font-size="22" font-weight="700" fill="#4b4b4b">BROWSER</text>
+<rect x="180" y="1777" width="640" height="130" rx="18" fill="#f2f4f7"/>
+<text x="202" y="1805" font-size="16" font-weight="600" letter-spacing="1.5" fill="#4b4b4b">BROWSER — YOUR TAB</text>
+<rect x="200" y="1823" width="600" height="64" rx="14" fill="#e9e9e9"/>
+<text x="500" y="1855.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">The page at 127.0.0.1:3007</text>
 <line x1="500" y1="162" x2="265" y2="210" stroke="#9a9a9a" stroke-width="2.5" stroke-linecap="round" marker-end="url(#ah)"/>
 <line x1="500" y1="162" x2="735" y2="210" stroke="#9a9a9a" stroke-width="2.5" stroke-linecap="round" marker-end="url(#ah)"/>
 <line x1="265" y1="506" x2="500" y2="662" stroke="#9a9a9a" stroke-width="2.5" stroke-linecap="round" marker-end="url(#ah)"/>

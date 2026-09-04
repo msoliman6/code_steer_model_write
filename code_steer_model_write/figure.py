@@ -168,24 +168,27 @@ def layout(spec: RecipeSpec, *, names: dict[str, str] | None = None) -> Figure:
             f.arrows.append((270, top + BOX_DY + BOX_H2, 412, my - 4, False, False))
             f.arrows.append((730, top + BOX_DY + BOX_H2, 588, my - 4, False, False))
             y = top + BAND_H3
-        elif fig.checker and fig.extra:  # three across, a sequence
-            f.bands.append(Band(top, BAND_H, st.hue, label))
+        elif fig.checker and fig.extra:  # three across, a sequence; the actor on its own line
+            f.bands.append(Band(top, BAND_H2, st.hue, label))
             xs = (88, 371, 654)
             phrases = [fig.author, fig.checker, fig.extra[0]]
             for x, ph in zip(xs, phrases, strict=True):
-                f.boxes.append(Box(x, top + BOX_DY, 258, BOX_H, _kind_of(ph), _text(ph, names), size=18))
-            cy = top + BOX_DY + BOX_H / 2 - 2
+                lines = _text(ph, names)
+                if _kind_of(ph) in ("a", "b") and len(lines) == 1 and " " in lines[0]:
+                    lines = list(lines[0].split(" ", 1))  # "Claude" / "writes the contract"
+                f.boxes.append(Box(x, top + BOX_DY, 258, BOX_H2, _kind_of(ph), lines, size=18))
+            cy = top + BOX_DY + BOX_H2 / 2 - 2
             f.arrows.append((350, cy, 367, cy, False, False))
             f.arrows.append((633, cy, 650, cy, False, False))
-            y = top + BAND_H
+            y = top + BAND_H2
         elif fig.checker:  # author and checker, review rounds between them
             f.bands.append(Band(top, BAND_H, st.hue, label))
-            f.boxes.append(Box(130, top + BOX_DY, 280, BOX_H, _kind_of(fig.author), _text(fig.author, names)))
+            f.boxes.append(Box(100, top + BOX_DY, 320, BOX_H, _kind_of(fig.author), _text(fig.author, names)))
             f.boxes.append(
-                Box(590, top + BOX_DY, 280, BOX_H, _kind_of(fig.checker), _text(fig.checker, names))
+                Box(580, top + BOX_DY, 320, BOX_H, _kind_of(fig.checker), _text(fig.checker, names))
             )
             cy = top + BOX_DY + BOX_H / 2
-            f.arrows.append((420, cy, 580, cy, True, True))
+            f.arrows.append((430, cy, 570, cy, True, True))
             if fig.rounds:
                 f.labels.append((CX, cy - 21, fig.rounds))
             y = top + BAND_H
@@ -295,7 +298,7 @@ def render_svg(f: Figure, theme: Theme, *, names: dict[str, str] | None = None) 
         if theme == "light":
             L.append(f'<rect x="60" y="{b.y:g}" width="880" height="{b.h:g}" rx="18" fill="{BAND_LIGHT}"/>')
             L.append(
-                f'<text x="82" y="{b.y + LABEL_DY:g}" font-size="15" font-weight="600" letter-spacing="1.5" fill="{muted}">{_esc(b.label.split(" ", 1)[1])}</text>'
+                f'<text x="82" y="{b.y + LABEL_DY:g}" font-size="15" font-weight="600" letter-spacing="1.5" fill="{muted}">{_esc(b.label)}</text>'
             )
         else:
             a = 0.06 if b.h > BAND_H else 0.07
@@ -321,10 +324,16 @@ def render_svg(f: Figure, theme: Theme, *, names: dict[str, str] | None = None) 
             if i == 0 and b.glyph and b.kind in ("a", "b"):
                 mark = MARKS[b.kind]
                 if mark.exists():  # the side's mark, as on the page
+                    if n > 1:  # the actor's name alone on the line: the mark sits just before it
+                        tw = len(ln) * 0.58 * b.size
+                        mx = b.x + b.w / 2 - (28 + tw) / 2
+                        dx = 14.0
+                    else:
+                        mx = b.x + 14
+                        dx = 12.0
                     L.append(
-                        f'<image href="{_data_uri(mark)}" x="{b.x + 14:g}" y="{cy - 11:.1f}" width="22" height="22"/>'
+                        f'<image href="{_data_uri(mark)}" x="{mx:g}" y="{cy - 11:.1f}" width="22" height="22"/>'
                     )
-                    dx = 12.0
                 elif theme == "dark":
                     g, gc = ACTORS[b.kind][1], ACTORS[b.kind][2]
                     glyph = f'<tspan fill="{gc}">{g} </tspan>'
