@@ -63,7 +63,11 @@ Agreed with the user on 2026-09-04. Nothing below is code; it is what the code w
   leaves in phase 6 with the price map vendored). The doctor names the tool behind each seam.
   Walk 13/13, tests 101, ruff and pyright clean. Classes retired, from section 8 once a side
   runs on it: an exit code that lies, a message parsed by position, an accounting path skipped
-  on one exit, liveness from the wrong signal -- for that side.
+  on one exit, liveness from the wrong signal -- for that side. **For this project the live
+  path stays the CLI logins** (the user's rule, 2026-09-04: no API keys); PydanticAI is the
+  API implementation behind the seam, tested and ready for a deployment with keys, not the
+  path a live run here takes. The CLI backends therefore keep their fixes from live-3 and the
+  four classes above remain possible on them.
   **Live:** `live-3` halted at contract arbitration (a refusal with no re-ask, in the CLI
   backend; fixed at the class, ledger). `live-4` (2026-09-04, Haiku 4.5 low + gpt-5.4-mini
   low, auto, one round): COMPLETED, 27 steps, 0 halts, 0 resumes, 3 refusals all recovered,

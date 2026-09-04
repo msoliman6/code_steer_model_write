@@ -66,3 +66,6 @@ Every module docstring, check and walk leg cites the rule number it enforces.
 - The seams are `code_steer_model_write/layers/` (ARCHITECTURE.md section 6 in
   `production_agentic_workflow`): a check or a step never shells out, reads a policy or judges
   content directly; it goes through `layers.current()`. A tool is chosen behind an interface.
+- Live runs use the CLI logins (`claude_cli`, `codex_cli`, `CSMW_CLI_USE_LOGIN=1`, the shell's
+  `ANTHROPIC_API_KEY` unset), never API keys. The `pydantic_ai` backend exists for deployments
+  that have keys.
