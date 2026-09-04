@@ -200,7 +200,7 @@ Values are USD per million input and output tokens.
 ## Read more
 
 - [docs/PLAN.md](docs/PLAN.md) — the full design: backbone, schemas, verification, recipes, dashboard, figure, build order
-- [docs/RELIABILITY.md](docs/RELIABILITY.md) — the doctrine the rules come from (imported from freeze-and-swap)
+- [docs/RELIABILITY.md](docs/RELIABILITY.md) — the doctrine the rules come from
 - [docs/BUG-LEDGER.md](docs/BUG-LEDGER.md) — the bug classes; classify before fixing, fix the class
 - [docs/HACKATHON-30MIN.md](docs/HACKATHON-30MIN.md) — the first thirty minutes
 - [docs/ADD-A-RECIPE.md](docs/ADD-A-RECIPE.md) — extend it
