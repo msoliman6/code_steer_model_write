@@ -667,17 +667,18 @@ def eyebrow(text, right: rx.Component | None = None) -> rx.Component:
     )
 
 
-def pill(text) -> rx.Component:
-    return rx.box(
-        rx.text(text, **MONO, font_size=SMALL, color=T.MUTED),
-        border=f"1px solid {T.BORDER}",
-        border_radius=T.RADIUS["chip"],
-        padding="2px 10px",
-    )
+PILL_STYLE = {
+    "font_family": T.MONO,
+    "font_size": SMALL,
+    "font_weight": "700",
+    "letter_spacing": "0.08em",
+    "text_transform": "uppercase",
+}
 
 
-def status_pill(text, tone) -> rx.Component:
-    """Uppercase mono on a faint tint: CONFIGURED · MISSING KEY · NOT ON PATH."""
+def pill(text, tone="neutral", *, upper: bool = True) -> rx.Component:
+    """The reference pill: a filled rounded rectangle with a faint tint of its colour, the text in
+    that colour, bold, uppercase, letter-spaced. One component for status, chips and settings."""
     color = rx.match(
         tone,
         ("ok", T.PILL["ok"][0]),
@@ -692,26 +693,58 @@ def status_pill(text, tone) -> rx.Component:
         ("bad", T.PILL["bad"][1]),
         T.PILL["neutral"][1],
     )
+    style = dict(PILL_STYLE)
+    if not upper:
+        style.pop("text_transform")
     return rx.box(
-        rx.text(text, **MONO, font_size=SMALL, font_weight="700", letter_spacing="0.06em", color=color),
+        rx.text(text, **style, color=color),
         background=bg,
-        border_radius=T.RADIUS["chip"],
-        padding="3px 10px",
+        border_radius="8px",
+        padding="4px 11px",
+        white_space="nowrap",
+    )
+
+
+def status_pill(text, tone) -> rx.Component:
+    return pill(text, tone)
+
+
+def setting_pill(label: str, value) -> rx.Component:
+    """A settings pill: the label uppercase, the value as it is (a model id keeps its case)."""
+    return rx.box(
+        rx.hstack(
+            rx.text(label, **PILL_STYLE, color=T.PILL["neutral"][0]),
+            rx.text(value, **MONO, font_size=SMALL, font_weight="700", color=T.TEXT),
+            spacing="2",
+            align="center",
+        ),
+        background=T.PILL["neutral"][1],
+        border_radius="8px",
+        padding="4px 11px",
+        white_space="nowrap",
     )
 
 
 def chip(c: ChipRow) -> rx.Component:
-    color = rx.match(c.tone, ("bad", T.BAD), ("live", T.MUTED), T.WARN)
     return rx.box(
         rx.hstack(
-            rx.text(c.label, **MONO, font_size=SMALL),
-            rx.text(c.count, **MONO, font_size=SMALL, font_weight="700"),
+            rx.text(
+                c.label, **PILL_STYLE, color=rx.match(c.tone, ("bad", T.PILL["bad"][0]), T.PILL["warn"][0])
+            ),
+            rx.text(
+                c.count,
+                **MONO,
+                font_size=SMALL,
+                font_weight="700",
+                color=rx.match(c.tone, ("bad", T.PILL["bad"][0]), T.PILL["warn"][0]),
+            ),
             spacing="2",
+            align="center",
         ),
-        border=f"1px solid {color}",
-        color=color,
-        border_radius=T.RADIUS["chip"],
-        padding="2px 10px",
+        background=rx.match(c.tone, ("bad", T.PILL["bad"][1]), T.PILL["warn"][1]),
+        border_radius="8px",
+        padding="4px 11px",
+        white_space="nowrap",
     )
 
 
@@ -899,9 +932,9 @@ def header() -> rx.Component:
         ),
         progress_bar(),
         rx.hstack(
-            rx.foreach(S.model_rows, lambda m: pill(f"{m.role} {m.model}")),
-            pill(f"Rounds {S.rounds}"),
-            pill(S.mode),
+            rx.foreach(S.model_rows, lambda m: setting_pill(m.role, m.model)),
+            setting_pill("rounds", S.rounds.to_string()),
+            setting_pill("mode", S.mode),
             spacing="2",
             margin_top=T.SPACE["md"],
             wrap="wrap",
