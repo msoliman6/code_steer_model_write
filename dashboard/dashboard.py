@@ -870,8 +870,13 @@ def start_box() -> rx.Component:
         rx.box(min_height="22px"),
         rx.box(
             rx.vstack(
-                rx.text("▸", color=T.MUTED),
-                rx.text("Start", font_weight="700", font_size=f"{T.SIZE['title']}px", color=T.TEXT),
+                rx.hstack(
+                    rx.text("▸", color=T.MUTED, font_size=f"{T.SIZE['title']}px"),
+                    rx.text("Start", font_weight="700", font_size=f"{T.SIZE['title']}px", color=T.TEXT),
+                    spacing="2",
+                    align="center",
+                    justify="center",
+                ),
                 rx.text("settings", **MONO, color=T.MUTED, font_size=SMALL),
                 spacing="1",
                 align="center",
