@@ -465,6 +465,7 @@ class S(rx.State):
         self.runs = _runs()
         if not self.run_dir and self.runs:
             self.run_dir = self.runs[0]["dir"]
+        self.hash_ = ""  # a page load rebuilds the view even when nothing on disk moved
         if self.run_dir:
             self._apply(self.run_dir)
 
@@ -785,7 +786,6 @@ def stage_box(s: Stage) -> rx.Component:
     glyph = rx.match(s.state, ("done", "✓"), ("now", "●"), ("halted", "■"), "○")
     return rx.vstack(
         rx.hstack(
-            rx.text(s.n, **MONO, color=hue, font_size=SMALL),
             rx.foreach(
                 s.tokens,
                 lambda t: rx.hstack(
@@ -803,7 +803,14 @@ def stage_box(s: Stage) -> rx.Component:
         ),
         rx.box(
             rx.vstack(
-                rx.text(glyph, color=rx.cond(s.state == "halted", T.BAD, hue)),
+                rx.hstack(
+                    rx.text(s.n, **MONO, color=hue, font_size=SMALL),
+                    rx.text("·", color=T.DIM),
+                    rx.text(s.emoji, font_size=SMALL),
+                    rx.text(glyph, color=rx.cond(s.state == "halted", T.BAD, hue)),
+                    spacing="2",
+                    align="center",
+                ),
                 rx.text(s.title, font_weight="700", font_size=f"{T.SIZE['title']}px", color=T.TEXT),
                 rx.text(
                     rx.cond(s.rounds != "", f"{s.rounds} · {s.duration}", s.duration),
