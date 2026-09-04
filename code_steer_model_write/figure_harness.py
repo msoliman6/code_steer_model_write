@@ -197,7 +197,7 @@ def render(theme: Theme = "dark", names: dict[str, str] | None = None) -> str:  
         for k, ln in enumerate(n.items):
             cy = iy + PAD + k * LEAD if len(n.items) > 1 else iy + ih / 2
             L.append(
-                f'<text x="{ix + iw / 2:g}" y="{cy:.1f}" text-anchor="middle" dominant-baseline="central" font-size="{ITEM}" font-weight="500" fill="{text}">{_esc(ln)}</text>'
+                f'<text x="{ix + 24:g}" y="{cy:.1f}" dominant-baseline="central" font-size="{ITEM}" font-weight="500" fill="{text}">{_esc(ln)}</text>'
             )
     top, pre, ml, mon, ref, dash, browser = nodes
 
