@@ -615,7 +615,11 @@ class S(rx.State):
 
     @rx.var
     def picked_elsewhere(self) -> bool:
-        return bool(self.picked) and self.picked != self.current_stage
+        return (
+            bool(self.picked)
+            and self.picked != self.current_stage
+            and self.control in ("running", "gate", "stopping")
+        )
 
     @rx.var
     def stage_hue(self) -> str:
@@ -1448,13 +1452,17 @@ def evidence() -> rx.Component:
             padding_top=T.SPACE["sm"],
         ),
         rx.el.details(
-            rx.el.summary(rx.text(f"Carried · {S.carried.length()}", **MONO, color=T.WARN, font_size=BODY)),
+            rx.el.summary(
+                rx.text(f"CARRIED · {S.carried.length()}", **{**EYEBROW, "color": T.WARN}, display="inline")
+            ),
             rx.foreach(S.carried, lambda c: rx.text(f"{c.kind} {c.id} · {c.summary}", font_size=BODY)),
             id="run-carried",
             open=S.detail_full,
         ),
         rx.el.details(
-            rx.el.summary(rx.text(f"Event log · {S.events.length()}", **MONO, color=T.MUTED, font_size=BODY)),
+            rx.el.summary(
+                rx.text(f"EVENT LOG · {S.events.length()}", **{**EYEBROW, "color": T.DIM}, display="inline")
+            ),
             rx.hstack(
                 rx.foreach(
                     ["all", "0", "1", "2", "3", "4"],
@@ -1479,7 +1487,7 @@ def evidence() -> rx.Component:
             open=S.detail_full,
         ),
         rx.el.details(
-            rx.el.summary(rx.text("Report", **MONO, color=T.MUTED, font_size=BODY)),
+            rx.el.summary(rx.text("REPORT", **{**EYEBROW, "color": T.DIM}, display="inline")),
             rx.cond(S.report_md != "", rx.markdown(S.report_md), rx.text("not yet", color=T.DIM)),
             id="run-report",
             open=S.detail_full,
