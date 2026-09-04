@@ -458,18 +458,33 @@ def stages_rail() -> rx.Component:
 
 
 def start_page() -> rx.Component:
-    from .dashboard import sidebar
+    from .dashboard import S, runs_tabs, sidebar
 
     return rx.hstack(
         sidebar(active="new"),
-        rx.box(start_form(), flex="1", width="100%", overflow_y="auto", min_height="100vh"),
+        rx.box(
+            rx.vstack(
+                rx.box(
+                    runs_tabs(active=False),
+                    padding=f"{T.SPACE['lg']} {T.SPACE['lg']} 0 {T.SPACE['lg']}",
+                    width="100%",
+                ),
+                start_form(),
+                spacing="0",
+                width="100%",
+            ),
+            flex="1",
+            width="100%",
+            overflow_y="auto",
+            min_height="100vh",
+        ),
         spacing="0",
         align="start",
         width="100%",
         background=T.SURFACE,
         color=T.TEXT,
         font_family=T.SANS,
-        on_mount=Start.load,
+        on_mount=[Start.load, S.load_runs],
     )
 
 

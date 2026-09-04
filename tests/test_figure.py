@@ -28,11 +28,11 @@ def test_dark_figure_matches_reference_geometry():
     assert _colours(new) <= _colours(ref), _colours(new) - _colours(ref)
     assert new.count("<image") == 9  # a mark in every actor box (2+2+3+2)
     for label in (
-        "🗺 0 · PLAN",
-        "📜 1 · CONTRACTS",
-        "🧪 2 · VERIFICATION DESIGN",
-        "🔨 3 · BUILD — TWO ISOLATED AUTHORS",
-        "🚑 4 · VERIFICATION RUN",
+        "0 · PLAN",
+        "1 · CONTRACTS",
+        "2 · VERIFICATION DESIGN",
+        "3 · BUILD — TWO ISOLATED AUTHORS",
+        "4 · VERIFICATION RUN",
     ):
         assert label in new, label
     assert (
