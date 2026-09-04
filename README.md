@@ -131,7 +131,8 @@ one. The agent workflow is Python; it feeds Prefect and MLflow through their SDK
 <img src="docs/media/harness.svg" alt="How the runtime is wired" width="760">
 </picture></p>
 
-### Clean responsibility split
+<details>
+<summary><b>Clean responsibility split</b></summary>
 
 | system | owns |
 |---|---|
@@ -140,7 +141,10 @@ one. The agent workflow is Python; it feeds Prefect and MLflow through their SDK
 | **monitor.db** | dashboard-only state · live human-readable progress · current activity · UI metadata · graph layout / positions |
 | **Reflex** | human control plane · create tasks · launch / cancel runs · live dashboard · inspect traces · inspect experiments · inspect evaluations |
 
-### Shared workflow id
+</details>
+
+<details>
+<summary><b>Shared workflow id</b></summary>
 
 Every subsystem receives the same application-level id, and the dashboard joins on it:
 
@@ -152,6 +156,7 @@ workflow_run_id = "run_123"
    +-- monitor.db --> What UI-specific state should be displayed?
 ```
 
+</details>
 
 ## Install
 
