@@ -134,6 +134,7 @@ class RunView(BaseModel):
     tokens: dict[str, int]
     cost: dict[str, str] = {}  # per side, '$0.12' or '$?' when the price is unknown (rule 14)
     cost_total: str = ""
+    cost_note: str = ""  # "at API rates" when a side ran on a CLI login: the subscription bills flat
     now_word: str
     now_text: str
     now_role: str | None
@@ -488,6 +489,7 @@ def build_view(run_dir: Path | str) -> RunView:
             if cost_by_role and all(v is not None for v in cost_by_role.values())
             else None
         ),
+        cost_note=_cost_note(paths),
         now_word=now_word,
         now_text=now_text,
         now_role=now_role,
@@ -805,6 +807,20 @@ def _step_rows(
                 )
             )
     return out
+
+
+def _cost_note(paths: RunPaths) -> str:
+    """The estimate is the API price of the tokens. A CLI backend on a subscription login is not
+    billed per token, so the page says so beside the figure rather than presenting it as a bill."""
+    tp = paths.run_dir / "task.json"
+    if not tp.exists():
+        return ""
+    try:
+        roles = json.loads(tp.read_text()).get("roles") or {}
+    except ValueError:
+        return ""
+    backends = {str((r or {}).get("backend", "")) for r in roles.values()}
+    return "at API rates" if backends & {"claude_cli", "codex_cli"} else ""
 
 
 def _stage_of(phase: str, spec) -> str:

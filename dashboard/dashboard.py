@@ -362,6 +362,7 @@ class S(rx.State):
     model_rows: list[ModelRow] = []
     token_rows: list[TokenRow] = []
     cost_total: str = ""
+    cost_note: str = ""
     flagged: list[str] = []
     report_md: str = ""
     settings_rows: list[SettingRow] = []
@@ -442,6 +443,7 @@ class S(rx.State):
             for k, n in d["tokens"].items()
         ]
         self.cost_total = d.get("cost_total", "")
+        self.cost_note = d.get("cost_note", "")
         self.artifacts = [ArtRow(**a) for a in d["artifacts"]]
         self.runs = _runs()
         self.artifact_md = {k: render_artifact(self.run_dir, k) for k in self.open_paths}
@@ -1065,6 +1067,18 @@ def progress_bar() -> rx.Component:
             ),
         ),
         rx.text(f"TOT = {S.cost_total}", **MONO, font_weight="700", font_size=SMALL, white_space="nowrap"),
+        rx.cond(
+            S.cost_note != "",
+            rx.text(
+                S.cost_note,
+                **MONO,
+                color=T.DIM,
+                font_size=SMALL,
+                white_space="nowrap",
+                title="a CLI on a subscription login is not billed per token; this is what the tokens would cost on the API",
+            ),
+            rx.fragment(),
+        ),
         spacing="4",
         justify="center",
         align="center",

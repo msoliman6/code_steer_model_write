@@ -200,6 +200,10 @@ override a rate, or price a model of your own, put a `prices.json` next to your 
 Values are USD per million input and output tokens; cached input is billed at the map's cached
 rate where it states one.
 
+The figure is always the API price of the tokens. A side that ran on `claude -p` or `codex exec`
+under a subscription login is not billed per token, and the page marks the estimate "at API rates"
+for such runs: a comparison, not a bill.
+
 ## Read more
 
 - [docs/PLAN.md](docs/PLAN.md) — the full design: backbone, schemas, verification, recipes, dashboard, figure, build order
