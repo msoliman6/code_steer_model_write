@@ -296,7 +296,6 @@ def stage_column(t: Tile) -> rx.Component:
     return rx.vstack(
         rx.box(
             rx.hstack(
-                rx.text(t.emoji, font_size=f"{T.SIZE['title']}px"),
                 rx.text(t.n, **MONO, color=hue, font_size=f"{T.SIZE['title']}px", font_weight="700"),
                 rx.text(
                     t.title,

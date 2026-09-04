@@ -804,7 +804,6 @@ def stage_box(s: Stage) -> rx.Component:
         rx.box(
             rx.vstack(
                 rx.hstack(
-                    rx.text(s.emoji, font_size=f"{T.SIZE['title']}px"),
                     rx.text(s.n, **MONO, color=hue, font_size=f"{T.SIZE['title']}px", font_weight="700"),
                     rx.text(
                         s.title,
