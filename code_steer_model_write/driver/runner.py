@@ -8,7 +8,10 @@ halt report; a driver exception is `broke`. The loop never asks a model what to 
 
 from __future__ import annotations
 
+import os
+import socket
 import subprocess
+import threading
 import time
 import traceback
 from pathlib import Path
@@ -20,7 +23,7 @@ from ..config import RoleSpec
 from ..events import EventLog
 from ..prompts import fill, load
 from ..spec.base import CheckContext
-from ..state.run import Outcome, RunPaths, RunState, RunStatus
+from ..state.run import Outcome, RunnerRecord, RunPaths, RunState, RunStatus, runner_alive
 from ..spec.events import now
 from .driver import Driver, DriverError
 from .halt import Halt, HaltReason
@@ -67,8 +70,22 @@ class Runner:
         )
 
     def begin(self) -> Outcome | None:
-        """Clear a halt (resume), mark RUNNING. Returns an outcome only if the run cannot start."""
+        """Clear a halt (resume), mark RUNNING, take the runner record. Returns an outcome only
+        if the run cannot start (another live runner holds it)."""
         st = self.driver.state
+        if runner_alive(self.paths):
+            other = RunnerRecord.read(self.paths)
+            self.events.append(
+                "run.status",
+                status="REFUSED",
+                reason=f"another runner (pid {other.pid if other else '?'}) holds this run",
+            )
+            return Outcome.BROKE
+        self._record = RunnerRecord(pid=os.getpid(), host=socket.gethostname())
+        self._record.write(self.paths)
+        self._beat = threading.Thread(target=self._heartbeat, daemon=True)
+        self._beat_stop = threading.Event()
+        self._beat.start()
         h = Halt.read(self.paths)
         if h is not None:
             Halt.clear(self.paths)
@@ -78,6 +95,22 @@ class Runner:
             self.events.append("run.status", status="RESUMED", from_step=h.step)
         self._set(RunStatus.RUNNING)
         return None
+
+    def _heartbeat(self) -> None:
+        while not self._beat_stop.wait(5):
+            try:
+                self._record.alive_at = now()
+                self._record.write(self.paths)
+            except Exception:  # noqa: BLE001 -- a heartbeat that cannot write must not kill the run
+                pass
+
+    def _close_record(self) -> None:
+        rec = getattr(self, "_record", None)
+        if rec is None:
+            return
+        self._beat_stop.set()
+        rec.ended_at = now()
+        rec.write(self.paths)
 
     def finish(self) -> Outcome:
         """Nothing is ready: complete, or report a blocked program."""
@@ -118,6 +151,8 @@ class Runner:
                     resumable=False,
                 )
             )
+        finally:
+            self._close_record()
 
     def _halt(self, h: Halt) -> Outcome:
         h.write(self.paths)

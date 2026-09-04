@@ -104,6 +104,10 @@ class RunPaths(BaseModel):
     def report(self) -> Path:
         return self.run_dir / "report.json"
 
+    @property
+    def runner(self) -> Path:
+        return self.run_dir / "runner.json"
+
     def resolve(self, rel: str) -> Path:
         """One normaliser at the edge: every deliverable path is run-dir relative."""
         p = Path(rel)
@@ -113,6 +117,52 @@ class RunPaths(BaseModel):
             except ValueError as e:
                 raise ValueError(f"path outside the run dir: {rel}") from e
         return self.run_dir / p
+
+
+class RunnerRecord(BaseModel):
+    """Who drives the run: written by the runner at begin, refreshed while it lives, closed at
+    the end. A RUNNING state whose runner is gone is a stale run (the process died without a
+    word); readers say so instead of trusting the file (ledger: an exit code that lies)."""
+
+    pid: int
+    host: str = ""
+    started_at: datetime = Field(default_factory=now)
+    alive_at: datetime = Field(default_factory=now)
+    ended_at: datetime | None = None
+
+    def write(self, paths: "RunPaths") -> None:
+        atomic_write_text(paths.runner, self.model_dump_json(indent=2))
+
+    @classmethod
+    def read(cls, paths: "RunPaths") -> "RunnerRecord | None":
+        return (
+            cls.model_validate_json(paths.runner.read_text(encoding="utf-8"))
+            if paths.runner.exists()
+            else None
+        )
+
+
+def pid_alive(pid: int) -> bool:
+    import os
+
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
+def runner_alive(paths: "RunPaths", *, max_quiet_seconds: int = 30) -> bool:
+    """True iff a runner holds this run: its record is open, its pid lives, and its heartbeat
+    is fresh."""
+    rec = RunnerRecord.read(paths)
+    if rec is None or rec.ended_at is not None:
+        return False
+    if not pid_alive(rec.pid):
+        return False
+    return (now() - rec.alive_at).total_seconds() <= max_quiet_seconds
 
 
 class RunState(BaseModel):

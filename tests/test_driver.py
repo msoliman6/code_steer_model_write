@@ -1,4 +1,5 @@
 import json
+import os
 
 import pytest
 
@@ -166,3 +167,29 @@ def test_second_run_in_same_dir_refused(tmp_path):
     RunState.create(paths, _task())
     with pytest.raises(FileExistsError):
         RunState.create(paths, _task())
+
+
+def test_runner_record_and_stale_detection(tmp_path):
+    """A RUNNING state whose runner is gone is stale; a live runner refuses a second driver."""
+    from code_steer_model_write import walk
+    from code_steer_model_write.state.run import RunnerRecord, runner_alive
+    from dashboard.model import build_view
+
+    with walk.env(FAKE_MODELS="1"):
+        paths, recipe, task = walk.start("code_builder", tmp_path / "run")
+        assert walk.make_runner(paths, recipe, task).drive() is Outcome.COMPLETED
+    rec = RunnerRecord.read(paths)
+    assert rec is not None and rec.ended_at is not None and not runner_alive(paths)
+    # forge a stale run: state says RUNNING, the record names a dead pid
+    st = RunState.load(paths)
+    st.status = RunStatus.RUNNING
+    st.save(paths)
+    RunnerRecord(pid=99999999).write(paths)
+    assert not runner_alive(paths)
+    v = build_view(paths.run_dir)
+    assert v.process == "stale" and v.dot == "halted" and v.now_word == "STALE"
+    # a live record with a fresh heartbeat refuses another driver
+    RunnerRecord(pid=os.getpid()).write(paths)
+    assert runner_alive(paths)
+    with walk.env(FAKE_MODELS="1"):
+        assert walk.make_runner(paths, recipe, task).drive() is Outcome.BROKE

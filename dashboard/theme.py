@@ -41,7 +41,7 @@ SANS = "Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif"
 
 # the five-step type scale (px); CSMW_BASE shifts all of them
 BASE = 15
-SIZE = {"eyebrow": 13, "body": 15, "title": 17, "headline": 22, "page": 30}
+SIZE = {"eyebrow": 14, "body": 16, "title": 18, "headline": 22, "page": 30}
 LETTER_SPACING_EYEBROW = "0.08em"
 
 SPACE = {"xs": "4px", "sm": "8px", "md": "12px", "lg": "20px", "xl": "32px"}

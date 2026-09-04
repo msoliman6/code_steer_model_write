@@ -64,9 +64,13 @@ def _settings_rows(run_dir: str) -> list["SettingRow"]:
 def _run_dot(d: Path, st: dict[str, Any]) -> tuple[str, str]:
     """The tab's dot from the run's files: cheap, no events read. Green running, amber waiting
     for you, red halted or broke, grey done (ringed green when clean, amber when items carried)."""
+    from code_steer_model_write.state.run import RunPaths, runner_alive
+
     status = st.get("status", "")
     if status in ("PAUSED", "FAILED", "CANCELLED") or (d / "halt.json").exists():
         return "halted", ""
+    if status == "RUNNING" and not runner_alive(RunPaths(run_dir=d)):
+        return "halted", ""  # stale: the record says running, the runner is gone
     if status == "COMPLETED":
         return "done", ("warn" if st.get("carried") else "ok")
     gates = d / "gates"
@@ -569,7 +573,7 @@ class S(rx.State):
 
     @rx.var
     def now_color(self) -> str:
-        return {"COMPLETE": T.OK, "HALT": T.BAD, "GATE": T.WARN}.get(self.now_word, T.LIVE)
+        return {"COMPLETE": T.OK, "HALT": T.BAD, "STALE": T.BAD, "GATE": T.WARN}.get(self.now_word, T.OK)
 
     # ---- the gate (one record; the form derives from it; the decision is a file) ------------
 
@@ -606,6 +610,19 @@ class S(rx.State):
         self.comments = {}
         self.hash_ = ""
         self._apply(self.run_dir)
+
+    @rx.event
+    def resume_run(self):
+        """A stale or halted run continues from disk in a detached `csmw resume`."""
+        import subprocess
+        import sys
+
+        subprocess.Popen(
+            [sys.executable, "-m", "code_steer_model_write.cli", "resume", self.run_dir, "--no-mlflow"],
+            stdout=(Path(self.run_dir) / "runner.log").open("a"),
+            stderr=subprocess.STDOUT,
+            start_new_session=True,
+        )
 
     @rx.event
     def stop_run(self):
@@ -1377,7 +1394,8 @@ def brand() -> rx.Component:
             justify_content="center",
         ),
         rx.vstack(
-            rx.text("code steers · models write", font_weight="700", font_size=BODY, white_space="nowrap"),
+            rx.text("code steers", font_weight="700", font_size=BODY, line_height="1.15"),
+            rx.text("models write", font_weight="700", font_size=BODY, line_height="1.15"),
             rx.text("run control", color=T.MUTED, font_size=SMALL),
             spacing="0",
             align="start",

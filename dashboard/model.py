@@ -21,7 +21,7 @@ from code_steer_model_write.driver.halt import Halt
 from code_steer_model_write.events import EventLog
 from code_steer_model_write.recipes import registry
 from code_steer_model_write.spec.events import Event
-from code_steer_model_write.state.run import RunPaths, RunState
+from code_steer_model_write.state.run import RunPaths, RunState, runner_alive
 
 
 def _fmt_dur(seconds: float | None) -> str:
@@ -177,7 +177,8 @@ def build_view(run_dir: Path | str) -> RunView:
     t0 = evs[0].ts if evs else st.created_at
     t_end = st.completed_at or (evs[-1].ts if evs else t0)
     now = datetime.now(timezone.utc)
-    running = st.status.value == "RUNNING"
+    stale = st.status.value == "RUNNING" and not runner_alive(paths)
+    running = st.status.value == "RUNNING" and not stale
     elapsed_s = ((now if running else t_end) - t0).total_seconds()
 
     # ---- per-step facts from the events -------------------------------------------------
@@ -323,7 +324,9 @@ def build_view(run_dir: Path | str) -> RunView:
         current = last_done_stage or (stages[0].id if stages else None)
 
     # ---- process, product, now line ----------------------------------------------------------
-    if st.status.value == "COMPLETED":
+    if stale:
+        process = "stale"
+    elif st.status.value == "COMPLETED":
         process = "completed"
     elif st.status.value == "PAUSED":
         process = "halted honestly"
@@ -414,7 +417,7 @@ def build_view(run_dir: Path | str) -> RunView:
         fl = [d["id"] for d in json.loads(paths.decisions.read_text()) if d.get("flagged")]
     rh, live = refresh_hash(paths)
     rmd = (paths.run_dir / "REPORT.md").read_text() if (paths.run_dir / "REPORT.md").exists() else None
-    dot, ring = run_dot(st, halt, any(s.gate for s in stages), bool(carried) or failing > 0)
+    dot, ring = run_dot(st, halt, any(s.gate for s in stages), bool(carried) or failing > 0, stale=stale)
     fracs: list[float] = []
     for sv in stages:
         if sv.state == "done" or st.status.value == "COMPLETED":
@@ -468,9 +471,11 @@ def build_view(run_dir: Path | str) -> RunView:
     )
 
 
-def run_dot(st: RunState, halt: Halt | None, gated: bool, unclean: bool) -> tuple[str, str]:
-    """The runs-tab dot: green running, amber waiting for you, red halted or broke, grey done."""
-    if st.status.value in ("PAUSED", "FAILED", "CANCELLED") or halt is not None:
+def run_dot(
+    st: RunState, halt: Halt | None, gated: bool, unclean: bool, *, stale: bool = False
+) -> tuple[str, str]:
+    """The runs-tab dot: green running, amber waiting for you, red halted, broke or stale, grey done."""
+    if stale or st.status.value in ("PAUSED", "FAILED", "CANCELLED") or halt is not None:
         return "halted", ""
     if st.status.value == "COMPLETED":
         return "done", ("warn" if unclean else "ok")
@@ -682,6 +687,13 @@ def _now_line(
     product: str,
     elapsed: float,
 ):
+    if process == "stale":
+        last_step = next((e.step for e in reversed(evs) if e.step), None)
+        return (
+            "STALE",
+            f"the runner process is gone while the record says running · last step {last_step} · Resume continues from disk",
+            None,
+        )
     if process == "completed":
         return "COMPLETE", f"Run complete · {product} · {_fmt_dur(elapsed)}", None
     if halt is not None:
