@@ -236,7 +236,7 @@ def side_row(model: Card, effort: Card) -> rx.Component:
             width="100%",
         ),
         rx.hstack(
-            rx.text("effort", **MONO, color=T.DIM, font_size=SMALL, min_width="44px"),
+            rx.text("effort", **MONO, color=T.DIM, font_size=SMALL, min_width="52px", white_space="nowrap"),
             rx.select(
                 effort.options,
                 value=effort.value,
