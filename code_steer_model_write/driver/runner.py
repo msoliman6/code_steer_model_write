@@ -133,6 +133,17 @@ class Runner:
             if out is not None:
                 return out
             while True:
+                if (self.paths.run_dir / "STOP").exists():
+                    (self.paths.run_dir / "STOP").unlink()
+                    pend = [s.key for s in self.driver.all_pending()]
+                    return self._halt(
+                        Halt(
+                            step=pend[0] if pend else "end",
+                            reason=HaltReason.CANCELLED,
+                            message="stopped from the page",
+                            resumable=True,
+                        )
+                    )
                 ready = self.driver.next()
                 if not ready:
                     return self.finish()
@@ -140,6 +151,8 @@ class Runner:
                     outcome = self._execute(step)
                     if outcome is not None:
                         return outcome
+                    if (self.paths.run_dir / "STOP").exists():
+                        break
         except Exception as e:  # noqa: BLE001 -- the driver itself broke; report, never crash silently
             tb = traceback.format_exc(limit=8)
             return self._halt(

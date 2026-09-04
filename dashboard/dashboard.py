@@ -351,6 +351,10 @@ class S(rx.State):
     progress: float = 0.0
     stage_progress: list[float] = []
     prog_rows: list[ProgRow] = []
+    control: str = "queued"
+    control_label: str = ""
+    control_verb: str = ""
+    control_tone: str = "neutral"
 
     # ---- loading -------------------------------------------------------------------------
 
@@ -627,6 +631,23 @@ class S(rx.State):
     @rx.event
     def stop_run(self):
         atomic_write_text(Path(self.run_dir) / "STOP", "requested from the page")
+        self.hash_ = ""
+        self._apply(self.run_dir)
+
+    @rx.event
+    def control_click(self):
+        """The one verb the run's state allows (docs/DASHBOARD-DESIGN.md, the control table)."""
+        v = self.control_verb
+        if v == "stop":
+            return S.stop_run
+        if v in ("resume", "start"):
+            return S.resume_run
+        if v == "answer":
+            return S.open_gate
+        if v == "report":
+            self.view_tab = "evidence"
+            self.detail_full = True
+        return None
 
 
 # ---- styles --------------------------------------------------------------------------------
@@ -1454,8 +1475,37 @@ def sidebar() -> rx.Component:
     )
 
 
+def run_control_button() -> rx.Component:
+    """The pill is the button: state word · verb, in the state's colour, disabled when no verb."""
+    color = rx.match(
+        S.control_tone,
+        ("ok", T.PILL["ok"][0]),
+        ("warn", T.PILL["warn"][0]),
+        ("bad", T.PILL["bad"][0]),
+        T.PILL["neutral"][0],
+    )
+    bg = rx.match(
+        S.control_tone,
+        ("ok", T.PILL["ok"][1]),
+        ("warn", T.PILL["warn"][1]),
+        ("bad", T.PILL["bad"][1]),
+        T.PILL["neutral"][1],
+    )
+    return rx.box(
+        rx.text(S.control_label, **PILL_STYLE, color=color),
+        background=bg,
+        border="1px solid transparent",
+        border_radius="8px",
+        padding="8px 14px",
+        white_space="nowrap",
+        cursor=rx.cond(S.control_verb != "", "pointer", "default"),
+        opacity=rx.cond(S.control_verb != "", "1", "0.7"),
+        on_click=S.control_click,
+    )
+
+
 def bottom_bar() -> rx.Component:
-    """The next thing the run wants from you, where a human looks for the next action."""
+    """The next thing the run wants from you, and the one control that acts on it."""
     return rx.hstack(
         rx.box(width="3px", height="36px", background=S.live_hue, border_radius="2px"),
         rx.vstack(
@@ -1484,17 +1534,11 @@ def bottom_bar() -> rx.Component:
             rx.fragment(),
         ),
         rx.cond(
-            S.has_open_gate,
-            rx.button(
-                f"Answer the gate: {S.gate_title}", color_scheme="gray", variant="solid", on_click=S.open_gate
-            ),
+            S.control == "broke",
+            rx.link("New run like this ▸", href="/new", **MONO, font_size=SMALL, color=T.TEXT),
             rx.fragment(),
         ),
-        rx.cond(
-            S.is_running,
-            rx.button("Stop", size="1", color_scheme="red", variant="soft", on_click=S.stop_run),
-            rx.fragment(),
-        ),
+        run_control_button(),
         spacing="3",
         align="center",
         width="100%",

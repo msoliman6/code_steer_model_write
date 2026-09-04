@@ -153,3 +153,24 @@ text, the live blue for the selected chip; mono for every value, sans for names 
 `FIELDS` renders exactly one card; every card's chips equal the field's options; the selected chip
 equals the saved preference or the default; the Start button is inactive iff the run name or the
 request is empty; the rail preview equals the recipe's stages in order.
+
+## The run-status control (the bottom bar's right side)
+
+One control: the pill is the button. Its label carries the state word and the one verb that
+state allows, so a state never appears without its action and an action never without its
+state. Reuse this table for every recipe and every new workflow.
+
+| run state | the pill reads | click does |
+|---|---|---|
+| running, runner alive | RUNNING · STOP (green) | writes `STOP` in the run dir; the runner halts honestly at the next step boundary, reason "stopped from the page", resumable |
+| stopping, requested but not yet halted | STOPPING… (green, disabled) | nothing; flips to HALTED when the runner writes the halt |
+| waiting at a gate | GATE · ANSWER (amber) | jumps to the gate form; Proceed and Send back stay in the form |
+| halted honestly, resumable | HALTED · RESUME (red) | detached `csmw resume`; continues at the halted step from disk |
+| stale, record says running but the runner is gone | STALE · RESUME (red) | the same Resume |
+| broke, not resumable | BROKE (red, disabled) | nothing; a "New run like this" link appears beside it |
+| queued, created but never driven | QUEUED · START (grey) | the same detached resume, which begins the run |
+| completed | DONE (grey; green ring when clean, amber ring when items were carried) | opens the report |
+
+The state comes from one place, `dashboard/model.py::run_control(...)`, which reads state.json,
+the runner record, the halt, the gates and the `STOP` file; the runner (`driver/runner.py`)
+honours `STOP` between steps. The same rows drive the tab dots.

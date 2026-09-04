@@ -133,6 +133,10 @@ class RunView(BaseModel):
     refresh_hash: str
     live_files: list[str]
     artifacts: list[ArtifactRef] = Field(default_factory=list)
+    control: str = "queued"  # running | stopping | gate | halted | stale | broke | queued | done
+    control_label: str = ""
+    control_verb: str = ""  # stop | answer | resume | start | report | ""
+    control_tone: str = "neutral"
     progress: float = 0.0  # 0..1 end to end: done stages plus the running stage's steps done
     stage_progress: list[float] = Field(default_factory=list)  # per stage, 0..1, in rail order
     dot: str = "queued"  # running | waiting | halted | done | queued
@@ -418,6 +422,9 @@ def build_view(run_dir: Path | str) -> RunView:
     rh, live = refresh_hash(paths)
     rmd = (paths.run_dir / "REPORT.md").read_text() if (paths.run_dir / "REPORT.md").exists() else None
     dot, ring = run_dot(st, halt, any(s.gate for s in stages), bool(carried) or failing > 0, stale=stale)
+    ctl = run_control(
+        st, halt, any(s.gate for s in stages), stale=stale, stop_requested=(paths.run_dir / "STOP").exists()
+    )
     fracs: list[float] = []
     for sv in stages:
         if sv.state == "done" or st.status.value == "COMPLETED":
@@ -468,7 +475,34 @@ def build_view(run_dir: Path | str) -> RunView:
         dot_ring=ring,
         progress=progress,
         stage_progress=fracs,
+        control=ctl[0],
+        control_label=ctl[1],
+        control_verb=ctl[2],
+        control_tone=ctl[3],
     )
+
+
+def run_control(
+    st: RunState, halt: Halt | None, gated: bool, *, stale: bool, stop_requested: bool
+) -> tuple[str, str, str, str]:
+    """The run-status control (docs/DASHBOARD-DESIGN.md): (state, label, verb, tone). One owner
+    for what the bottom bar's button says and does."""
+    status = st.status.value
+    if status == "COMPLETED":
+        return "done", "DONE", "report", "neutral"
+    if status == "FAILED" or (halt is not None and not halt.resumable):
+        return "broke", "BROKE", "", "bad"
+    if stale:
+        return "stale", "STALE · RESUME", "resume", "bad"
+    if status in ("PAUSED", "CANCELLED") or halt is not None:
+        return "halted", "HALTED · RESUME", "resume", "bad"
+    if status == "RUNNING" and stop_requested:
+        return "stopping", "STOPPING…", "", "ok"
+    if status == "RUNNING" and gated:
+        return "gate", "GATE · ANSWER", "answer", "warn"
+    if status == "RUNNING":
+        return "running", "RUNNING · STOP", "stop", "ok"
+    return "queued", "QUEUED · START", "start", "neutral"
 
 
 def run_dot(
