@@ -6,7 +6,7 @@
 <rect x="60" y="30" width="880" height="130" rx="18" fill="#f2f4f7"/>
 <text x="82" y="58" font-size="16" font-weight="600" letter-spacing="1.5" fill="#4b4b4b">AGENT WORKFLOW — THE WORKFLOW FIGURE ABOVE · PYTHON</text>
 <rect x="80" y="76" width="840" height="64" rx="14" fill="#dbe3ee"/>
-<text x="500" y="108.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">code decides every step · models fill schemas</text>
+<text x="500" y="108.0" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="500" fill="#4b4b4b">Code decides every step · models fill schemas</text>
 <rect x="60" y="212" width="410" height="292" rx="18" fill="#f2f4f7"/>
 <text x="82" y="240" font-size="16" font-weight="600" letter-spacing="1.5" fill="#4b4b4b">PREFECT — PYTHON SDK</text>
 <rect x="80" y="258" width="370" height="226" rx="14" fill="#fbf0c4"/>

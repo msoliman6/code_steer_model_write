@@ -35,7 +35,7 @@ def _h(lines: list[str]) -> float:
     return PAD * 2 + LEAD * (len(lines) - 1)
 
 
-WORKFLOW = ["AGENT WORKFLOW", "the workflow figure above · Python"]
+WORKFLOW = ["AGENT WORKFLOW", "The workflow figure above · Python"]
 PREFECT = [
     "PREFECT",
     "Python SDK",
@@ -128,8 +128,8 @@ def layout() -> list[Node]:
         880,
         "blue",
         "AGENT WORKFLOW",
-        "the workflow figure above · Python",
-        ["code decides every step · models fill schemas"],
+        "The workflow figure above · Python",
+        ["Code decides every step · models fill schemas"],
     )
     nodes.append(n)
     y += n.h + GAP
