@@ -584,6 +584,25 @@ class S(rx.State):
         self.view_tab = "run"
 
     @rx.var
+    def status_word(self) -> str:
+        """The run's state in a word, next to the progress: the one place it is spelled out."""
+        return {
+            "done": "Finished",
+            "running": "Running",
+            "stopping": "Stopping",
+            "gate": "Waiting at a gate",
+            "halted": "Halted",
+            "stale": "Stale",
+            "broke": "Broke",
+            "queued": "Queued",
+        }.get(self.control, self.control.capitalize())
+
+    @rx.var
+    def status_color(self) -> str:
+        """The agreed tones (plan §7a.1): green running, amber gate, red halted or broke, grey done."""
+        return {"ok": T.OK, "warn": T.WARN, "bad": T.BAD}.get(self.control_tone, T.TEXT)
+
+    @rx.var
     def now_color(self) -> str:
         return {"COMPLETE": T.OK, "HALT": T.BAD, "STALE": T.BAD, "GATE": T.WARN}.get(self.now_word, T.OK)
 
@@ -927,15 +946,15 @@ def progress_segment(r: ProgRow) -> rx.Component:
 
 
 def progress_bar() -> rx.Component:
-    """tqdm, with better graphics: segments per stage, the percentage, elapsed, then the token
-    totals under their marks. The one time line on the page."""
+    """tqdm, with better graphics: segments per stage, the percentage, elapsed, the run's state in
+    its tone, then the token totals under their marks. The one line that says where the run is."""
     return rx.hstack(
-        rx.hstack(rx.foreach(S.prog_rows, progress_segment), spacing="1", width="34%", align="center"),
+        rx.hstack(rx.foreach(S.prog_rows, progress_segment), spacing="1", width="30%", align="center"),
         rx.text(S.percent, **MONO, font_weight="700", font_size=BODY, min_width="44px"),
-        rx.text(f"· {S.elapsed}", **MONO, color=T.MUTED, font_size=SMALL),
-        rx.text(
-            rx.cond(S.process == "completed", "· finished", "· running"), **MONO, color=T.DIM, font_size=SMALL
-        ),
+        rx.text("·", color=T.DIM),
+        rx.text(S.elapsed, **MONO, font_weight="700", font_size=BODY),
+        rx.text("·", color=T.DIM),
+        rx.text(S.status_word, **MONO, font_weight="700", font_size=BODY, color=S.status_color),
         rx.spacer(),
         rx.foreach(
             S.token_rows,
@@ -949,7 +968,7 @@ def progress_bar() -> rx.Component:
         spacing="3",
         align="center",
         width="100%",
-        margin_top=T.SPACE["sm"],
+        margin_top=T.SPACE["lg"],
     )
 
 
@@ -992,11 +1011,14 @@ def header() -> rx.Component:
             rx.foreach(S.model_rows, lambda m: setting_pill(m.role, m.model)),
             setting_pill("rounds", S.rounds.to_string()),
             setting_pill("mode", S.mode),
+            rx.spacer(),
+            rx.foreach(S.chips, chip),
             spacing="2",
             margin_top=T.SPACE["md"],
+            width="100%",
+            align="center",
             wrap="wrap",
         ),
-        rx.hstack(rx.foreach(S.chips, chip), spacing="2", margin_top=T.SPACE["sm"]),
         **CARD,
     )
 
@@ -1455,7 +1477,7 @@ def nav_row(key: str, label: str, *, active_key=None, href: str | None = None) -
 def brand() -> rx.Component:
     return rx.hstack(
         rx.box(
-            rx.text("🧊", font_size="18px"),
+            rx.image(src="/logo-64.png", width="30px", height="30px", alt="code steers, models write"),
             width="40px",
             height="40px",
             border_radius="10px",
@@ -1529,23 +1551,7 @@ def bottom_bar() -> rx.Component:
     """The next thing the run wants from you, and the one control that acts on it."""
     return rx.hstack(
         rx.box(width="3px", height="36px", background=S.live_hue, border_radius="2px"),
-        rx.vstack(
-            rx.hstack(
-                rx.box(width="8px", height="8px", border_radius="50%", background=S.now_color),
-                rx.text(
-                    S.now_word,
-                    **MONO,
-                    font_size=SMALL,
-                    color=T.MUTED,
-                    letter_spacing=T.LETTER_SPACING_EYEBROW,
-                ),
-                spacing="2",
-                align="center",
-            ),
-            rx.text(S.now_text, font_weight="600", font_size=BODY),
-            spacing="0",
-            align="start",
-        ),
+        rx.text(S.now_text, font_weight="600", font_size=BODY),
         rx.spacer(),
         rx.cond(
             S.picked_elsewhere,
