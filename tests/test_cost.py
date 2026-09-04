@@ -8,6 +8,9 @@ def test_prefix_match_prefers_the_longest_key():
     assert config.price_of("gpt-5-mini") == config.PRICE_PER_MTOK["gpt-5-mini"]
     assert config.price_of("gpt-5") == config.PRICE_PER_MTOK["gpt-5"]
     assert config.price_of("fake-a") is None
+    assert (
+        config.price_of("gpt-5.4-mini") is None
+    )  # a newer model is unpriced until prices.json says otherwise
 
 
 def test_cost_and_its_words():

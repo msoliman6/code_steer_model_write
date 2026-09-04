@@ -153,11 +153,8 @@ def price_table() -> dict[str, tuple[float, float]]:
 def price_of(model: str) -> tuple[float, float] | None:
     """The longest key that prefixes the model id, so gpt-5-mini wins over gpt-5."""
     table = price_table()
-    best = max(
-        (k for k in table if model == k or model.startswith(k + "-") or model.startswith(k)),
-        key=len,
-        default=None,
-    )
+    # a key matches whole dash-separated parts only: gpt-5 prices gpt-5-2025-08-07, never gpt-5.4-mini
+    best = max((k for k in table if model == k or model.startswith(k + "-")), key=len, default=None)
     return table[best] if best else None
 
 
