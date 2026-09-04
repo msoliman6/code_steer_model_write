@@ -325,6 +325,52 @@ def side_column(cards, side: str, title: str) -> rx.Component:
     )
 
 
+def run_column(card: Card) -> rx.Component:
+    """Running mode or attack rounds: a centred column with the title, the dropdown, its reason."""
+    return rx.vstack(
+        rx.text(card.name, font_weight="700", font_size=BODY, text_align="center", white_space="nowrap"),
+        rx.box(
+            centered_select(card.options, card.value, lambda v: Start.set_value(card.key, v)), width="210px"
+        ),
+        rx.text(
+            card.description,
+            color=T.MUTED,
+            font_size=SMALL,
+            line_height="1.45",
+            text_align="center",
+            max_width="520px",
+        ),
+        spacing="2",
+        width="100%",
+        align="center",
+        flex="1 1 0",
+        min_width="0",
+        padding=f"{T.SPACE['sm']} 0",
+    )
+
+
+def run_card() -> rx.Component:
+    return rx.box(
+        rx.hstack(
+            rx.text("The run.", font_weight="700", font_size=BODY),
+            rx.text(
+                "How much it asks of you, and how many attack rounds it spends.",
+                color=T.MUTED,
+                font_size=BODY,
+            ),
+            spacing="2",
+        ),
+        rx.hstack(
+            rx.foreach(Start.run_cards, run_column),
+            spacing="6",
+            width="100%",
+            align="start",
+            margin_top=T.SPACE["md"],
+        ),
+        **CARD,
+    )
+
+
 def sides_card() -> rx.Component:
     return rx.box(
         rx.hstack(
@@ -400,7 +446,7 @@ def start_form() -> rx.Component:
                 spacing="2",
             ),
             rx.foreach(Start.brief_cards, card_view),
-            rx.foreach(Start.run_cards, card_view),
+            run_card(),
             sides_card(),
             stages_rail(),
             rx.hstack(
