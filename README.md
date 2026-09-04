@@ -9,7 +9,7 @@
 <img alt="schemas: pydantic v2" src="https://img.shields.io/badge/schemas-pydantic%20v2-E92063?style=for-the-badge&logo=pydantic&logoColor=white">
 <img alt="orchestration: prefect" src="https://img.shields.io/badge/orchestration-prefect-4f46e5?style=for-the-badge&logo=prefect&logoColor=white">
 <img alt="traces and evals: mlflow" src="https://img.shields.io/badge/traces%20and%20evals-mlflow-0194E2?style=for-the-badge&logo=mlflow&logoColor=white">
-<img alt="dashboard: reflex" src="https://img.shields.io/badge/dashboard-reflex-5646ED?style=for-the-badge">
+<img alt="dashboard: reflex" src="https://img.shields.io/badge/dashboard-reflex-5646ED?style=for-the-badge&logo=reflex&logoColor=white">
 </p>
 <p align="center">
 <img alt="Claude Code: author" src="https://img.shields.io/badge/Claude_Code-author-d97757?style=for-the-badge">
