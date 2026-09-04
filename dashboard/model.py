@@ -727,7 +727,7 @@ def _now_line(
         last_step = next((e.step for e in reversed(evs) if e.step), None)
         return (
             "STALE",
-            f"the runner process is gone while the record says running · last step {last_step} · Resume continues from disk",
+            f"The runner process is gone while the record says running · last step {last_step} · Resume continues from disk",
             None,
         )
     if process == "completed":

@@ -989,14 +989,15 @@ def header() -> rx.Component:
             rx.text("·", color=T.DIM),
             rx.text(S.recipe, **MONO, color=T.MUTED),
             rx.text("·", color=T.DIM),
-            rx.text(S.mode, **MONO, color=T.MUTED),
-            rx.text("·", color=T.DIM),
             rx.text(
                 rx.cond(S.fresh, "Fresh run", f"Resumed ×{S.resumed_count}"),
                 **MONO,
                 color=rx.cond(S.fresh, T.OK, T.WARN),
             ),
             rx.spacer(),
+            rx.foreach(S.model_rows, lambda m: setting_pill(m.role, m.model)),
+            setting_pill("rounds", S.rounds.to_string()),
+            setting_pill("mode", S.mode),
             rx.button(
                 rx.cond(S.detail_full, "Detail: Full", "Detail: Glance"),
                 on_click=S.toggle_detail,
@@ -1018,9 +1019,6 @@ def header() -> rx.Component:
         ),
         progress_bar(),
         rx.hstack(
-            rx.foreach(S.model_rows, lambda m: setting_pill(m.role, m.model)),
-            setting_pill("rounds", S.rounds.to_string()),
-            setting_pill("mode", S.mode),
             rx.spacer(),
             rx.foreach(S.chips, chip),
             spacing="2",
