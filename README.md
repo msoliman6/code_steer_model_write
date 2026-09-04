@@ -4,27 +4,27 @@
 </picture></p>
 
 <p align="center">
-<img alt="license: MIT" src="https://img.shields.io/badge/license-MIT-d4a72c?style=for-the-badge">
-<img alt="python: 3.11+" src="https://img.shields.io/badge/python-3.11%2B-3776AB?style=for-the-badge&logo=python&logoColor=white">
-<img alt="schemas: pydantic v2" src="https://img.shields.io/badge/schemas-pydantic%20v2-E92063?style=for-the-badge&logo=pydantic&logoColor=white">
-<img alt="orchestration: prefect" src="https://img.shields.io/badge/orchestration-prefect-4f46e5?style=for-the-badge&logo=prefect&logoColor=white">
-<img alt="traces and evals: mlflow" src="https://img.shields.io/badge/traces%20and%20evals-mlflow-0194E2?style=for-the-badge&logo=mlflow&logoColor=white">
-<img alt="dashboard: reflex" src="https://img.shields.io/badge/dashboard-reflex-5646ED?style=for-the-badge&logo=reflex&logoColor=white">
+<a href="LICENSE"><img alt="license: MIT" src="https://img.shields.io/badge/license-MIT-d4a72c?style=for-the-badge"></a>
+<a href="https://www.python.org/"><img alt="python: 3.11+" src="https://img.shields.io/badge/python-3.11%2B-3776AB?style=for-the-badge&logo=python&logoColor=white"></a>
+<a href="https://docs.pydantic.dev/"><img alt="schemas: pydantic v2" src="https://img.shields.io/badge/schemas-pydantic%20v2-E92063?style=for-the-badge&logo=pydantic&logoColor=white"></a>
+<a href="https://www.prefect.io/"><img alt="orchestration: prefect" src="https://img.shields.io/badge/orchestration-prefect-4f46e5?style=for-the-badge&logo=prefect&logoColor=white"></a>
+<a href="https://mlflow.org/"><img alt="traces and evals: mlflow" src="https://img.shields.io/badge/traces%20and%20evals-mlflow-0194E2?style=for-the-badge&logo=mlflow&logoColor=white"></a>
+<a href="https://reflex.dev/"><img alt="dashboard: reflex" src="https://img.shields.io/badge/dashboard-reflex-5646ED?style=for-the-badge&logo=reflex&logoColor=white"></a>
 </p>
 <p align="center">
-<img alt="Claude Code: author" src="https://img.shields.io/badge/Claude_Code-author-d97757?style=for-the-badge">
-<img alt="OpenAI Codex: adversarial checker" src="https://img.shields.io/badge/OpenAI_Codex-adversarial%20checker-10a37f?style=for-the-badge">
-<img alt="code check: ruff" src="https://img.shields.io/badge/code%20check-ruff-D7FF64?style=for-the-badge&logo=ruff&logoColor=black">
-<img alt="code check: pyright" src="https://img.shields.io/badge/code%20check-pyright-1E90FF?style=for-the-badge">
-<img alt="verification: pytest" src="https://img.shields.io/badge/verification-pytest-0A9EDC?style=for-the-badge&logo=pytest&logoColor=white">
-<img alt="ui state: sqlite" src="https://img.shields.io/badge/ui%20state-sqlite-003B57?style=for-the-badge&logo=sqlite&logoColor=white">
+<a href="https://docs.anthropic.com/en/docs/claude-code"><img alt="Claude Code: author" src="https://img.shields.io/badge/Claude_Code-author-d97757?style=for-the-badge"></a>
+<a href="https://openai.com/codex/"><img alt="OpenAI Codex: adversarial checker" src="https://img.shields.io/badge/OpenAI_Codex-adversarial%20checker-10a37f?style=for-the-badge"></a>
+<a href="https://docs.astral.sh/ruff/"><img alt="code check: ruff" src="https://img.shields.io/badge/code%20check-ruff-D7FF64?style=for-the-badge&logo=ruff&logoColor=black"></a>
+<a href="https://github.com/microsoft/pyright"><img alt="code check: pyright" src="https://img.shields.io/badge/code%20check-pyright-1E90FF?style=for-the-badge"></a>
+<a href="https://docs.pytest.org/"><img alt="verification: pytest" src="https://img.shields.io/badge/verification-pytest-0A9EDC?style=for-the-badge&logo=pytest&logoColor=white"></a>
+<a href="https://www.sqlite.org/"><img alt="ui state: sqlite" src="https://img.shields.io/badge/ui%20state-sqlite-003B57?style=for-the-badge&logo=sqlite&logoColor=white"></a>
 </p>
 <p align="center">
-<img alt="Anthropic SDK" src="https://img.shields.io/badge/Anthropic_SDK-backend-d97757?style=for-the-badge">
-<img alt="Claude Agent SDK" src="https://img.shields.io/badge/Claude_Agent_SDK-backend-d97757?style=for-the-badge">
-<img alt="LiteLLM" src="https://img.shields.io/badge/LiteLLM-backend-555?style=for-the-badge">
-<img alt="Claude Code CLI" src="https://img.shields.io/badge/Claude_Code_CLI-backend-d97757?style=for-the-badge">
-<img alt="OpenAI Codex CLI" src="https://img.shields.io/badge/OpenAI_Codex_CLI-backend-10a37f?style=for-the-badge">
+<a href="https://github.com/anthropics/anthropic-sdk-python"><img alt="Anthropic SDK" src="https://img.shields.io/badge/Anthropic_SDK-backend-d97757?style=for-the-badge"></a>
+<a href="https://github.com/anthropics/claude-agent-sdk-python"><img alt="Claude Agent SDK" src="https://img.shields.io/badge/Claude_Agent_SDK-backend-d97757?style=for-the-badge"></a>
+<a href="https://docs.litellm.ai/"><img alt="LiteLLM" src="https://img.shields.io/badge/LiteLLM-backend-555?style=for-the-badge"></a>
+<a href="https://docs.anthropic.com/en/docs/claude-code"><img alt="Claude Code CLI" src="https://img.shields.io/badge/Claude_Code_CLI-backend-d97757?style=for-the-badge"></a>
+<a href="https://github.com/openai/codex"><img alt="OpenAI Codex CLI" src="https://img.shields.io/badge/OpenAI_Codex_CLI-backend-10a37f?style=for-the-badge"></a>
 </p>
 
 <p align="center"><a href="#the-14-universal-rules">The 14 rules</a> · <a href="#the-workflow">The workflow</a> · <a href="#the-harness">The harness</a> · <a href="#install">Install</a> · <a href="#first-run">First run</a> · <a href="#settings-you-choose-once">Settings</a> · <a href="#read-more">Read more</a></p>
