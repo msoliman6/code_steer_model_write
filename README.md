@@ -29,7 +29,7 @@
 <a href="https://github.com/openai/codex"><img alt="OpenAI Codex CLI" src="https://img.shields.io/badge/OpenAI_Codex_CLI-backend-10a37f?style=flat-square"></a>
 </p>
 
-<p align="center"><a href="#the-14-universal-rules">The 14 rules</a> · <a href="#the-workflow">The workflow</a> · <a href="#the-harness">The harness</a> · <a href="#install">Install</a> · <a href="#first-run">First run</a> · <a href="#settings-you-choose-once">Settings</a> · <a href="#read-more">Read more</a></p>
+<p align="center"><a href="#the-14-universal-rules">The 14 rules</a> · <a href="#workflow">Workflow</a> · <a href="#harness">Harness</a> · <a href="#install">Install</a> · <a href="#first-run">First run</a> · <a href="#settings-you-choose-once">Settings</a> · <a href="#read-more">Read more</a></p>
 
 <p align="center">
 <a href="docs/PLAN.md"><img alt="docs: the plan" src="https://img.shields.io/badge/docs-the%20plan-30363d?style=flat-square"></a>
@@ -110,7 +110,7 @@ designed in `docs/PLAN.md` §5.2 and not built yet; `just new-recipe` is the way
 
 Two diagrams, both generated from the code so they cannot drift from it (`just figure`):
 
-## The workflow
+## Workflow
 
 The block diagram of the workflow itself, generated from the recipe (`csmw figure code_builder`):
 what each stage does, who writes and who attacks, where code freezes, merges and runs.
@@ -120,7 +120,7 @@ what each stage does, who writes and who attacks, where code freezes, merges and
 <img src="docs/media/workflow.svg" alt="How the code-builder workflow operates" width="820">
 </picture></p>
 
-## The harness
+## Harness
 
 The harness operates on top of the workflow: the workflow figure above is the top box of this
 one. The agent workflow is Python; it feeds Prefect and MLflow through their SDKs; both feed
@@ -140,18 +140,6 @@ one. The agent workflow is Python; it feeds Prefect and MLflow through their SDK
 | **monitor.db** | dashboard-only state · live human-readable progress · current activity · UI metadata · graph layout / positions |
 | **Reflex** | human control plane · create tasks · launch / cancel runs · live dashboard · inspect traces · inspect experiments · inspect evaluations |
 
-The main rule:
-
-```text
-workflow/task state  -> Prefect
-agent behavior       -> MLflow traces
-experiment results   -> MLflow experiments
-UI-only state        -> monitor.db
-human interaction    -> Reflex
-```
-
-Do not log the same data into all systems.
-
 ### Shared workflow id
 
 Every subsystem receives the same application-level id, and the dashboard joins on it:
@@ -164,9 +152,6 @@ workflow_run_id = "run_123"
    +-- monitor.db --> What UI-specific state should be displayed?
 ```
 
-In this template the id is the run's folder name under `runs/`; `state.json` and `events.jsonl`
-in that folder are the one owner of status and history, and Prefect, MLflow and `monitor.db` are
-fed from them (rule 4, one owner per fact).
 
 ## Install
 
