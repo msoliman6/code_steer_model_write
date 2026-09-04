@@ -974,59 +974,76 @@ BAR_WIDTH = "300px"  # as wide as the token line beneath it
 
 
 def progress_bar() -> rx.Component:
-    """tqdm, with better graphics: segments per stage and the percentage on the left, the
-    wrong-ness chips on the right in up to two rows. The run's state is the tab dot and the
-    control button, not a word here."""
+    """tqdm, with better graphics. A tight two-row column on the left: the segments per stage with
+    the percentage, and beneath it the tokens and estimated cost per side centred under the bar
+    with elapsed under the percentage. Beside it the wrong-ness chips in two rows. The run's state
+    is the tab dot and the control button, not a word here."""
+    tokens = rx.hstack(
+        rx.foreach(
+            S.token_rows,
+            lambda t: rx.hstack(
+                side_mark(t.role == "author", "13px"),
+                rx.text(f"{t.label} tok", **MONO, font_weight="700", font_size=SMALL, white_space="nowrap"),
+                rx.text(t.cost, **MONO, color=T.MUTED, font_size=SMALL, white_space="nowrap"),
+                spacing="2",
+                align="center",
+            ),
+        ),
+        rx.cond(
+            S.cost_total != "",
+            rx.text(S.cost_total, **MONO, color=T.MUTED, font_size=SMALL, white_space="nowrap"),
+            rx.fragment(),
+        ),
+        spacing="4",
+        justify="center",
+        align="center",
+        width=BAR_WIDTH,
+    )
     return rx.hstack(
-        rx.hstack(rx.foreach(S.prog_rows, progress_segment), spacing="1", width=BAR_WIDTH, align="center"),
-        rx.text(S.percent, **MONO, font_weight="700", font_size=BODY, min_width="52px", text_align="center"),
+        rx.vstack(
+            rx.hstack(
+                rx.hstack(
+                    rx.foreach(S.prog_rows, progress_segment), spacing="1", width=BAR_WIDTH, align="center"
+                ),
+                rx.text(
+                    S.percent,
+                    **MONO,
+                    font_weight="700",
+                    font_size=BODY,
+                    min_width="52px",
+                    text_align="center",
+                ),
+                spacing="3",
+                align="center",
+            ),
+            rx.hstack(
+                tokens,
+                rx.text(
+                    S.elapsed,
+                    **MONO,
+                    font_weight="700",
+                    font_size=SMALL,
+                    min_width="52px",
+                    text_align="center",
+                ),
+                spacing="3",
+                align="center",
+            ),
+            spacing="1",
+            align="start",
+        ),
         rx.grid(
             rx.foreach(S.chips, chip),
-            columns="2",
+            grid_template_columns="auto auto",
             spacing="2",
             margin_left=T.SPACE["xl"],
             align_items="center",
+            justify_items="start",
         ),
-        spacing="3",
-        align="start",
-        width="100%",
-        margin_top=T.SPACE["lg"],
-    )
-
-
-def token_line() -> rx.Component:
-    """The same columns as the bar row: under the bar, centred, the tokens and estimated cost
-    per side and the total; under the percentage, elapsed."""
-    return rx.hstack(
-        rx.hstack(
-            rx.foreach(
-                S.token_rows,
-                lambda t: rx.hstack(
-                    side_mark(t.role == "author", "13px"),
-                    rx.text(
-                        f"{t.label} tok", **MONO, font_weight="700", font_size=SMALL, white_space="nowrap"
-                    ),
-                    rx.text(t.cost, **MONO, color=T.MUTED, font_size=SMALL, white_space="nowrap"),
-                    spacing="2",
-                    align="center",
-                ),
-            ),
-            rx.cond(
-                S.cost_total != "",
-                rx.text(S.cost_total, **MONO, color=T.MUTED, font_size=SMALL, white_space="nowrap"),
-                rx.fragment(),
-            ),
-            spacing="5",
-            justify="center",
-            align="center",
-            width=BAR_WIDTH,
-        ),
-        rx.text(S.elapsed, **MONO, font_weight="700", font_size=SMALL, min_width="52px", text_align="center"),
-        rx.spacer(),
         spacing="3",
         align="center",
         width="100%",
-        margin_top=T.SPACE["xs"],
+        margin_top=T.SPACE["lg"],
     )
 
 
@@ -1095,7 +1112,6 @@ def header() -> rx.Component:
             overflow="hidden",
         ),
         progress_bar(),
-        token_line(),
         **CARD,
     )
 
