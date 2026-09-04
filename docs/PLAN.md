@@ -68,6 +68,25 @@ Agreed with the user on 2026-09-04. Nothing below is code; it is what the code w
   API implementation behind the seam, tested and ready for a deployment with keys, not the
   path a live run here takes. The CLI backends therefore keep their fixes from live-3 and the
   four classes above remain possible on them.
+- **Phase 4 — L2 with its tool: built 2026-09-04.** `gateway/api.py` (the operations as plain
+  functions: list workflows; run = validate through the recipe, create, register, submit
+  detached, the next free `-N` folder when the default is taken; status, cancel, pause,
+  resume; get, logs paged by `seq`, artifacts, run list), `gateway/server.py` (the official
+  MCP SDK v2: ten tools with pydantic input and output schemas, stdio for the hosts, in-memory
+  for the walk), `gateway/cli.py` (Typer: `csmw gateway list|run|status|cancel|pause|resume|
+  logs|artifacts|runs|serve`), `layers/runner.py` (the Runner seam: `LocalRunner` holds the
+  detach, STOP-file cancel/pause, resume and liveness the scripts had; Prefect is phase 5),
+  `layers/registry.py` (the Run Registry: SQLite in WAL mode at `~/.csmw/registry.db`, every
+  runs directory registered, status a view refreshed from each `state.json`, STALE when a
+  RUNNING run's runner is gone), P1 budgets (`RoleSpec.budget_tokens`, checked before an
+  AUTHOR step is issued, `HaltReason.BUDGET`, resumable). The page's tab strip reads the
+  registry. Walk legs `gateway/drives-a-run` (a run started, watched, paged and listed through
+  the in-memory client) and `gateway/budget-halts-then-resumes`. Tests: the registry across
+  directories, refusals, and the server over stdio as a real subprocess. The coder's plugin
+  (0.2.0) declares the server (`mcpServers` → `scripts/mcp.sh`, which bootstraps then execs
+  `csmw gateway serve`); `start.sh` and `status.sh` deleted; `build` and `status` call the
+  tools; `dashboard.sh` and `bootstrap.sh` stay (a page to start, an environment to make).
+  Dependencies `mcp>=2.1`, `typer>=0.19,<0.28`. Walk 15/15, tests 104, ruff and pyright clean.
   **Live:** `live-3` halted at contract arbitration (a refusal with no re-ask, in the CLI
   backend; fixed at the class, ledger). `live-4` (2026-09-04, Haiku 4.5 low + gpt-5.4-mini
   low, auto, one round): COMPLETED, 27 steps, 0 halts, 0 resumes, 3 refusals all recovered,

@@ -81,6 +81,7 @@ class RoleSpec(BaseModel):
     model: str
     effort: Effort = "medium"
     thinking: bool = False
+    budget_tokens: int | None = None  # P1: a ceiling on this role's tokens for the run; None = no ceiling
 
     @property
     def vendor(self) -> str:

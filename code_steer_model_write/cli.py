@@ -271,6 +271,19 @@ def cmd_figure(a: argparse.Namespace) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
+    import sys as _sys
+
+    argv = list(_sys.argv[1:] if argv is None else argv)
+    if argv and argv[0] == "gateway":
+        # the control plane's verbs (Typer, ARCHITECTURE.md 7.10): one Gateway for the shell,
+        # the hosts and the walk
+        from .gateway.cli import app as gateway_app
+
+        try:
+            gateway_app(args=argv[1:], prog_name="csmw gateway")
+        except SystemExit as e:
+            return int(e.code or 0)
+        return 0
     ap = argparse.ArgumentParser(prog="csmw", description="code steers, models write")
     sub = ap.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("validate", help="DRAFT -> VALIDATED: the task fits the recipe")

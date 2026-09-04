@@ -83,23 +83,44 @@ def _run_dot(d: Path, st: dict[str, Any]) -> tuple[str, str]:
     return ("running", "") if status == "RUNNING" else ("queued", "")
 
 
-def _runs() -> list[dict[str, str]]:
-    out = []
+def _registry():
+    """The Run Registry (ARCHITECTURE.md L2/L7): one index across every runs directory. This
+    page's own runs directory is always registered, so a run started by hand is not lost."""
+    from code_steer_model_write.layers.registry import RunRegistry
+
+    reg = RunRegistry()
     if RUNS_DIR.exists():
-        for d in sorted(RUNS_DIR.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True):
-            if (d / "state.json").exists():
-                st = json.loads((d / "state.json").read_text())
-                dot, ring = _run_dot(d, st)
-                out.append(
-                    {
-                        "id": st["run_id"],
-                        "recipe": st["recipe"],
-                        "status": st["status"],
-                        "dir": str(d),
-                        "dot": dot,
-                        "ring": ring,
-                    }
-                )
+        reg.add_dir(RUNS_DIR)
+    return reg
+
+
+def _runs() -> list[dict[str, str]]:
+    """The tab strip's list from the registry: every run in every registered runs directory,
+    newest first; the dot from each run's own files (the registry is an index, not the record)."""
+    reg = _registry()
+    reg.scan()
+    out = []
+    rows = sorted(
+        reg.refresh(),
+        key=lambda r: Path(r["run_dir"]).stat().st_mtime if Path(r["run_dir"]).exists() else 0,
+        reverse=True,
+    )
+    for r in rows:
+        d = Path(r["run_dir"])
+        if not (d / "state.json").exists():
+            continue
+        st = json.loads((d / "state.json").read_text())
+        dot, ring = _run_dot(d, st)
+        out.append(
+            {
+                "id": st["run_id"],
+                "recipe": st["recipe"],
+                "status": st["status"],
+                "dir": str(d),
+                "dot": dot,
+                "ring": ring,
+            }
+        )
     return out
 
 

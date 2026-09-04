@@ -22,6 +22,7 @@ class HaltReason(StrEnum):
     MISSING_DELIVERABLE = "missing_deliverable"
     DOCTOR = "doctor"
     CANCELLED = "cancelled"
+    BUDGET = "budget"  # a role's token ceiling (P1) reached; resumable once the ceiling is raised
     BROKE = "broke"  # an exception in the driver itself
 
 

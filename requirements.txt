@@ -12,3 +12,5 @@ litellm>=1.50
 cedarpy>=4.8
 guardrails-ai>=0.11
 pydantic-ai-slim[anthropic,openai]>=2.39
+mcp>=2.1
+typer>=0.19,<0.28

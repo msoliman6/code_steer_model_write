@@ -380,7 +380,104 @@ def leg_debate_findings_rounds(tmp: Path) -> str:
     return "one finding on the hypotheses, arbitrated, closing read"
 
 
+def leg_gateway_drives_a_run(tmp: Path) -> str:
+    """L2 (ARCHITECTURE.md 7.10): a run started, watched, paged and listed through the MCP
+    gateway's in-memory client -- the same tools Claude Code and Codex call over stdio -- with
+    the run executing detached under the Runner seam. The child inherits FAKE_MODELS, so no
+    token is spent; the walk asserts on the record, never on the tool's words."""
+    import asyncio
+    import time
+
+    from mcp import Client
+
+    from .gateway.api import Gateway
+    from .gateway.server import build
+    from .layers.registry import RunRegistry
+
+    gw = Gateway(registry=RunRegistry(tmp / "registry.db"))
+    task = fake_task("debate", task_id="gw").model_dump(mode="json")
+
+    async def drive() -> dict[str, Any]:
+        async with Client(build(gw)) as c:
+            names = [t.name for t in (await c.list_tools()).tools]
+            assert {
+                "workflow_list",
+                "workflow_run",
+                "workflow_status",
+                "workflow_cancel",
+                "workflow_pause",
+                "workflow_resume",
+                "run_list",
+                "run_get",
+                "run_logs",
+                "run_artifacts",
+            } <= set(names), names
+            wf = (await c.call_tool("workflow_list", {})).structured_content
+            assert any(w["name"] == "debate" for w in wf["result"]), wf
+            h = (
+                await c.call_tool("workflow_run", {"task": task, "run_dir": str(tmp / "run")})
+            ).structured_content
+            assert h["status"] == "RUNNING" and h["pid"], h
+            t0 = time.time()
+            while True:
+                st = (await c.call_tool("workflow_status", {"run": h["run_dir"]})).structured_content
+                if st["status"] in ("COMPLETED", "FAILED", "PAUSED", "STALE"):
+                    break
+                assert time.time() - t0 < 120, f"the detached run did not finish: {st}"
+                await asyncio.sleep(0.5)
+            assert st["status"] == "COMPLETED" and st["verdict"], st
+            page1 = (
+                await c.call_tool("run_logs", {"run": h["run_dir"], "after": 0, "limit": 5})
+            ).structured_content
+            assert len(page1["events"]) == 5 and page1["more"] and page1["next_after"] == 5, page1
+            page2 = (
+                await c.call_tool(
+                    "run_logs", {"run": h["run_dir"], "after": page1["next_after"], "limit": 1000}
+                )
+            ).structured_content
+            assert page2["events"][0]["seq"] == 6 and not page2["more"], "paging by seq, never by position"
+            arts = (await c.call_tool("run_artifacts", {"run": h["run_dir"]})).structured_content["result"]
+            assert any(a["key"] == "report" for a in arts), arts
+            runs = (await c.call_tool("run_list", {})).structured_content["result"]
+            assert any(r["run_id"] == "gw" and r["status"] == "COMPLETED" for r in runs), runs
+            return st
+
+    st = asyncio.run(drive())
+    return f"run through the gateway: {st['steps_done']}/{st['steps_total']} steps · {st['verdict']} · logs paged by seq"
+
+
+def leg_budget_halts_then_resumes(tmp: Path) -> str:
+    """P1 (ARCHITECTURE.md section 5): a role's token ceiling is checked before a step is issued;
+    over it the run halts honestly and resumably; raised, it resumes at the first undone step."""
+    paths, recipe, task = start("debate", tmp / "run")
+    st = RunState.load(paths)
+    roles = {
+        r: s.model_copy(update={"budget_tokens": 1}) if r == "author" else s for r, s in st.task.roles.items()
+    }
+    st.task = st.task.model_copy(update={"roles": roles})
+    st.save(paths)
+    out = make_runner(paths, recipe, st.task).drive()
+    h = Halt.read(paths)
+    assert out is Outcome.HALTED_HONESTLY and h is not None and h.reason.value == "budget" and h.resumable, (
+        out,
+        h,
+    )
+    assert "author spent" in h.message and "ceiling" in h.message, h.message
+    st = RunState.load(paths)
+    roles = {r: s.model_copy(update={"budget_tokens": None}) for r, s in st.task.roles.items()}
+    st.task = st.task.model_copy(update={"roles": roles})
+    st.save(paths)
+    out2 = make_runner(paths, recipe, st.task).drive()
+    assert out2 is Outcome.COMPLETED, Halt.read(paths)
+    assert RunState.load(paths).resumed_count == 1
+    return f"halted at {h.step} on the ceiling, resumed once the ceiling was lifted, completed"
+
+
 LEGS: dict[str, dict[str, Leg]] = {
+    "gateway": {
+        "drives-a-run": leg_gateway_drives_a_run,
+        "budget-halts-then-resumes": leg_budget_halts_then_resumes,
+    },
     "debate": {
         "happy": leg_debate_happy,
         "undecided-to-human": leg_debate_undecided_to_human,
