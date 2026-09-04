@@ -21,10 +21,10 @@ def test_fields_are_one_owner_and_render_as_cards():
         "contracts_checker_effort",
     ]
     assert [c["func"] for c in cards if c["group"] == "stage:verification"] == [
-        "reviews coverage",
-        "reviews coverage",
-        "writes the properties",
-        "writes the properties",
+        "Attacks the properties",
+        "Attacks the properties",
+        "Writes the properties",
+        "Writes the properties",
     ]
     by = {c["key"]: c for c in cards}
     assert by["checker_model"]["discovery"] in ("dynamic", "configured") and by["checker_effort"]["options"][

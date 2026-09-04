@@ -239,9 +239,11 @@ def side_row(model: Card, effort: Card) -> rx.Component:
             rx.text(
                 model.func,
                 font_weight="700",
-                font_size=BODY,
+                font_size=SMALL,
                 text_align="center",
-                letter_spacing="0.06em",
+                white_space="nowrap",
+                overflow="hidden",
+                text_overflow="ellipsis",
             ),
             spacing="2",
             align="center",
