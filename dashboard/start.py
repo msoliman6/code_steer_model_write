@@ -45,12 +45,20 @@ class Card:
     group: str = "settings"
     required: bool = False
     discovery: str = ""
+    side: str = ""
+    func: str = ""
+    field: str = ""
 
 
 @dataclasses.dataclass
 class Tile:
     n: int = 0
+    id: str = ""
     title: str = ""
+    emoji: str = ""
+    hue: str = "slate"
+    author: str = ""
+    checker: str = ""
 
 
 class Start(rx.State):
@@ -64,12 +72,27 @@ class Start(rx.State):
     def load(self):
         self.values = {**sf.defaults(), **sf.load_prefs(RUNS_DIR)}
         self.cards = [Card(**c) for c in sf.form_model(self.values)]
-        self.tiles = [Tile(n=s.n, title=s.title) for s in registry.get("code_builder").spec.stages]
+        self.tiles = [
+            Tile(n=s.n, id=s.id, title=s.title, emoji=s.emoji, hue=s.hue, author=s.author, checker=s.checker)
+            for s in registry.get("code_builder").spec.stages
+        ]
 
     @rx.event
     def set_value(self, key: str, value: str):
         self.values = {**self.values, key: value}
         self.cards = [Card(**c) for c in sf.form_model(self.values)]
+
+    @rx.var
+    def universal_cards(self) -> list[Card]:
+        return [c for c in self.cards if not c.group.startswith("stage:")]
+
+    @rx.var
+    def stage_cards(self) -> dict[str, list[Card]]:
+        out: dict[str, list[Card]] = {}
+        for c in self.cards:
+            if c.group.startswith("stage:"):
+                out.setdefault(c.group.split(":", 1)[1], []).append(c)
+        return out
 
     @rx.var
     def blocking(self) -> str:
@@ -110,7 +133,7 @@ class Start(rx.State):
         return rx.redirect("/")
 
 
-def dropdown(card: Card) -> rx.Component:
+def dropdown(card: Card, *, width: str = "280px") -> rx.Component:
     """One dropdown per setting (§7c): a model row lists the provider's catalogue for the chosen
     backend; an effort row lists the chosen model's efforts; the value is what is sent."""
     return rx.hstack(
@@ -119,7 +142,7 @@ def dropdown(card: Card) -> rx.Component:
             value=card.value,
             on_change=lambda v: Start.set_value(card.key, v),
             size="2",
-            width="280px",
+            width=width,
         ),
         rx.cond(
             card.discovery != "", rx.text(card.discovery, **MONO, color=T.DIM, font_size=SMALL), rx.fragment()
@@ -130,8 +153,7 @@ def dropdown(card: Card) -> rx.Component:
 
 
 def card_view(card: Card) -> rx.Component:
-    """A setting card: the name and its control on one line, the description as a full line
-    under them (the reference clamped it in the left column; the user asked for the full line)."""
+    """A universal setting: the name and its control on one line, the description under them."""
     control = rx.match(
         card.kind,
         (
@@ -188,6 +210,100 @@ def card_view(card: Card) -> rx.Component:
     )
 
 
+HUE_MATCH = [(k, v) for k, v in T.STAGE_HUES.items()]
+GLASS_FILL = [(k, T.tint(k, 0.10)) for k in T.STAGE_HUES]
+GLASS_STROKE = [(k, f"1px solid {T.tint(k, 0.55)}") for k in T.STAGE_HUES]
+
+
+def side_row(model: Card, effort: Card) -> rx.Component:
+    """One line per side of a stage: the function (writer / checker), then the model and its
+    effort side by side; the box above says which stage, so the labels stay short."""
+    color = rx.cond(model.side == "author", T.ACTOR["a"], T.ACTOR["b"])
+    glyph = rx.cond(model.side == "author", "✳", "☘")
+    return rx.vstack(
+        rx.hstack(
+            rx.text(glyph, color=color, font_size=SMALL),
+            rx.text(model.func, **MONO, color=T.MUTED, font_size=SMALL),
+            rx.text(model.side, **MONO, color=T.DIM, font_size=SMALL),
+            spacing="2",
+            align="center",
+        ),
+        rx.hstack(
+            rx.select(
+                model.options,
+                value=model.value,
+                on_change=lambda v: Start.set_value(model.key, v),
+                size="1",
+                width="100%",
+            ),
+            rx.select(
+                effort.options,
+                value=effort.value,
+                on_change=lambda v: Start.set_value(effort.key, v),
+                size="1",
+                width="88px",
+            ),
+            spacing="2",
+            width="100%",
+            align="center",
+        ),
+        spacing="1",
+        width="100%",
+        align="start",
+    )
+
+
+def stage_column(t: Tile) -> rx.Component:
+    """The stage's glass box (the run page's colour code), then a writer row and a checker row,
+    each a model dropdown and its effort side by side."""
+    hue = rx.match(t.hue, *HUE_MATCH, T.MUTED)
+    cards = Start.stage_cards[t.id]
+    return rx.vstack(
+        rx.box(
+            rx.vstack(
+                rx.text(f"{t.n} · {t.emoji}", **MONO, color=hue, font_size=SMALL),
+                rx.text(t.title, font_weight="700", font_size=f"{T.SIZE['title']}px", color=T.TEXT),
+                spacing="1",
+                align="center",
+            ),
+            border=rx.match(t.hue, *GLASS_STROKE, f"1px solid {T.BORDER}"),
+            background=rx.match(t.hue, *GLASS_FILL, T.CARD),
+            border_radius=T.RADIUS["box"],
+            padding=T.SPACE["md"],
+            width="100%",
+        ),
+        rx.cond(cards.length() >= 2, side_row(cards[0], cards[1]), rx.fragment()),
+        rx.cond(cards.length() >= 4, side_row(cards[2], cards[3]), rx.fragment()),
+        spacing="3",
+        width="100%",
+        flex="1 1 0",
+        min_width="0",
+        align="start",
+    )
+
+
+def stages_rail() -> rx.Component:
+    return rx.box(
+        rx.hstack(
+            rx.text("Per stage.", font_weight="700", font_size=BODY),
+            rx.text(
+                "Which model and effort each side uses on each stage; `as author` and `as checker` inherit the rows above.",
+                color=T.MUTED,
+                font_size=BODY,
+            ),
+            spacing="2",
+        ),
+        rx.hstack(
+            rx.foreach(Start.tiles, stage_column),
+            spacing="3",
+            width="100%",
+            align="start",
+            margin_top=T.SPACE["md"],
+        ),
+        **CARD,
+    )
+
+
 def start_page() -> rx.Component:
     from .dashboard import sidebar
 
@@ -216,44 +332,21 @@ def start_form() -> rx.Component:
                 ),
                 spacing="2",
             ),
-            rx.foreach(Start.cards, card_view),
+            rx.foreach(Start.universal_cards, card_view),
+            stages_rail(),
             rx.hstack(
                 rx.button(
-                    "Start the run ▸", on_click=Start.start, disabled=~Start.ready, color_scheme="blue"
+                    "Start the run ▸",
+                    on_click=Start.start,
+                    disabled=~Start.ready,
+                    color_scheme="gray",
+                    variant="solid",
                 ),
                 rx.text(Start.blocking, color=T.MUTED, font_size=SMALL),
                 spacing="3",
                 align="center",
             ),
             rx.cond(Start.error != "", rx.text(Start.error, color=T.BAD, font_size=SMALL), rx.fragment()),
-            rx.hstack(
-                rx.box(
-                    rx.text("Start the run", font_weight="700"),
-                    border=rx.cond(Start.ready, f"1px solid {T.LIVE}", f"1px dashed {T.BORDER_STRONG}"),
-                    border_radius=T.RADIUS["box"],
-                    padding="10px 14px",
-                    cursor="pointer",
-                    on_click=Start.start,
-                ),
-                rx.foreach(
-                    Start.tiles,
-                    lambda t: rx.box(
-                        rx.text(t.n, **MONO, color=T.MUTED, font_size=SMALL),
-                        rx.text(t.title.lower(), font_weight="700", font_size=BODY),
-                        border=f"1px solid {T.BORDER}",
-                        background=T.CARD,
-                        border_radius=T.RADIUS["box"],
-                        padding="8px 14px",
-                        flex="1",
-                    ),
-                ),
-                spacing="2",
-                width="100%",
-                position="sticky",
-                bottom="0",
-                background=T.SURFACE,
-                padding_top=T.SPACE["sm"],
-            ),
             rx.text(
                 "This page follows the run and takes your choices directly. Times are local.",
                 **MONO,
@@ -265,13 +358,7 @@ def start_form() -> rx.Component:
             ),
             spacing="3",
             width="100%",
-            max_width=T.PAGE_WIDTH,
-            margin="0 auto",
             padding=T.SPACE["lg"],
         ),
-        background=T.SURFACE,
-        color=T.TEXT,
-        min_height="100vh",
-        font_family=T.SANS,
-        on_mount=Start.load,
+        width="100%",
     )

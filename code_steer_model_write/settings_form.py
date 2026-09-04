@@ -34,28 +34,54 @@ class FormField(BaseModel):
     inherits: str | None = None  # the key the first chip ("as plan" / "as checker") inherits from
 
 
-def _stage_rows(
-    stage: str, title: str, what: str, model_default: str, effort_default: str, effort_reason: str
-) -> list[FormField]:
-    return [
-        FormField(
-            key=f"{stage}_model",
-            name=f"{title} model",
-            description=what,
-            options=["as plan", *AUTHOR_MODELS[1:]],
-            default=model_default,
-            inherits="plan_model",
-        ),
-        FormField(
-            key=f"{stage}_effort",
-            name=f"{title} effort",
-            description=effort_reason,
-            options=["as plan", *AUTHOR_EFFORT[1:]],
-            default=effort_default,
-            inherits="plan_effort",
-        ),
-    ]
+def _stage_side_rows(recipe_name: str) -> list[FormField]:
+    """Per stage, per side that stage uses (from the recipe's StageSpec): a model row and an
+    effort row inheriting the side's base row. The start page lays these out under the stage's
+    box; a new recipe gets its columns for free."""
+    from .recipes import registry as recipes
 
+    spec = recipes.get(recipe_name).spec
+    out: list[FormField] = []
+    for st in spec.stages:
+        for role in ("author", "checker"):
+            if not (st.author == role or st.checker == role):
+                continue
+            what = "writes" if st.author == role else "checks"
+            out.append(
+                FormField(
+                    key=f"{st.id}_{role}_model",
+                    name=f"{st.title} · {role} model",
+                    group=f"stage:{st.id}",
+                    description=f"The {role} {what} this stage; `as {role}` inherits the {role} row above",
+                    options=[f"as {role}", *(AUTHOR_MODELS[1:] if role == "author" else CHECKER_MODELS[1:])],
+                    default=f"as {role}",
+                    inherits=f"{role}_model",
+                )
+            )
+            out.append(
+                FormField(
+                    key=f"{st.id}_{role}_effort",
+                    name=f"{st.title} · {role} effort",
+                    group=f"stage:{st.id}",
+                    description=f"Effort for the {role} on this stage; `as {role}` inherits the {role} row above",
+                    options=[f"as {role}", *(AUTHOR_EFFORT[1:] if role == "author" else CHECKER_EFFORT)],
+                    default=f"as {role}",
+                    inherits=f"{role}_effort",
+                )
+            )
+    return out
+
+
+RECIPE = "code_builder"
+
+# the pre-selected setup (the one-round average task): the checker at high effort, the contract
+# and verification rows carrying the judgment, the build on the cheapest model
+STAGE_DEFAULTS = {
+    "contracts_author_effort": "high",
+    "verification_author_effort": "high",
+    "build_author_model": "claude-haiku-4-5",
+    "build_author_effort": "low",
+}
 
 FIELDS: list[FormField] = [
     FormField(
@@ -118,6 +144,27 @@ FIELDS: list[FormField] = [
         default="1",
     ),
     FormField(
+        key="author_backend",
+        name="author backend",
+        description="the claude CLI by default (its own login); the Anthropic SDK or the Agent SDK with a key; litellm for any provider; fake offline",
+        options=["claude_cli", "anthropic", "agent_sdk", "litellm", "fake"],
+        default="claude_cli",
+    ),
+    FormField(
+        key="author_model",
+        name="author model",
+        description="the author side's model, inherited by every stage row that says `as author`; `default` is CSMW_MODEL_A",
+        options=AUTHOR_MODELS,
+        default="claude-sonnet-5",
+    ),
+    FormField(
+        key="author_effort",
+        name="author effort",
+        description="fastest; the saving usually returns as review rounds -- the checker finds what the author skipped",
+        options=AUTHOR_EFFORT,
+        default="low",
+    ),
+    FormField(
         key="checker_backend",
         name="checker backend",
         description="the other vendor (rule 3): codex exec by default; litellm for any provider; fake for the offline walk",
@@ -138,84 +185,11 @@ FIELDS: list[FormField] = [
         options=CHECKER_EFFORT,
         default="high",
     ),
-    FormField(
-        key="author_backend",
-        name="author backend",
-        description="the claude CLI by default (its own login); the Anthropic SDK or the Agent SDK with a key; litellm for any provider; fake offline",
-        options=["claude_cli", "anthropic", "agent_sdk", "litellm", "fake"],
-        default="claude_cli",
-    ),
-    FormField(
-        key="plan_model",
-        name="plan model",
-        description="the plan row's model, for stage 0 (Plan) and its arbitrations; `default` is CSMW_MODEL_A",
-        options=AUTHOR_MODELS,
-        default="claude-sonnet-5",
-    ),
-    FormField(
-        key="plan_effort",
-        name="plan effort",
-        description="fastest; the saving usually returns as review rounds -- the checker finds what the author skipped",
-        options=AUTHOR_EFFORT,
-        default="low",
-    ),
-    *_stage_rows(
-        "contracts",
-        "contracts",
-        "stage 1 only -- the contract is what every later stage cites, so it is where a stronger model pays",
-        "claude-sonnet-5",
-        "high",
-        "the default: a loose clause costs a whole review round, so effort here is cheaper than the round it saves",
-    ),
-    *_stage_rows(
-        "verification",
-        "verification",
-        "stage 2 only -- the coverage review and its arbitrations",
-        "claude-sonnet-5",
-        "high",
-        "the default: a loose clause costs a whole review round, so effort here is cheaper than the round it saves",
-    ),
-    *_stage_rows(
-        "build",
-        "build",
-        "stage 3 only -- many mechanical units against an algorithm already written; the cheapest model does it",
-        "claude-haiku-4-5",
-        "low",
-        "fastest; the saving usually returns as review rounds -- the checker finds what the author skipped",
-    ),
-    FormField(
-        key="verify_author_model",
-        name="verif. run author",
-        description="stage 4's rulings and source fixes on the plan model",
-        options=["as plan", *AUTHOR_MODELS[1:]],
-        default="as plan",
-        inherits="plan_model",
-    ),
-    FormField(
-        key="verify_author_effort",
-        name="verif. run author effort",
-        description="inherit the plan effort",
-        options=["as plan", *AUTHOR_EFFORT[1:]],
-        default="as plan",
-        inherits="plan_effort",
-    ),
-    FormField(
-        key="verify_checker_model",
-        name="verif. run checker",
-        description="stage 4's triage and test fixes on the checker row's model",
-        options=["as checker", *CHECKER_MODELS[1:]],
-        default="as checker",
-        inherits="checker_model",
-    ),
-    FormField(
-        key="verify_checker_effort",
-        name="verif. run checker effort",
-        description="inherit the checker row's effort",
-        options=["as checker", *CHECKER_EFFORT],
-        default="as checker",
-        inherits="checker_effort",
-    ),
+    *_stage_side_rows(RECIPE),
 ]
+for _f in FIELDS:
+    if _f.key in STAGE_DEFAULTS:
+        _f.default = STAGE_DEFAULTS[_f.key]
 
 BY_KEY = {f.key: f for f in FIELDS}
 STAGE_OF_KEY = {
@@ -243,28 +217,17 @@ def defaults() -> dict[str, str]:
 
 
 MODEL_ROWS = {
-    "checker_model": "checker_backend",
-    "plan_model": "author_backend",
-    "contracts_model": "author_backend",
-    "verification_model": "author_backend",
-    "build_model": "author_backend",
-    "verify_author_model": "author_backend",
-    "verify_checker_model": "checker_backend",
+    f.key: ("checker_backend" if "checker" in f.key else "author_backend")
+    for f in FIELDS
+    if f.key.endswith("_model")
 }
-EFFORT_ROWS = {
-    "checker_effort": "checker_model",
-    "plan_effort": "plan_model",
-    "contracts_effort": "contracts_model",
-    "verification_effort": "verification_model",
-    "build_effort": "build_model",
-    "verify_author_effort": "verify_author_model",
-    "verify_checker_effort": "verify_checker_model",
-}
+EFFORT_ROWS = {f.key: f.key[: -len("_effort")] + "_model" for f in FIELDS if f.key.endswith("_effort")}
+INHERIT_WORDS = ("default", "as author", "as checker")
 
 
 def _inherit_word(key: str) -> str | None:
     f = BY_KEY[key]
-    return f.options[0] if f.options and f.options[0] in ("default", "as plan", "as checker") else None
+    return f.options[0] if f.options and f.options[0] in INHERIT_WORDS else None
 
 
 def options_for(key: str, values: dict[str, str]) -> list[str]:
@@ -319,7 +282,7 @@ def resolve(values: dict[str, str]) -> dict[str, str]:
     `as plan` / `as checker` resolved from the row they inherit."""
     out = {**defaults(), **{k: v for k, v in values.items() if k in BY_KEY}}
     s = Settings()
-    if out["plan_model"] == "default":
+    if out["author_model"] == "default":
         out["plan_model"] = (
             s.model_a if s.model_a else providers.for_backend(out["author_backend"]).default_model()
         )
@@ -329,9 +292,9 @@ def resolve(values: dict[str, str]) -> dict[str, str]:
         )
     for f in FIELDS:
         if f.key.endswith("_model") and out[f.key] == "default":
-            out[f.key] = out["checker_model"] if "checker" in f.key else out["plan_model"]
+            out[f.key] = out["checker_model"] if "checker" in f.key else out["author_model"]
     for f in FIELDS:
-        if f.inherits and out[f.key] in ("as plan", "as checker"):
+        if f.inherits and out[f.key] in INHERIT_WORDS:
             out[f.key] = out[f.inherits]
     for key, model_key in EFFORT_ROWS.items():
         prov = providers.for_backend(out[MODEL_ROWS[model_key]])
@@ -368,22 +331,21 @@ def build_task(values: dict[str, str], *, recipe: str = "code_builder") -> TaskS
     }
     roles = {
         "author": RoleSpec(
-            backend=BackendName(v["author_backend"]), model=v["plan_model"], effort=v["plan_effort"]
+            backend=BackendName(v["author_backend"]), model=v["author_model"], effort=v["author_effort"]
         ),
         "checker": RoleSpec(
             backend=BackendName(v["checker_backend"]), model=v["checker_model"], effort=v["checker_effort"]
         ),
     }
-    stage_settings: dict[str, dict[str, dict[str, str]]] = {
-        "plan": {"author": {"model": v["plan_model"], "effort": v["plan_effort"]}},
-        "contracts": {"author": {"model": v["contracts_model"], "effort": v["contracts_effort"]}},
-        "verification": {"author": {"model": v["verification_model"], "effort": v["verification_effort"]}},
-        "build": {"author": {"model": v["build_model"], "effort": v["build_effort"]}},
-        "verify": {
-            "author": {"model": v["verify_author_model"], "effort": v["verify_author_effort"]},
-            "checker": {"model": v["verify_checker_model"], "effort": v["verify_checker_effort"]},
-        },
-    }
+    stage_settings: dict[str, dict[str, dict[str, str]]] = {}
+    for f in FIELDS:
+        if f.group.startswith("stage:") and f.key.endswith("_model"):
+            stage = f.group.split(":", 1)[1]
+            role = "checker" if f.key.endswith("_checker_model") else "author"
+            stage_settings.setdefault(stage, {})[role] = {
+                "model": v[f.key],
+                "effort": v[f"{stage}_{role}_effort"],
+            }
     return TaskSpec(
         task_id=values.get("run_name", "run").strip() or "run",
         objective=brief["request"][:200],
@@ -409,19 +371,48 @@ def stage_role(task: TaskSpec, stage: str, role: str) -> RoleSpec:
     )
 
 
+def _stage_meta(f: FormField) -> dict[str, str]:
+    """For a per-stage row: the side (author/checker), its function on that stage (writer or
+    checker), and the field (model/effort); the page lays the pair out on one line."""
+    if not f.group.startswith("stage:"):
+        return {"side": "", "func": "", "field": ""}
+    from .recipes import registry as recipes
+
+    stage = f.group.split(":", 1)[1]
+    side = "checker" if f.key.endswith(("_checker_model", "_checker_effort")) else "author"
+    st = next(x for x in recipes.get(RECIPE).spec.stages if x.id == stage)
+    return {
+        "side": side,
+        "func": "writer" if st.author == side else "checker",
+        "field": "effort" if f.key.endswith("_effort") else "model",
+    }
+
+
 def form_model(values: dict[str, str]) -> list[dict[str, Any]]:
-    """What the page renders: one card per field, the selected value, the options."""
+    """What the page renders: one card per field, the selected value, the options now (model
+    catalogues per backend, efforts per model). A selected value the options no longer hold
+    falls back to the first option, so the page never shows a chip that cannot be sent."""
     v = {**defaults(), **values}
-    return [
-        {
-            "key": f.key,
-            "name": f.name[:1].upper() + f.name[1:],
-            "description": sentence(f.description),
-            "kind": f.kind,
-            "options": f.options,
-            "value": v.get(f.key, f.default),
-            "group": f.group,
-            "required": f.required,
-        }
-        for f in FIELDS
-    ]
+    out = []
+    for f in FIELDS:
+        opts = options_for(f.key, v)
+        val = v.get(f.key, f.default)
+        if f.kind == "chips" and opts and val not in opts:
+            val = f.default if f.default in opts else opts[0]
+        out.append(
+            {
+                "key": f.key,
+                "name": f.name[:1].upper() + f.name[1:],
+                "description": sentence(f.description),
+                "kind": f.kind,
+                "options": opts,
+                "value": val,
+                "group": f.group,
+                "required": f.required,
+                "discovery": (
+                    providers.for_backend(v[MODEL_ROWS[f.key]]).model_discovery if f.key in MODEL_ROWS else ""
+                ),
+                **_stage_meta(f),
+            }
+        )
+    return out
