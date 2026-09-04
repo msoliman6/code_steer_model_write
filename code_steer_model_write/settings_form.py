@@ -148,7 +148,7 @@ FIELDS: list[FormField] = [
     FormField(
         key="plan_model",
         name="plan model",
-        description="claude-sonnet-5 for stage 0 (Plan) and its arbitrations; `default` is CSMW_MODEL_A",
+        description="the plan row's model, for stage 0 (Plan) and its arbitrations; `default` is CSMW_MODEL_A",
         options=AUTHOR_MODELS,
         default="claude-sonnet-5",
     ),
