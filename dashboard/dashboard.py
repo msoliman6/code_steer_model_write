@@ -1639,6 +1639,11 @@ def index() -> rx.Component:
     )
 
 
-app = rx.App(theme=rx.theme(appearance="dark", gray_color="slate"))
+app = rx.App(
+    theme=rx.theme(appearance="dark", gray_color="slate"),
+    # the browser-tab icon is the same PNG as the brand tile, so the two can never differ in colour;
+    # the query string retires the icon a browser cached before the mark was recoloured
+    head_components=[rx.el.link(rel="icon", type="image/png", href="/logo-64.png?v=3")],
+)
 app.add_page(index, route="/", title="csmw")
 app.add_page(start_page, route="/new", title="csmw · new run")
