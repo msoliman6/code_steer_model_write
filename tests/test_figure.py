@@ -26,7 +26,7 @@ def test_dark_figure_matches_reference_geometry():
         r'viewBox="0 0 1000 (\d+)"', ref
     ).group(1)
     assert _colours(new) <= _colours(ref), _colours(new) - _colours(ref)
-    assert new.count("<image") == 12  # the two marks in every actor box
+    assert new.count("<image") == 9  # a mark in every actor box (2+2+3+2)
     for label in (
         "🗺 0 · PLAN",
         "📜 1 · CONTRACTS",
