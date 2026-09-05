@@ -29,7 +29,7 @@
 <a href="https://github.com/openai/codex"><img alt="OpenAI Codex CLI" src="https://img.shields.io/badge/OpenAI_Codex_CLI-backend-10a37f?style=flat-square"></a>
 </p>
 
-<p align="center"><a href="#the-14-universal-rules">The 14 rules</a> · <a href="#workflow">Workflow</a> · <a href="#harness">Harness</a> · <a href="#install">Install</a> · <a href="#first-run">First run</a> · <a href="#settings-you-choose-once">Settings</a> · <a href="#read-more">Read more</a></p>
+<p align="center"><a href="#the-14-universal-rules">The 14 rules</a> · <a href="#workflow">Workflow</a> · <a href="#the-ten-layers">The ten layers</a> · <a href="#install">Install</a> · <a href="#first-run">First run</a> · <a href="#settings-you-choose-once">Settings</a> · <a href="#read-more">Read more</a></p>
 
 <p align="center">
 <a href="docs/PLAN.md"><img alt="docs: the plan" src="https://img.shields.io/badge/docs-the%20plan-30363d?style=flat-square"></a>
@@ -74,7 +74,7 @@
 12. **Prove it offline first.** Fake models walk every branch with zero tokens before any live
     run. A check that never runs is not a check.
 13. **Prompts are code-filled templates, not skills.** A missing key refuses before a token is
-    spent. Tool denial is stated as fact in the prompt and enforced by the harness.
+    spent. Tool denial is stated as fact in the prompt and enforced by the runtime.
 14. **Cost is a design axis.** No unused tools, thinking off where a check catches every
     mistake, calls batched, tokens as the honest measure.
 
@@ -94,21 +94,22 @@ to everyone -- a new recipe, a fixed check, a better renderer -- come back here 
 
 ## What it is
 
-A Python package (`code_steer_model_write`, CLI `csmw`) plus recipes. A **recipe** declares a
-workflow as data: stages, who authors and who checks each one, the pydantic schema every model
-answer must fit, the code checks, the human gates, the evaluations. A coded driver runs it,
-resumable from disk, with one append-only event log, a Prefect flow around it, MLflow traces
-and evals beside it, and a Reflex dashboard on top. Four backends sit behind one `ask()`:
-the Anthropic SDK, the Claude Agent SDK, LiteLLM, and the `claude` / `codex` CLIs — plus a
-fake backend that walks the whole pipeline offline with zero tokens.
+A Python package (`code_steer_model_write`, CLI `csmw`) plus workflows. A **workflow** declares
+itself as data: stages, who authors and who checks each one, the pydantic schema every model
+answer must fit, the code checks, the human gates, the evaluations. A coded driver derives the
+next step from disk and runs it, resumable, with one append-only event log; ten layers sit
+around that loop, each behind a seam with one tool chosen for it (the table below). One `ask()`
+fronts every model call; behind it PydanticAI (Anthropic and OpenAI through it), the `claude`
+and `codex` CLIs on their logins, and a fake backend that walks the whole pipeline offline with
+zero tokens.
 
-Recipes in the box: **code-builder** (plan → contract → freeze → tests by one model, source by
-the other → null run → verify → triage; walked offline on 10 legs, proven live on `claude -p` +
-`codex exec`) and **debate** (hypotheses → support vs challenge → rebuttal by id → a fresh judge
-on a rubric; walked offline, unproven live). The research and tool-assistant recipes are
-designed in `docs/PLAN.md` §5.2 and not built yet; `just new-recipe` is the way in.
+Workflows in the box: **code-builder** (plan → contract → freeze → tests by one model, source by
+the other, side by side → null run → verify → triage; walked offline on 10 legs, proven live on
+`claude -p` + `codex exec` through every layer) and **debate** (hypotheses → support vs challenge
+→ rebuttal by id → a fresh judge on a rubric; walked offline, unproven live). The architecture
+these layers implement is the parent repository, `production_agentic_workflow`.
 
-Two diagrams, both generated from the code so they cannot drift from it (`just figure`):
+The workflow diagram is generated from the code so it cannot drift from it (`just figure`):
 
 ## Workflow
 
@@ -120,43 +121,35 @@ what each stage does, who writes and who attacks, where code freezes, merges and
 <img src="docs/media/workflow.svg" alt="How the code-builder workflow operates" width="820">
 </picture></p>
 
-## Harness
+## The ten layers
 
-The harness operates on top of the workflow: the workflow figure above is the top box of this
-one. The agent workflow is Python; it feeds Prefect and MLflow through their SDKs; both feed
-`monitor.db`; Reflex is the human control plane; the custom dashboard is what you look at.
+Seven execution layers and three cross-cutting planes, each behind a seam, each with the tool
+that sits there now. Every choice is free, self-hosted, a Python SDK, and leaves through its
+seam; the offline walk proves every layer with fake models before any live run.
 
-<p align="center"><picture>
-<source media="(prefers-color-scheme: dark)" srcset="docs/media/harness-dark.svg">
-<img src="docs/media/harness.svg" alt="How the runtime is wired" width="760">
-</picture></p>
+| layer | what it owns | behind the seam |
+|---|---|---|
+| L1 UI | the pages: a home of every run, the run page, the start page | Reflex, Jinja2 |
+| L2 control plane | the task, the budgets, the workflow and run registries, the gateway every entry point calls | pydantic, the MCP SDK (the `csmw` server, twelve tools), Typer, SQLite |
+| L3 orchestration | the sequence: the driver derives the next step from disk; the runner detaches, cancels, pauses, resumes, runs independent steps at once | the driver (no seam), Prefect 3 as the runner |
+| L4 agent runtime | one model call under a schema, or a bounded tool loop the vendor never runs | PydanticAI; the Claude Code and Codex CLIs as login backends; the fake |
+| L5 sandbox | where anything that is not a model call runs, bounded | a subprocess tier for the walk; a container tier on the Docker SDK over Colima or Docker, network off, the run folder the only mount |
+| L6 tools | the typed registry of every capability code or a model may invoke, every call an event | the runtime's own `ToolSpec` registry (git, pytest, ruff, pyright); a workflow adds its own |
+| L7 state | the record: files per run, versioned artifacts, the index across runs | files, SQLite, obstore (create-only puts) |
+| L8 observability | traces, tokens, evaluations, trends | MLflow 3 on SQLite through the OpenTelemetry GenAI names; the runtime's Evaluator |
+| L9 authorization | may this principal do this action on this resource, every decision an event | Cedar (`cedarpy`), one policy file |
+| L10 guardrails | is this interaction safe: before the prompt, after the answer, before a tool call | the schema and the checks; Guardrails AI validators by profile; the ToolSpec's schema |
 
-<details>
-<summary><b>Clean responsibility split</b></summary>
-
-| system | owns |
-|---|---|
-| **Prefect** | workflow execution · task dependencies · retries · scheduling · cancellation · run/task state |
-| **MLflow** | agent / LLM traces · spans · tool calls · retrieval traces · token / cost / latency · workflow / agent evaluation · scientific / ML experiments · parameters / metrics · artifacts / models |
-| **monitor.db** | dashboard-only state · live human-readable progress · current activity · UI metadata · graph layout / positions |
-| **Reflex** | human control plane · create tasks · launch / cancel runs · live dashboard · inspect traces · inspect experiments · inspect evaluations |
-
-</details>
-
-<details>
-<summary><b>Shared workflow id</b></summary>
-
-Every subsystem receives the same application-level id, and the dashboard joins on it:
+Every subsystem receives the same run id, and the page joins on it:
 
 ```text
-workflow_run_id = "run_123"
+run id
    |
-   +-- Prefect -----> What is executing?
-   +-- MLflow ------> What did the agents do? How did the experiment perform?
-   +-- monitor.db --> What UI-specific state should be displayed?
+   +-- Prefect ------> what is executing?
+   +-- MLflow -------> what did the models do, at what cost, how well?
+   +-- the registry -> which runs exist, where, in what state?
+   +-- the run folder -> the record: state, events, artifacts, evals
 ```
-
-</details>
 
 ## Install
 
@@ -188,10 +181,10 @@ per task; your picks are remembered for the next run. The form derives from one 
 schema, which the CLI reads too. The layout is `docs/DASHBOARD-DESIGN.md` → *The start page*.
 
 **Estimated cost.** The dashboard prices a run's tokens on read (rule 14: tokens are the fact, dollars
-are a lookup). Prices come from LiteLLM's model price map, which covers every provider and refreshes
-from the LiteLLM repo, so no table is kept here. A model the map does not know shows `$?`. To
-override a rate, or price a model of your own, put a `prices.json` next to your runs (or set
-`CSMW_PRICES_FILE`):
+are a lookup). Prices come from a vendored copy of LiteLLM's model price map (`data/model_prices.json`,
+420 models, the file and not the package); a run on a CLI login shows its figure "at API rates",
+since the subscription bills flat. A model the map does not know shows `$?`. To override a rate, or
+price a model of your own, put a `prices.json` next to your runs (or set `CSMW_PRICES_FILE`):
 
 ```json
 {"my-negotiated-model": [0.25, 2.0]}

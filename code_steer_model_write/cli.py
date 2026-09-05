@@ -89,15 +89,10 @@ def attach_mlflow(runner) -> bool:
 
 
 def _attach_mirrors(runner, a: argparse.Namespace) -> None:
-    """MLflow and monitor.db are sinks (rule 4); either failing to attach is a warning, never a halt."""
+    """MLflow is a sink (rule 4); failing to attach is a warning, never a halt. (monitor.db, the
+    page's private index, left with the Run Registry in L7: one index of runs, read by the page.)"""
     if not getattr(a, "no_mlflow", False):
         attach_mlflow(runner)
-    try:
-        from .observability.monitor_db import MonitorDb
-
-        MonitorDb(getattr(a, "monitor_db", None) or "monitor.db").register(runner.paths)
-    except Exception as e:  # noqa: BLE001
-        print(f"warn: monitor.db not updated: {e}")
 
 
 def _drive(runner, a: argparse.Namespace):
@@ -330,7 +325,6 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--gate-timeout", type=float)
     p.add_argument("--prefect", action="store_true", help="run the loop as a Prefect flow (a task per step)")
     p.add_argument("--no-mlflow", action="store_true")
-    p.add_argument("--monitor-db", default=None)
     p.set_defaults(fn=cmd_run)
     p = sub.add_parser(
         "start", help="build a task from the settings form (defaults, prefs.json, --set key=value) and run it"
@@ -340,14 +334,12 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--gate-timeout", type=float)
     p.add_argument("--prefect", action="store_true")
     p.add_argument("--no-mlflow", action="store_true")
-    p.add_argument("--monitor-db", default=None)
     p.set_defaults(fn=cmd_start)
     p = sub.add_parser("resume", help="continue a halted or gated run")
     p.add_argument("run_dir")
     p.add_argument("--gate-timeout", type=float)
     p.add_argument("--prefect", action="store_true")
     p.add_argument("--no-mlflow", action="store_true")
-    p.add_argument("--monitor-db", default=None)
     p.set_defaults(fn=cmd_resume)
     p = sub.add_parser("status", help="where a run is")
     p.add_argument("run_dir")

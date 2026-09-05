@@ -33,7 +33,7 @@
 12. **Prove it offline first.** Fake models walk every branch with zero tokens before any live
     run. A check that never runs is not a check.
 13. **Prompts are code-filled templates, not skills.** A missing key refuses before a token is
-    spent. Tool denial is stated as fact in the prompt and enforced by the harness.
+    spent. Tool denial is stated as fact in the prompt and enforced by the runtime.
 14. **Cost is a design axis.** No unused tools, thinking off where a check catches every
     mistake, calls batched, tokens as the honest measure.
 
@@ -69,3 +69,9 @@ Every module docstring, check and walk leg cites the rule number it enforces.
 - Live runs use the CLI logins (`claude_cli`, `codex_cli`, `CSMW_CLI_USE_LOGIN=1`, the shell's
   `ANTHROPIC_API_KEY` unset), never API keys. The `pydantic_ai` backend exists for deployments
   that have keys.
+- Version 3 (2026-09-04): all ten layers are live behind their seams -- `docs/PLAN.md`,
+  "Version 3", holds the phase record and every live pass. The container tier needs an engine
+  (`brew install colima docker && colima start`) and the image (`csmw sandbox build`); without
+  them the subprocess tier runs and the record says so. Prefect as the runner needs `prefect
+  server start` and `csmw gateway prefect serve`; the walk needs neither. Everything a step
+  checks lives under the run folder (`paths.staging()`), never the system temp.
