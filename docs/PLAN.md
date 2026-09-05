@@ -231,6 +231,14 @@ Agreed with the user on 2026-09-04. Nothing below is code; it is what the code w
   engine cannot see the run folder, and the walk under the container tier keeps its run folders
   under home -- the coder's ten legs then run every check in containers (15 per happy leg).
   A halted run restarts from scratch: live-11.**
+  **`live-11` (2026-09-04, phases 8 and 9 in the path, the container tier under Prefect, the
+  CLI logins): COMPLETED, 30 steps, 0 halts, 0 resumes, 1 refusal recovered, 18 min, 273K
+  tokens; verdict 8/8 pass, 8/8 fail on the null, 6 minor findings carried; every one of its
+  31 checks ran in a container (`tier=container` on all 31 `sandbox.run` events, network off,
+  the run folder the only mount, the host's uid); tests ‖ source as one round; evals: pass 1.0,
+  null-fail 1.0, carried 6, rounds 1.75, refused 1; the self-check passes on it. The clean pass
+  phases 8 and 9 owed, and the last of version 3: all ten layers live on their tools. Both
+  code repositories and the architecture repository tagged `v3`.**
 
 ## The rule for every phase
 
