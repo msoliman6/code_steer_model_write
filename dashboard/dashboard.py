@@ -10,6 +10,7 @@ import asyncio
 import dataclasses
 import json
 import os
+import re
 from pathlib import Path
 from typing import Any
 
@@ -256,16 +257,6 @@ class AgentRow:
 
 
 @dataclasses.dataclass
-class Seg:
-    lane: str = ""
-    label: str = ""
-    left: float = 0.0
-    width: float = 0.0
-    stage: str = ""
-    kind: str = "call"
-
-
-@dataclasses.dataclass
 class TLRow:
     step: str = ""
     kind: str = ""
@@ -279,6 +270,20 @@ class TLRow:
     label: str = ""  # tokens in K/M
     seconds: str = ""
     done: bool = True
+
+
+@dataclasses.dataclass
+class TLBand:
+    stage: str = ""
+    hue: str = "slate"
+    left: float = 0.0
+    width: float = 0.0
+
+
+@dataclasses.dataclass
+class TLTick:
+    left: float = 0.0
+    label: str = ""
 
 
 @dataclasses.dataclass
@@ -417,9 +422,10 @@ class S(rx.State):
     agent_runs: list[AgentRow] = []
     steps: list[StepRow] = []
     hidden_runs: str = rx.LocalStorage("[]", name="csmw_hidden_runs")  # closed tabs, this browser
-    segments: list[Seg] = []
     timeline: list[TLRow] = []  # §7d piece 2
     tl_total: str = ""
+    tl_bands: list[TLBand] = []  # one tinted band per stage, behind every row, in the stage's hue
+    tl_ticks: list[TLTick] = []  # the time axis under the rows
     events: list[EventRow] = []
     carried: list[CarriedRow] = []
     model_rows: list[ModelRow] = []
@@ -479,18 +485,6 @@ class S(rx.State):
             )
             for x in d.get("steps", [])
         ]
-        total = max([sg["end"] for sg in d["segments"]] + [1.0])
-        self.segments = [
-            Seg(
-                lane=sg["lane"],
-                label=sg["label"],
-                left=round(100 * sg["start"] / total, 2),
-                width=max(0.6, round(100 * (sg["end"] - sg["start"]) / total, 2)),
-                stage=sg["stage"],
-                kind=sg["kind"],
-            )
-            for sg in d["segments"]
-        ]
         tl = d.get("timeline", [])
         span = max([r["end"] for r in tl] + [1.0])
         self.tl_total = _fmt_secs(span)
@@ -510,6 +504,24 @@ class S(rx.State):
                 done=bool(r["done"]),
             )
             for r in tl
+        ]
+        hues = {st["id"]: st["hue"] for st in d["stages"]}
+        bands: list[TLBand] = []
+        for sid in [st["id"] for st in d["stages"]]:
+            mine = [r for r in tl if r.get("stage") == sid]
+            if mine:
+                lo, hi = min(r["start"] for r in mine), max(r["end"] for r in mine)
+                bands.append(
+                    TLBand(
+                        stage=sid,
+                        hue=hues.get(sid, "slate"),
+                        left=round(100 * lo / span, 2),
+                        width=max(0.2, round(100 * (hi - lo) / span, 2)),
+                    )
+                )
+        self.tl_bands = bands
+        self.tl_ticks = [
+            TLTick(left=round(100 * f, 2), label=_fmt_secs(span * f)) for f in (0, 0.25, 0.5, 0.75, 1.0)
         ]
         self.events = [
             EventRow(**{f.name: e[f.name] for f in dataclasses.fields(EventRow)}) for e in d["events"]
@@ -1520,36 +1532,52 @@ def artifacts_panel() -> rx.Component:
     )
 
 
-def lane_row(lane: str) -> rx.Component:
-    color = {"a": T.ACTOR["a"], "b": T.ACTOR["b"], "you": T.ACTOR["you"]}[lane]
+TL_LABEL_W = "176px"
+TL_TAIL_W = "116px"  # the seconds and the tokens after the track
+
+
+def timeline_band(b: TLBand) -> rx.Component:
+    """A stage's span as a glass band behind the rows, in the stage's hue (the rail's boxes)."""
+    return rx.box(
+        position="absolute",
+        left=f"{b.left}%",
+        width=f"{b.width}%",
+        top="0",
+        bottom="0",
+        background=rx.match(b.hue, *GLASS_FILL, "transparent"),
+        title=b.stage,
+    )
+
+
+def timeline_axis() -> rx.Component:
+    """The time axis under the rows: ticks at the quarters of the run."""
     return rx.hstack(
-        rx.text(lane, **MONO, color=T.MUTED, min_width="40px", font_size=SMALL),
+        rx.box(width=TL_LABEL_W, min_width=TL_LABEL_W),
         rx.box(
             rx.foreach(
-                S.segments,
-                lambda sg: rx.cond(
-                    sg.lane == lane,
-                    rx.box(
-                        position="absolute",
-                        left=f"{sg.left}%",
-                        width=rx.cond(sg.kind == "call", f"{sg.width}%", "8px"),
-                        height="10px",
-                        top="4px",
-                        background=color,
-                        border_radius="2px",
-                        title=sg.label,
-                    ),
-                    rx.fragment(),
+                S.tl_ticks,
+                lambda t: rx.box(
+                    rx.box(width="1px", height="5px", background=T.BORDER_STRONG),
+                    rx.text(t.label, **MONO, color=T.DIM, font_size=SMALL, white_space="nowrap"),
+                    position="absolute",
+                    left=f"{t.left}%",
+                    top="0",
+                    transform="translateX(-50%)",
+                    display="flex",
+                    flex_direction="column",
+                    align_items="center",
                 ),
             ),
             position="relative",
-            height="18px",
+            height="26px",
             width="100%",
-            background=T.SUBCARD,
-            border_radius="4px",
+            border_top=f"1px solid {T.BORDER_STRONG}",
         ),
+        rx.box(width=TL_TAIL_W, min_width=TL_TAIL_W),
         width="100%",
-        align="center",
+        align="start",
+        spacing="2",
+        padding_top="2px",
     )
 
 
@@ -1563,14 +1591,15 @@ def timeline_row(r: TLRow) -> rx.Component:
             **MONO,
             color=T.MUTED,
             font_size=SMALL,
-            width="176px",
-            min_width="176px",
+            width=TL_LABEL_W,
+            min_width=TL_LABEL_W,
             white_space="nowrap",
             overflow="hidden",
             text_overflow="ellipsis",
             title=f"{r.kind} · {r.seconds}",
         ),
         rx.box(
+            rx.foreach(S.tl_bands, timeline_band),
             rx.box(
                 position="absolute",
                 left=f"{r.left}%",
@@ -1641,27 +1670,24 @@ def evidence() -> rx.Component:
         eyebrow(
             "EVIDENCE",
             rx.text(
-                f"swimlane · {S.events.length()} events · run summary", **MONO, color=T.MUTED, font_size=SMALL
+                f"timeline · {S.events.length()} events · run summary", **MONO, color=T.MUTED, font_size=SMALL
             ),
-        ),
-        rx.box(
-            sub_eyebrow("WHERE THE TIME WENT"),
-            lane_row("a"),
-            lane_row("b"),
-            lane_row("you"),
-            rx.text(f"The whole run · {S.elapsed}", **MONO, color=T.MUTED, font_size=SMALL),
-            width="100%",
-            padding_top=T.SPACE["sm"],
         ),
         rx.el.details(
             rx.el.summary(
                 rx.text(
-                    f"STEP TIMELINE · {S.timeline.length()} · {S.tl_total}",
+                    f"WHERE THE TIME WENT · {S.timeline.length()} steps · the whole run {S.elapsed}",
                     **{**EYEBROW, "color": T.DIM},
                     display="inline",
                 )
             ),
-            rx.vstack(rx.foreach(S.timeline, timeline_row), spacing="0", width="100%", padding_top="6px"),
+            rx.vstack(
+                rx.foreach(S.timeline, timeline_row),
+                timeline_axis(),
+                spacing="0",
+                width="100%",
+                padding_top="6px",
+            ),
             id="run-timeline",
             open=True,
         ),
@@ -2118,7 +2144,8 @@ class HomeRowV:
     id: str = ""
     recipe: str = ""
     bucket: str = ""
-    verdict: str = ""
+    verdict: str = ""  # compact: "6/6 pass · 6/6 null-fail", or the halt's step and reason
+    verdict_full: str = ""
     steps: str = ""
     elapsed: str = ""
     tokens: str = ""
@@ -2137,23 +2164,47 @@ class HomeRowV:
     is_done: bool = False
 
 
-HOME_COLUMNS = [  # key, label, width; the workflow rides in the run cell as on the tab strip
-    ("id", "run", "196px"),
-    ("status", "status", "90px"),
-    ("verdict", "verdict", "minmax(170px, 1fr)"),
-    ("steps", "steps", "52px"),
-    ("elapsed", "time", "52px"),
-    ("tokens", "tokens", "58px"),
-    ("cost", "cost", "58px"),
-    ("pass_rate", "pass", "44px"),
-    ("null_fail_rate", "null", "44px"),
-    ("carried_findings", "carried", "74px"),
-    ("rounds_to_converge", "rounds", "66px"),
-    ("refused_answers", "refused", "74px"),
-    ("started", "started", "96px"),
+HOME_COLUMNS = [  # key, label, width, align, what the column means (the header's tooltip)
+    ("id", "run", "168px", "start", "the run and its workflow; click the row to open it"),
+    (
+        "status",
+        "status",
+        "104px",
+        "start",
+        "running, completed, halted (resumable), failed, or stale (the record says running, the runner is gone)",
+    ),
+    (
+        "verdict",
+        "verdict",
+        "minmax(180px, 1fr)",
+        "start",
+        "properties passing on the source, and failing on the null implementation; a halted run shows its halt",
+    ),
+    ("steps", "steps", "52px", "center", "steps done of the steps issued so far"),
+    ("elapsed", "time", "52px", "center", "wall clock, start to end"),
+    ("tokens", "tokens", "56px", "center", "tokens spent, input and output, every side"),
+    ("cost", "cost", "56px", "center", "the tokens at API rates; a CLI login is billed flat"),
+    ("pass_rate", "pass", "44px", "center", "eval: properties passing on the source, 0 to 1"),
+    (
+        "null_fail_rate",
+        "null",
+        "44px",
+        "center",
+        "eval: properties failing on the null implementation, 0 to 1 (a test that passes the null proves nothing)",
+    ),
+    ("carried_findings", "carried", "62px", "center", "eval: findings carried into the report unfixed"),
+    (
+        "rounds_to_converge",
+        "rounds",
+        "58px",
+        "center",
+        "eval: review rounds to converge, mean over the loops",
+    ),
+    ("refused_answers", "refused", "62px", "center", "eval: answers refused by a check and re-asked"),
+    ("started", "started", "98px", "start", "when the run started"),
 ]
-HOME_GRID = " ".join(w for _, _, w in HOME_COLUMNS) + " 196px"
-HOME_MIN_W = "1200px"  # below this the card scrolls sideways, like a browser's table; nothing wraps
+HOME_GRID = "28px " + " ".join(w for _, _, w, _, _ in HOME_COLUMNS) + " 116px"
+HOME_MIN_W = "1160px"  # below this the card scrolls sideways, like a browser's table; nothing wraps
 
 
 class H(rx.State):
@@ -2175,6 +2226,42 @@ class H(rx.State):
     trend: list[dict[str, Any]] = []
     trend_recipe: str = ""
     note: str = ""
+    selected: list[str] = []  # run dirs ticked for a bulk remove
+    confirm_remove: bool = False  # the button asks once before the list forgets them
+
+    @rx.var
+    def all_selected(self) -> bool:
+        return bool(self.rows) and all(r.dir in self.selected for r in self.rows)
+
+    @rx.event
+    def toggle_select(self, run_dir: str, checked: bool):
+        sel = set(self.selected)
+        (sel.add if checked else sel.discard)(run_dir)
+        self.selected = sorted(sel)
+        self.confirm_remove = False
+
+    @rx.event
+    def select_all(self, checked: bool):
+        self.selected = sorted(r.dir for r in self.rows) if checked else []
+        self.confirm_remove = False
+
+    @rx.event
+    def remove_selected(self):
+        """Two clicks: the first asks, the second forgets every ticked run. The folders stay."""
+        if not self.confirm_remove:
+            self.confirm_remove = True
+            return
+        gw = _gateway()
+        n = 0
+        for d in self.selected:
+            try:
+                gw.forget(d)
+                n += 1
+            except Exception as e:  # noqa: BLE001
+                self.note = f"remove: {type(e).__name__}: {e}"
+        self.selected, self.confirm_remove = [], False
+        self.note = f"{n} run{'s' if n != 1 else ''} removed from the list; every folder stays on disk"
+        self._reload()
 
     def _reload(self) -> None:
         all_rows = home.rows(_registry())
@@ -2192,7 +2279,8 @@ class H(rx.State):
                 id=r.id,
                 recipe=r.recipe,
                 bucket=r.bucket,
-                verdict=r.verdict or (r.halt if r.bucket in ("halted", "failed") else ""),
+                verdict=_short_verdict(r.verdict or (r.halt if r.bucket in ("halted", "failed") else "")),
+                verdict_full=r.verdict or (r.halt if r.bucket in ("halted", "failed") else ""),
                 steps=r.steps,
                 elapsed=r.elapsed,
                 tokens=r.tokens_label,
@@ -2254,8 +2342,13 @@ class H(rx.State):
 
     @rx.event
     async def open(self, run_dir: str):
+        """A row opens its run. A tab closed earlier is hidden in this browser (ledger: a second
+        owner) -- the home's click un-hides it, so the run page shows the run that was clicked."""
         s = await self.get_state(S)
         s.run_dir, s.picked, s.hash_ = run_dir, "", ""
+        hidden = s._hidden()
+        if run_dir in hidden:
+            s.hidden_runs = json.dumps(sorted(hidden - {run_dir}))
         return rx.redirect("/run")
 
     def _act(self, verb: str, run_dir: str) -> None:
@@ -2283,6 +2376,15 @@ class H(rx.State):
         self._act(verb, run_dir)
 
 
+def _short_verdict(v: str) -> str:
+    """ "6/6 properties pass · 6/6 fail on the null" -> "6/6 pass · 6/6 null-fail"; a halt keeps
+    its step and reason, the column's tooltip carries the whole text."""
+    m = re.match(r"(\d+/\d+) properties pass · (\d+/\d+) fail on the null(.*)", v)
+    if m:
+        return f"{m.group(1)} pass · {m.group(2)} null-fail"
+    return v
+
+
 def home_counter(label: str, n, color) -> rx.Component:
     return rx.vstack(
         rx.text(n, **MONO, font_size="22px", font_weight="700", color=color, line_height="1"),
@@ -2294,16 +2396,19 @@ def home_counter(label: str, n, color) -> rx.Component:
     )
 
 
-def home_head_cell(key: str, label: str) -> rx.Component:
+def home_head_cell(key: str, label: str, align: str = "start", tip: str = "") -> rx.Component:
     active = H.sort_key == key
     return rx.text(
         rx.cond(active, rx.cond(H.sort_desc, f"{label} ▾", f"{label} ▴"), label),
-        **{k: v for k, v in EYEBROW.items() if k != "color"},
+        **{k: v for k, v in EYEBROW.items() if k not in ("color", "letter_spacing")},
+        letter_spacing="0.02em",  # the table's headers are narrow columns; the eyebrow's spacing would clip them
         color=rx.cond(active, T.TEXT, T.MUTED),
         cursor="pointer",
         white_space="nowrap",
         overflow="hidden",
         text_overflow="ellipsis",
+        text_align=align,
+        title=tip,
         on_click=H.sort_by(key),
     )
 
@@ -2325,11 +2430,37 @@ def home_action(label: str, verb: str, r, *, show) -> rx.Component:
 
 
 def home_row(r: HomeRowV) -> rx.Component:
-    def cell(v, **kw) -> rx.Component:
+    def cell(v, align: str = "start", **kw) -> rx.Component:
         style = {"font_size": SMALL, "color": T.MUTED, **kw}
-        return rx.text(v, **MONO, white_space="nowrap", overflow="hidden", text_overflow="ellipsis", **style)
+        return rx.text(
+            v,
+            **MONO,
+            white_space="nowrap",
+            overflow="hidden",
+            text_overflow="ellipsis",
+            text_align=align,
+            **style,
+        )
 
+    tone = rx.match(
+        r.bucket,
+        ("running", "ok"),
+        ("completed", "ok"),
+        ("halted", "warn"),
+        ("stale", "warn"),
+        ("failed", "bad"),
+        "neutral",
+    )
     return rx.grid(
+        rx.box(
+            rx.checkbox(
+                checked=H.selected.contains(r.dir),
+                on_change=H.toggle_select(r.dir),
+                size="1",
+                color_scheme="gray",
+            ),
+            on_click=rx.stop_propagation,
+        ),
         rx.hstack(
             status_dot(r.dot, r.ring),
             cell(r.id, color=T.TEXT, font_size=BODY, flex_shrink="0"),
@@ -2338,35 +2469,50 @@ def home_row(r: HomeRowV) -> rx.Component:
             align="center",
             min_width="0",
         ),
-        pill(
-            r.bucket,
-            rx.match(
+        rx.box(  # the pill fits its column: a fixed width, the word clipped before it overflows
+            rx.text(
                 r.bucket,
-                ("running", "ok"),
-                ("completed", "ok"),
-                ("halted", "warn"),
-                ("stale", "warn"),
-                ("failed", "bad"),
-                "neutral",
+                **{k: v for k, v in PILL_STYLE.items() if k != "font_size"},
+                font_size="10px",
+                color=rx.match(
+                    tone,
+                    ("ok", T.PILL["ok"][0]),
+                    ("warn", T.PILL["warn"][0]),
+                    ("bad", T.PILL["bad"][0]),
+                    T.PILL["neutral"][0],
+                ),
+                overflow="hidden",
+                text_overflow="ellipsis",
+                text_align="center",
             ),
+            background=rx.match(
+                tone,
+                ("ok", T.PILL["ok"][1]),
+                ("warn", T.PILL["warn"][1]),
+                ("bad", T.PILL["bad"][1]),
+                T.PILL["neutral"][1],
+            ),
+            border_radius="8px",
+            padding="4px 6px",
+            width="96px",
+            overflow="hidden",
         ),
-        cell(r.verdict, color=T.MUTED, title=r.verdict),
-        cell(r.steps, color=T.MUTED),
-        cell(r.elapsed, color=T.MUTED),
-        cell(r.tokens, color=T.MUTED),
-        cell(r.cost, color=T.MUTED),
-        cell(r.pass_rate, color=T.MUTED),
-        cell(r.null_fail_rate, color=T.MUTED),
-        cell(r.carried_findings, color=T.MUTED),
-        cell(r.rounds_to_converge, color=T.MUTED),
-        cell(r.refused_answers, color=T.MUTED),
+        cell(r.verdict, title=r.verdict_full),
+        cell(r.steps, "center"),
+        cell(r.elapsed, "center"),
+        cell(r.tokens, "center"),
+        cell(r.cost, "center"),
+        cell(r.pass_rate, "center"),
+        cell(r.null_fail_rate, "center"),
+        cell(r.carried_findings, "center"),
+        cell(r.rounds_to_converge, "center"),
+        cell(r.refused_answers, "center"),
         cell(r.started, color=T.DIM),
         rx.hstack(
             home_action("stop", "stop", r, show=r.can_stop),
             home_action("pause", "pause", r, show=r.can_stop),
             home_action("resume", "resume", r, show=r.can_resume),
             home_action("again", "again", r, show=r.is_done),
-            home_action("remove", "forget", r, show=r.is_done),
             spacing="3",
             justify="end",
             width="100%",
@@ -2486,8 +2632,34 @@ def home_page() -> rx.Component:
                         ),
                     ),
                     rx.grid(
-                        *[home_head_cell(k, lbl) for k, lbl, _ in HOME_COLUMNS],
-                        rx.text("", **EYEBROW),
+                        rx.checkbox(
+                            checked=H.all_selected,
+                            on_change=H.select_all,
+                            size="1",
+                            color_scheme="gray",
+                            title="select every run shown",
+                        ),
+                        *[home_head_cell(k, lbl, al, tip) for k, lbl, _, al, tip in HOME_COLUMNS],
+                        rx.hstack(
+                            rx.cond(
+                                H.selected.length() > 0,
+                                rx.button(
+                                    rx.cond(
+                                        H.confirm_remove,
+                                        f"remove {H.selected.length()} from the list?",
+                                        f"remove {H.selected.length()}",
+                                    ),
+                                    size="1",
+                                    variant=rx.cond(H.confirm_remove, "solid", "soft"),
+                                    color_scheme=rx.cond(H.confirm_remove, "red", "gray"),
+                                    title="the list forgets them; every folder stays on disk",
+                                    on_click=H.remove_selected,
+                                ),
+                                rx.fragment(),
+                            ),
+                            justify="end",
+                            width="100%",
+                        ),
                         grid_template_columns=HOME_GRID,
                         gap="10px",
                         width="100%",

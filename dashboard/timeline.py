@@ -16,7 +16,8 @@ class TimelineRow(BaseModel):
     step: str
     kind: str = ""  # the step kind the record carries: author | judge | code | check | gate | tool
     role: str = ""
-    lane: str = "code"  # the swimlane's letter for the role (a, b, you) or code
+    lane: str = "code"  # the side's letter for the role (a, b, you) or code
+    stage: str = ""  # the stage the step belongs to (the rail's box), for the tinted band behind it
     start: float  # seconds from the run's first event
     end: float
     call_start: float | None = None  # the model call inside the step, when there was one

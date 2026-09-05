@@ -504,7 +504,12 @@ def build_view(run_dir: Path | str) -> RunView:
         steps=steps,
         segments=segments,
         timeline=[
-            r.model_copy(update={"lane": sides.get(r.role, "code") if r.role else "code"})
+            r.model_copy(
+                update={
+                    "lane": sides.get(r.role, "code") if r.role else "code",
+                    "stage": _stage_of(step_phase.get(r.step, ""), spec),
+                }
+            )
             for r in timeline.rows(evs, now=now)
         ],
         token_series=series,
