@@ -156,6 +156,10 @@ Agreed with the user on 2026-09-04. Nothing below is code; it is what the code w
   `~/.csmw/mlflow.db` OK with 23 step spans, the five eval metrics on the run, `evals.json`
   beside the record: pass_rate 1.0, null_fail_rate 1.0, carried 0, rounds 1.5, refused 2.
   The clean pass phases 5 and 6 owed -- the first run through all ten layers on their tools.**
+  After it: Prefect's page for live-8 showed one flow run and no steps -- the served flow had its
+  own loop beside `drive_with_prefect`'s (ledger: a second owner). One loop now, in the Runner,
+  with a `round_executor` Prefect fills; a fake-model run through the served deployment shows
+  its 19 steps as task runs, tests ‖ source side by side on the timeline.
 
 ## The rule for every phase
 

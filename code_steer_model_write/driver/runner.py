@@ -54,6 +54,7 @@ class Runner:
         self.poll = poll_seconds
         self.gate_timeout = gate_timeout
         self.parallel = max(1, int(os.environ.get("CSMW_PARALLEL", parallel)))
+        self.round_executor: Callable[[list[Step]], Outcome | None] | None = None
         state = RunState.load(paths)
         self.events = EventLog(paths.events, state.run_id)
         self.driver = Driver(paths, program, self.events)
@@ -195,7 +196,11 @@ class Runner:
         """The ready steps have no dependency on each other (the Driver derived them so), so
         they run at once (ARCHITECTURE.md 7.3: tests ‖ source). One step at a time when only
         one is ready or the profile says so; a halt in any of them ends the round, the others
-        finish their step first so no half-landed step is left (section 4, L3)."""
+        finish their step first so no half-landed step is left (section 4, L3). A Runner tool
+        (Prefect) may take the round over through `round_executor` -- each step a task run --
+        while this loop stays the one owner of the sequence, the STOP check and the record."""
+        if self.round_executor is not None:
+            return self.round_executor(ready)
         if len(ready) == 1 or self.parallel <= 1:
             for step in ready:
                 outcome = self._execute(step)
