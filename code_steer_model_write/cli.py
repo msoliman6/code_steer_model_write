@@ -289,6 +289,11 @@ def cmd_dash(a: argparse.Namespace) -> int:
 def cmd_figure(a: argparse.Namespace) -> int:
     from .figure import write_figure
 
+    if a.recipe == "layers":
+        from .figure_layers import write as write_layers
+
+        print(write_layers(Path(a.out), a.theme))
+        return 0
     if a.recipe == "harness":
         from .figure_harness import write
 

@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 666" width="1000" height="666" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+<defs>
+<marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c9d1d9"/></marker>
+</defs>
+<!-- transparent canvas: the host page's dark ground shows through -->
+<rect x="24" y="24" width="221.5" height="132" rx="16" fill="rgba(86,70,237,0.14)" stroke="rgba(86,70,237,0.7)" stroke-width="1.5"/>
+<text x="134.75" y="54" text-anchor="middle" font-size="18" font-weight="700" letter-spacing="0.5" fill="#9c8cf5">L1  UI</text>
+<text x="134.75" y="80" text-anchor="middle" font-size="14" font-weight="600" fill="#e6edf3">Reflex · Jinja2</text>
+<text x="134.75" y="106" text-anchor="middle" font-size="13" fill="#9aa4ae">what the person sees and decides</text>
+<rect x="267.5" y="24" width="221.5" height="132" rx="16" fill="rgba(86,70,237,0.14)" stroke="rgba(86,70,237,0.7)" stroke-width="1.5"/>
+<text x="378.25" y="54" text-anchor="middle" font-size="18" font-weight="700" letter-spacing="0.5" fill="#9c8cf5">L2  CONTROL PLANE</text>
+<text x="378.25" y="80" text-anchor="middle" font-size="14" font-weight="600" fill="#e6edf3">MCP SDK · pydantic · Typer</text>
+<text x="378.25" y="98" text-anchor="middle" font-size="14" font-weight="600" fill="#e6edf3">SQLite</text>
+<text x="378.25" y="124" text-anchor="middle" font-size="13" fill="#9aa4ae">the task, the budgets, the</text>
+<text x="378.25" y="141" text-anchor="middle" font-size="13" fill="#9aa4ae">registry</text>
+<rect x="511" y="24" width="221.5" height="132" rx="16" fill="rgba(208,74,69,0.14)" stroke="rgba(208,74,69,0.7)" stroke-width="1.5"/>
+<text x="621.75" y="54" text-anchor="middle" font-size="18" font-weight="700" letter-spacing="0.5" fill="#e06661">L3  ORCHESTRATION</text>
+<text x="621.75" y="80" text-anchor="middle" font-size="14" font-weight="600" fill="#e6edf3">the driver · Prefect 3</text>
+<text x="621.75" y="106" text-anchor="middle" font-size="13" fill="#9aa4ae">the next step from disk; detach,</text>
+<text x="621.75" y="123" text-anchor="middle" font-size="13" fill="#9aa4ae">cancel, resume</text>
+<rect x="754.5" y="24" width="221.5" height="132" rx="16" fill="rgba(208,74,69,0.14)" stroke="rgba(208,74,69,0.7)" stroke-width="1.5"/>
+<text x="865.25" y="54" text-anchor="middle" font-size="18" font-weight="700" letter-spacing="0.5" fill="#e06661">L4  AGENT RUNTIME</text>
+<text x="865.25" y="80" text-anchor="middle" font-size="14" font-weight="600" fill="#e6edf3">Claude Code · Codex</text>
+<text x="865.25" y="98" text-anchor="middle" font-size="14" font-weight="600" fill="#e6edf3">PydanticAI</text>
+<text x="865.25" y="124" text-anchor="middle" font-size="13" fill="#9aa4ae">one model call under a schema</text>
+<rect x="511" y="226" width="221.5" height="132" rx="16" fill="rgba(36,150,237,0.14)" stroke="rgba(36,150,237,0.7)" stroke-width="1.5"/>
+<text x="621.75" y="256" text-anchor="middle" font-size="18" font-weight="700" letter-spacing="0.5" fill="#6eb4f0">L5  SANDBOX</text>
+<text x="621.75" y="282" text-anchor="middle" font-size="14" font-weight="600" fill="#e6edf3">Docker SDK · Colima</text>
+<text x="621.75" y="308" text-anchor="middle" font-size="13" fill="#9aa4ae">network off, the run folder the</text>
+<text x="621.75" y="325" text-anchor="middle" font-size="13" fill="#9aa4ae">only mount</text>
+<rect x="754.5" y="226" width="221.5" height="132" rx="16" fill="rgba(36,150,237,0.14)" stroke="rgba(36,150,237,0.7)" stroke-width="1.5"/>
+<text x="865.25" y="256" text-anchor="middle" font-size="18" font-weight="700" letter-spacing="0.5" fill="#6eb4f0">L6  TOOLS</text>
+<text x="865.25" y="282" text-anchor="middle" font-size="14" font-weight="600" fill="#e6edf3">git · pytest · ruff</text>
+<text x="865.25" y="300" text-anchor="middle" font-size="14" font-weight="600" fill="#e6edf3">pyright</text>
+<text x="865.25" y="326" text-anchor="middle" font-size="13" fill="#9aa4ae">the typed registry, every call an</text>
+<text x="865.25" y="343" text-anchor="middle" font-size="13" fill="#9aa4ae">event</text>
+<line x1="247.5" y1="90" x2="265.5" y2="90" stroke="#c9d1d9" stroke-width="2" stroke-linecap="round" marker-end="url(#ah)"/>
+<line x1="491" y1="90" x2="509" y2="90" stroke="#c9d1d9" stroke-width="2" stroke-linecap="round" marker-end="url(#ah)"/>
+<line x1="734.5" y1="90" x2="752.5" y2="90" stroke="#c9d1d9" stroke-width="2" stroke-linecap="round" marker-end="url(#ah)"/>
+<line x1="865.25" y1="158" x2="865.25" y2="224" stroke="#c9d1d9" stroke-width="2" stroke-linecap="round" marker-end="url(#ah)"/>
+<text x="855.25" y="195" text-anchor="end" font-size="12.5" fill="#9aa4ae">a tool call, through the planes L9 · L10 · L8</text>
+<line x1="752.5" y1="292" x2="734.5" y2="292" stroke="#c9d1d9" stroke-width="2" stroke-linecap="round" marker-end="url(#ah)"/>
+<rect x="24" y="414" width="952" height="44" rx="10" fill="rgba(187,128,9,0.08)" stroke="rgba(187,128,9,0.5)" stroke-width="1.5"/>
+<text x="42" y="436" dominant-baseline="central" font-size="15" font-weight="700" letter-spacing="0.5" fill="#d69a26">L9  AUTHORIZATION</text>
+<text x="274" y="436" dominant-baseline="central" font-size="14" font-weight="600" fill="#e6edf3">Cedar</text>
+<text x="958" y="436" dominant-baseline="central" text-anchor="end" font-size="13" fill="#9aa4ae">every step, every write, every tool call</text>
+<rect x="24" y="468" width="952" height="44" rx="10" fill="rgba(187,128,9,0.08)" stroke="rgba(187,128,9,0.5)" stroke-width="1.5"/>
+<text x="42" y="490" dominant-baseline="central" font-size="15" font-weight="700" letter-spacing="0.5" fill="#d69a26">L10  GUARDRAILS</text>
+<text x="274" y="490" dominant-baseline="central" font-size="14" font-weight="600" fill="#e6edf3">Guardrails AI · the schema</text>
+<text x="958" y="490" dominant-baseline="central" text-anchor="end" font-size="13" fill="#9aa4ae">before the prompt, after the answer, before a tool call</text>
+<rect x="24" y="522" width="952" height="44" rx="10" fill="rgba(187,128,9,0.08)" stroke="rgba(187,128,9,0.5)" stroke-width="1.5"/>
+<text x="42" y="544" dominant-baseline="central" font-size="15" font-weight="700" letter-spacing="0.5" fill="#d69a26">L8  OBSERVABILITY</text>
+<text x="274" y="544" dominant-baseline="central" font-size="14" font-weight="600" fill="#e6edf3">MLflow 3 · OpenTelemetry</text>
+<text x="958" y="544" dominant-baseline="central" text-anchor="end" font-size="13" fill="#9aa4ae">every event a span, every run evaluated</text>
+<rect x="24" y="584" width="952" height="58" rx="14" fill="rgba(47,163,154,0.14)" stroke="rgba(47,163,154,0.7)" stroke-width="1.5"/>
+<text x="42" y="613" dominant-baseline="central" font-size="17" font-weight="700" letter-spacing="0.5" fill="#43bdb2">L7  STATE</text>
+<text x="274" y="613" dominant-baseline="central" font-size="15" font-weight="600" fill="#e6edf3">files · SQLite · obstore</text>
+<text x="958" y="613" dominant-baseline="central" text-anchor="end" font-size="13.5" fill="#9aa4ae">the record every layer reads and writes</text>
+</svg>

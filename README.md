@@ -24,7 +24,7 @@
 <a href="docs/DASHBOARD-DESIGN.md"><img alt="docs: dashboard design" src="https://img.shields.io/badge/docs-dashboard%20design-30363d?style=flat-square"></a>
 </p>
 
-<p align="center"><i>Independent open-source project. Not affiliated with or endorsed by Anthropic or OpenAI.<br>Claude and Claude Code are trademarks of Anthropic; Codex and GPT are trademarks of OpenAI. Prefect, MLflow, Reflex, ruff, pyright and pytest belong to their owners.</i></p>
+<p align="center"><i>Independent open-source project. Not affiliated with or endorsed by Anthropic or OpenAI.<br>Claude and Claude Code are trademarks of Anthropic; Codex and GPT are trademarks of OpenAI. Prefect, MLflow, Reflex, PydanticAI, pydantic, Guardrails AI, Cedar, Docker, Colima, obstore, Typer, Jinja2, SQLite, OpenTelemetry, the Model Context Protocol, ruff, pyright and pytest belong to their owners.</i></p>
 
 ## The 14 universal rules
 
@@ -111,6 +111,11 @@ what each stage does, who writes and who attacks, where code freezes, merges and
 Any workflow the runtime runs sits on seven execution layers and three cross-cutting planes,
 each behind a seam with one production tool chosen for it. Every choice is free, self-hosted and
 a Python SDK; the offline walk proves every layer with fake models before any live run.
+
+<p align="center"><picture>
+<source media="(prefers-color-scheme: dark)" srcset="docs/media/layers-dark.svg">
+<img src="docs/media/layers.svg" alt="The ten layers: the request path, the execution pair, the three planes, the record" width="900">
+</picture></p>
 
 <img alt="interface & control" src="https://img.shields.io/badge/-interface%20%26%20control-5646ED?style=flat-square"> <img alt="orchestration & runtime" src="https://img.shields.io/badge/-orchestration%20%26%20runtime-d04a45?style=flat-square"> <img alt="execution & tools" src="https://img.shields.io/badge/-execution%20%26%20tools-2496ED?style=flat-square"> <img alt="state" src="https://img.shields.io/badge/-state-1f6feb?style=flat-square"> <img alt="cross-cutting planes" src="https://img.shields.io/badge/-cross--cutting%20planes-bb8009?style=flat-square">
 
