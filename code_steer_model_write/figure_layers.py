@@ -216,24 +216,32 @@ def icon_svg(kind: str, x: float, y: float, s: float, color: str) -> str:
             + '<g><path d="M15 13l3.5-3.5"/><path d="M18.5 9.5L22.5 2" stroke-width="2.6"/>'
             + '<animateTransform attributeName="transform" type="rotate" values="0 15 13;-28 15 13;0 15 13;18 15 13;0 15 13" dur="1.2s" repeatCount="indefinite"/></g></g>'
         )
-    if kind == "clock":  # a clock with an outer arrow that circles it; the minute hand sweeps
+    if kind == "clock":  # a clock: the hour hand creeps, the minute hand sweeps
         return (
             g
-            + '<circle cx="12" cy="12" r="6.2"/>'
-            + '<circle cx="12" cy="6.8" r="0.7" fill="'
+            + '<circle cx="12" cy="12" r="10"/>'
+            + "".join(
+                f'<circle cx="{12 + 8 * dx:.2f}" cy="{12 + 8 * dy:.2f}" r="0.8" fill="{color}" stroke="none"/>'
+                for dx, dy in (
+                    (0, -1),
+                    (0.5, -0.866),
+                    (0.866, -0.5),
+                    (1, 0),
+                    (0.866, 0.5),
+                    (0.5, 0.866),
+                    (0, 1),
+                    (-0.5, 0.866),
+                    (-0.866, 0.5),
+                    (-1, 0),
+                    (-0.866, -0.5),
+                    (-0.5, -0.866),
+                )
+            )
+            + '<g><path d="M12 12V7.4" stroke-width="2.4"/><animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="24s" repeatCount="indefinite"/></g>'
+            + '<g><path d="M12 12h5.6"/><animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="2s" repeatCount="indefinite"/></g>'
+            + '<circle cx="12" cy="12" r="1" fill="'
             + color
-            + '" stroke="none"/><circle cx="17.2" cy="12" r="0.7" fill="'
-            + color
-            + '" stroke="none"/>'
-            + '<circle cx="12" cy="17.2" r="0.7" fill="'
-            + color
-            + '" stroke="none"/><circle cx="6.8" cy="12" r="0.7" fill="'
-            + color
-            + '" stroke="none"/>'
-            + '<path d="M12 12V8.6"/>'
-            + '<g><path d="M12 12h3"/><animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="4s" repeatCount="indefinite"/></g>'
-            + '<g><path d="M12 1.6A10.4 10.4 0 1 1 1.6 12" stroke-width="2.2"/><path d="M9.2 1.2L12.4 1.6 11.6 4.6"/>'
-            + '<animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="3s" repeatCount="indefinite"/></g></g>'
+            + '" stroke="none"/></g>'
         )
     if kind == "wrench":  # a wrench that tightens
         return (
