@@ -147,6 +147,15 @@ Agreed with the user on 2026-09-04. Nothing below is code; it is what the code w
   store is `~/.csmw/mlflow.db`, beside the run registry, one store for every project (MLflow's
   span store needs the SQLite backend, not a file store). Walk 16/16, tests 104 + 1 skipped,
   ruff clean, pyright clean on every file the phase touched.
+  **`live-8` (2026-09-04, phases 5 and 6 in the path): submitted through the gateway to the
+  Prefect runner (`CSMW_RUNNER=prefect`, one flow run, the flow-run id in `prefect.json`), the
+  CLI logins: COMPLETED, 23 steps, 0 halts, 0 resumes, 2 refusals recovered (the
+  implementation-steps check; a vacuous test caught by the null run), 14 min, 215K tokens;
+  verdict 6/6 pass, 6/6 fail on the null, nothing carried; the build round issued tests ‖
+  source together (started 0.3 ms apart, 50 s of overlap, both records whole); the trace in
+  `~/.csmw/mlflow.db` OK with 23 step spans, the five eval metrics on the run, `evals.json`
+  beside the record: pass_rate 1.0, null_fail_rate 1.0, carried 0, rounds 1.5, refused 2.
+  The clean pass phases 5 and 6 owed -- the first run through all ten layers on their tools.**
 
 ## The rule for every phase
 
