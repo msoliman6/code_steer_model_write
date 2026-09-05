@@ -1581,6 +1581,55 @@ def timeline_axis() -> rx.Component:
     )
 
 
+def timeline_legend() -> rx.Component:
+    """What the figure's colours mean: a band per stage in the rail's hue, a bar per side in the
+    side's colour (the darker segment inside a bar is the model call), grey for code steps."""
+
+    def band_key(st: Stage) -> rx.Component:
+        return rx.hstack(
+            rx.box(
+                width="18px",
+                height="10px",
+                border_radius="2px",
+                background=rx.match(st.hue, *GLASS_FILL_SEL, "transparent"),
+                border=rx.match(st.hue, *GLASS_STROKE, f"1px solid {T.BORDER}"),
+            ),
+            rx.text(st.title, **MONO, color=T.MUTED, font_size=SMALL, white_space="nowrap"),
+            spacing="1",
+            align="center",
+        )
+
+    def bar_key(color: str, label: str) -> rx.Component:
+        return rx.hstack(
+            rx.box(width="18px", height="10px", border_radius="2px", background=color),
+            rx.text(label, **MONO, color=T.MUTED, font_size=SMALL, white_space="nowrap"),
+            spacing="1",
+            align="center",
+        )
+
+    return rx.hstack(
+        rx.box(width=TL_LABEL_W, min_width=TL_LABEL_W),
+        rx.hstack(
+            rx.text("stages", **EYEBROW),
+            rx.foreach(S.stages, band_key),
+            rx.box(width="10px"),
+            rx.text("steps", **EYEBROW),
+            bar_key(T.ACTOR["a"], "author"),
+            bar_key(T.ACTOR["b"], "checker"),
+            bar_key(T.ACTOR["code"], "code"),
+            rx.text("· the darker segment is the model call", **MONO, color=T.DIM, font_size=SMALL),
+            spacing="3",
+            align="center",
+            wrap="wrap",
+            width="100%",
+        ),
+        width="100%",
+        align="center",
+        spacing="2",
+        padding_top="6px",
+    )
+
+
 def timeline_row(r: TLRow) -> rx.Component:
     """§7d piece 2: the step's bar in its lane's colour, the model call a darker segment inside
     it, the key at the left and the tokens at the right. Overlapping rows are the parallel build."""
@@ -1684,6 +1733,7 @@ def evidence() -> rx.Component:
             rx.vstack(
                 rx.foreach(S.timeline, timeline_row),
                 timeline_axis(),
+                timeline_legend(),
                 spacing="0",
                 width="100%",
                 padding_top="6px",

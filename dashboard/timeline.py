@@ -35,7 +35,7 @@ def rows(evs: list[Event], *, now: datetime | None = None) -> list[TimelineRow]:
     now = now or evs[-1].ts
 
     def at(ts: datetime) -> float:
-        return round((ts - t0).total_seconds(), 3)
+        return (ts - t0).total_seconds()  # exact; rounded only on the row, so the order is the record's
 
     by_step: dict[str, dict] = {}
     for e in evs:
@@ -60,27 +60,31 @@ def rows(evs: list[Event], *, now: datetime | None = None) -> list[TimelineRow]:
         elif e.kind == "call.usage":
             r["tokens"] += int(e.data.get("input_tokens", 0) or 0) + int(e.data.get("output_tokens", 0) or 0)
             r["c1"] = at(e.ts)
+    started = sorted(
+        ((r["start"], step, r) for step, r in by_step.items()),
+        key=lambda x: (x[0] if x[0] is not None else float("inf"), x[1]),
+    )
     out: list[TimelineRow] = []
-    for step, r in by_step.items():
-        if r["start"] is None:
+    for start, step, r in started:
+        if start is None:
             continue  # issued, never started: not on the clock
         end = r["end"] if r["end"] is not None else at(now)
         c0 = r["c0"]
         c1 = r["c1"] if r["c1"] is not None else (end if c0 is not None else None)
+        rd = lambda x: None if x is None else round(x, 3)  # noqa: E731
         out.append(
             TimelineRow(
                 step=step,
                 kind=r["kind"],
                 role=r["role"],
-                start=r["start"],
-                end=max(end, r["start"]),
-                call_start=c0,
-                call_end=c1,
+                start=round(start, 3),
+                end=round(max(end, start), 3),
+                call_start=rd(c0),
+                call_end=rd(c1),
                 tokens=r["tokens"],
                 done=r["end"] is not None,
             )
         )
-    out.sort(key=lambda r: (r.start, r.step))
     return out
 
 
