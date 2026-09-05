@@ -110,6 +110,10 @@ class Start(rx.State):
         return [c for c in self.cards if c.key in keys]
 
     @rx.var
+    def ceiling_cards(self) -> list[Card]:
+        return [c for c in self.cards if c.group == "ceilings"]
+
+    @rx.var
     def author_cards(self) -> list[Card]:
         by = {c.key: c for c in self.cards}
         return [
@@ -459,6 +463,30 @@ def run_card() -> rx.Component:
     )
 
 
+def ceilings_card() -> rx.Component:
+    """The budgets (P1): tokens per side, tokens for the run, model calls, minutes. Over any of
+    them the run halts honestly and waits; the page lifts the ceiling and resumes."""
+    return rx.box(
+        rx.hstack(
+            rx.text("The ceilings.", font_weight="700", font_size=BODY),
+            rx.text(
+                "What the run may spend before it stops and asks: tokens per side, tokens in all, model calls, minutes. None means no ceiling.",
+                color=T.MUTED,
+                font_size=BODY,
+            ),
+            spacing="2",
+        ),
+        rx.hstack(
+            rx.foreach(Start.ceiling_cards, run_column),
+            spacing="4",
+            width="100%",
+            align="start",
+            margin_top=T.SPACE["md"],
+        ),
+        **CARD,
+    )
+
+
 def sides_card() -> rx.Component:
     return rx.box(
         rx.hstack(
@@ -550,6 +578,7 @@ def start_form() -> rx.Component:
             ),
             rx.foreach(Start.brief_cards, card_view),
             run_card(),
+            ceilings_card(),
             sides_card(),
             stages_rail(),
             rx.hstack(

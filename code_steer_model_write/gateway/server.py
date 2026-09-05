@@ -69,6 +69,11 @@ def build(gateway: Gateway | None = None) -> MCPServer:
         return gw.forget(run)
 
     @srv.tool()
+    def workflow_raise_ceiling(run: str, what: str, value: int) -> dict[str, Any]:
+        """Lift a budget on a halted run: `what` is a role name (its token ceiling), 'tokens' (the run's total), 'calls' or 'minutes'; then resume it."""
+        return gw.raise_ceiling(run, what, value)
+
+    @srv.tool()
     def run_delete(run: str) -> dict[str, Any]:
         """Erase a run: its folder, its registry row, its MLflow run and trace, its Prefect flow run. Refused while it runs."""
         return gw.delete(run)

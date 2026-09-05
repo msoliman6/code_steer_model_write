@@ -220,6 +220,46 @@ UNIVERSAL_FIELDS: list[FormField] = [
         default="high",
     ),
     FormField(
+        key="author_budget",
+        name="author tokens",
+        group="ceilings",
+        description="a ceiling on the author's tokens for the whole run; over it the run halts honestly and waits for the ceiling to be lifted, then resumes where it stopped (rule 14: tokens are the measure)",
+        options=["none", "100K", "250K", "500K", "1M", "2M"],
+        default="none",
+    ),
+    FormField(
+        key="checker_budget",
+        name="checker tokens",
+        group="ceilings",
+        description="the same ceiling for the checker; a live run so far spends 200K to 300K tokens in all, so 500K a side is a loose bound and 100K a tight one",
+        options=["none", "100K", "250K", "500K", "1M", "2M"],
+        default="none",
+    ),
+    FormField(
+        key="total_budget",
+        name="run tokens",
+        group="ceilings",
+        description="a ceiling on the run's tokens, both sides together; checked before every model call from the record, never estimated",
+        options=["none", "250K", "500K", "1M", "2M", "5M"],
+        default="none",
+    ),
+    FormField(
+        key="max_calls",
+        name="model calls",
+        group="ceilings",
+        description="a ceiling on the number of model calls; a one-round run makes 15 to 30, and every re-ask counts",
+        options=["none", "25", "50", "100", "200"],
+        default="none",
+    ),
+    FormField(
+        key="max_minutes",
+        name="minutes",
+        group="ceilings",
+        description="a ceiling on the run's wall clock; a one-round run takes 15 to 20 minutes on the CLI logins",
+        options=["none", "15", "30", "60", "120", "240"],
+        default="none",
+    ),
+    FormField(
         key="checker_thinking",
         name="checker thinking",
         description="extended thinking on the checker's calls: the API backends switch it on; Codex reasons at its effort and streams the reasoning in full; off leaves each backend's own default",
@@ -413,12 +453,30 @@ def build_task(values: dict[str, str], *, recipe: str | None = None) -> TaskSpec
                 "effort": v[f"{stage}_{role}_effort"],
                 "thinking": v.get(f"{stage}_{role}_thinking", "off"),
             }
+
+    def tokens(x: str) -> int | None:
+        x = (x or "none").strip().upper()
+        if x in ("", "NONE"):
+            return None
+        return int(float(x[:-1]) * (1_000_000 if x.endswith("M") else 1_000)) if x[-1] in "KM" else int(x)
+
+    def count(x: str) -> int | None:
+        x = (x or "none").strip()
+        return None if x.lower() in ("", "none") else int(x)
+
+    roles["author"] = roles["author"].model_copy(update={"budget_tokens": tokens(v.get("author_budget", ""))})
+    roles["checker"] = roles["checker"].model_copy(
+        update={"budget_tokens": tokens(v.get("checker_budget", ""))}
+    )
     return TaskSpec(
         task_id=values.get("run_name", "run").strip() or "run",
         objective=brief["request"][:200],
         recipe=recipe,
         inputs={"brief": brief, "fix_rounds": 1},
         roles=roles,
+        max_tokens_total=tokens(v.get("total_budget", "")),
+        max_llm_calls=count(v.get("max_calls", "")),
+        max_runtime_minutes=count(v.get("max_minutes", "")),
         swaps=[("author", "checker")],
         require_cross_vendor=(v["author_backend"] != "fake"),
         mode=Mode(v["mode"]),

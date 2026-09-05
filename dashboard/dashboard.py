@@ -146,6 +146,7 @@ class TokenRow:
     n: int = 0
     label: str = ""  # K / M
     cost: str = ""
+    ceiling: str = ""  # "of 250K" when the side has a ceiling, "" when it is open
 
 
 @dataclasses.dataclass
@@ -432,6 +433,9 @@ class S(rx.State):
     token_rows: list[TokenRow] = []
     cost_total: str = ""
     cost_note: str = ""
+    total_label: str = ""  # "273K of 1M" when the run has a token ceiling, "273K" otherwise
+    ceilings_note: str = ""  # "calls 24 of 50 · 14 of 30 min" when those ceilings are set
+    budget_halt: bool = False  # the halt is a ceiling: the control offers to lift it
     flagged: list[str] = []
     report_md: str = ""
     settings_rows: list[SettingRow] = []
@@ -533,12 +537,31 @@ class S(rx.State):
             for c in d["carried"]
         ]
         self.model_rows = [ModelRow(role=k, model=m) for k, m in d["models"].items()]
+        task = _task_of(self.run_dir)
+        roles = task.get("roles") or {}
         self.token_rows = [
-            TokenRow(role=k, n=n, label=T.k(n), cost=d.get("cost", {}).get(k, ""))
+            TokenRow(
+                role=k,
+                n=n,
+                label=T.k(n),
+                cost=d.get("cost", {}).get(k, ""),
+                ceiling=(f"of {T.k(b)}" if (b := (roles.get(k) or {}).get("budget_tokens")) else ""),
+            )
             for k, n in d["tokens"].items()
         ]
         self.cost_total = d.get("cost_total", "")
         self.cost_note = d.get("cost_note", "")
+        spent = sum(d["tokens"].values())
+        cap = task.get("max_tokens_total")
+        self.total_label = f"{T.k(spent)} of {T.k(cap)}" if cap else T.k(spent)
+        notes = []
+        if task.get("max_llm_calls"):
+            calls = sum(1 for e in d["events"] if e["kind"] == "call.started")
+            notes.append(f"calls {calls} of {task['max_llm_calls']}")
+        if task.get("max_runtime_minutes"):
+            notes.append(f"{d['elapsed']} of {task['max_runtime_minutes']} min")
+        self.ceilings_note = " · ".join(notes)
+        self.budget_halt = "ceiling" in (d.get("last_halt") or "") or "ceiling" in self.now_text
         self.artifacts = [ArtRow(**a) for a in d["artifacts"]]
         self.evals, self.evals_summary = _eval_rows(self.run_dir)
         self.runs = self._visible_runs()
@@ -820,6 +843,26 @@ class S(rx.State):
         _gateway().resume(self.run_dir)
 
     @rx.event
+    def lift_and_resume(self):
+        """A run halted on a ceiling: every ceiling it has is raised by half, then it resumes.
+        The task in state.json is the owner; the gateway writes it under the lock."""
+        gw = _gateway()
+        task = _task_of(self.run_dir)
+        for role, spec in (task.get("roles") or {}).items():
+            if spec.get("budget_tokens"):
+                gw.raise_ceiling(self.run_dir, role, int(spec["budget_tokens"] * 1.5))
+        for what, key in (
+            ("tokens", "max_tokens_total"),
+            ("calls", "max_llm_calls"),
+            ("minutes", "max_runtime_minutes"),
+        ):
+            if task.get(key):
+                gw.raise_ceiling(self.run_dir, what, int(task[key] * 1.5))
+        gw.resume(self.run_dir)
+        self.hash_ = ""
+        self._apply(self.run_dir)
+
+    @rx.event
     def run_again(self):
         """§7d piece 3: the task carried unchanged into a new run beside this one."""
         h = _gateway().run_again(self.run_dir)
@@ -854,6 +897,13 @@ def _gateway():
     from code_steer_model_write.gateway.api import Gateway
 
     return Gateway()
+
+
+def _task_of(run_dir: str) -> dict[str, Any]:
+    try:
+        return json.loads((Path(run_dir) / "task.json").read_text())
+    except (OSError, ValueError):
+        return {}
 
 
 def _fmt_secs(x: float) -> str:
@@ -1180,12 +1230,23 @@ def progress_bar() -> rx.Component:
             lambda t: rx.hstack(
                 side_mark(t.role == "author", "13px"),
                 rx.text(f"{t.label} tok", **MONO, font_weight="700", font_size=SMALL, white_space="nowrap"),
+                rx.cond(
+                    t.ceiling != "",
+                    rx.text(t.ceiling, **MONO, color=T.WARN, font_size=SMALL, white_space="nowrap"),
+                    rx.fragment(),
+                ),
                 rx.text(t.cost, **MONO, color=T.MUTED, font_size=SMALL, white_space="nowrap"),
                 spacing="2",
                 align="center",
             ),
         ),
-        rx.text(f"TOT = {S.cost_total}", **MONO, font_weight="700", font_size=SMALL, white_space="nowrap"),
+        rx.text(
+            f"TOT {S.total_label} = {S.cost_total}",
+            **MONO,
+            font_weight="700",
+            font_size=SMALL,
+            white_space="nowrap",
+        ),
         rx.cond(
             S.cost_note != "",
             rx.text(
@@ -1198,11 +1259,11 @@ def progress_bar() -> rx.Component:
             ),
             rx.fragment(),
         ),
-        spacing="4",
+        spacing="3",
         justify="center",
         align="center",
         width=BAR_WIDTH,
-        white_space="nowrap",
+        wrap="wrap",
     )
     return rx.hstack(
         rx.vstack(
@@ -1230,6 +1291,20 @@ def progress_bar() -> rx.Component:
                 align="center",
             ),
             tokens,
+            rx.cond(
+                S.ceilings_note != "",
+                rx.text(
+                    S.ceilings_note,
+                    **MONO,
+                    color=T.WARN,
+                    font_size=SMALL,
+                    white_space="nowrap",
+                    width=BAR_WIDTH,
+                    text_align="center",
+                    title="the run's own ceilings: model calls and minutes; over either it halts and waits",
+                ),
+                rx.fragment(),
+            ),
             spacing="0",
             align="start",
         ),
@@ -1885,13 +1960,24 @@ def run_tab(r, *, active_allowed: bool = True) -> rx.Component:
             font_size=BODY,
             color=rx.cond(active, T.TEXT, T.MUTED),
             font_weight=rx.cond(active, "700", "400"),
-            # a browser tab: the label clips before the row wraps
+            # a browser tab: the label clips before the row wraps; the run's name gives way last
+            white_space="nowrap",
+            overflow="hidden",
+            text_overflow="ellipsis",
+            min_width="40px",
+            flex_shrink="1",
+        ),
+        rx.text(
+            r["recipe"],
+            **MONO,
+            font_size=SMALL,
+            color=T.DIM,
             white_space="nowrap",
             overflow="hidden",
             text_overflow="ellipsis",
             min_width="0",
+            flex_shrink="12",  # the workflow's name gives way first: it is the same on every tab
         ),
-        rx.text(r["recipe"], **MONO, font_size=SMALL, color=T.DIM, white_space="nowrap", flex_shrink="0"),
         rx.text(
             "×",
             **MONO,
@@ -1945,6 +2031,9 @@ def runs_tabs(active: bool = True) -> rx.Component:
             flex_shrink="0",
         ),
         width="100%",
+        min_width="0",
+        max_width="100%",
+        overflow="hidden",  # the strip never widens the page: the tabs box inside it scrolls
         border_bottom=f"1px solid {T.BORDER}",
         align="end",
         spacing="0",
@@ -2079,6 +2168,18 @@ def bottom_bar() -> rx.Component:
             rx.fragment(),
         ),
         rx.cond(
+            S.budget_halt & (S.control == "halted"),
+            rx.button(
+                "lift the ceilings by half and resume",
+                size="1",
+                variant="soft",
+                color_scheme="yellow",
+                title="every ceiling this run has, raised by half, then the run continues where it stopped",
+                on_click=S.lift_and_resume,
+            ),
+            rx.fragment(),
+        ),
+        rx.cond(
             (S.control == "done") | (S.control == "halted") | (S.control == "stale") | (S.control == "broke"),
             rx.button(
                 "run again",
@@ -2172,6 +2273,7 @@ def index() -> rx.Component:
             rx.cond(S.loaded, bottom_bar(), rx.fragment()),
             spacing="0",
             width="100%",
+            min_width="0",  # a flex child's floor is its content unless said otherwise; the strip must not set it
             min_height="100vh",
             flex="1",
         ),

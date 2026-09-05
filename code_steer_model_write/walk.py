@@ -536,7 +536,38 @@ def leg_budget_halts_then_resumes(tmp: Path) -> str:
     out2 = make_runner(paths, recipe, st.task).drive()
     assert out2 is Outcome.COMPLETED, Halt.read(paths)
     assert RunState.load(paths).resumed_count == 1
-    return f"halted at {h.step} on the ceiling, resumed once the ceiling was lifted, completed"
+    # the task's own ceilings (once recorded and enforced nowhere): the run's total tokens, its
+    # model calls, its minutes -- each halts honestly, and the Gateway's raise lifts each
+    from .gateway.api import Gateway
+    from .layers.registry import RunRegistry
+
+    gw = Gateway(registry=RunRegistry(tmp / "r.db"))
+    notes = []
+    for what, low in (("tokens", 1), ("calls", 1), ("minutes", 0)):
+        paths2, recipe2, task2 = start("debate", tmp / f"run-{what}")
+        st2 = RunState.load(paths2)
+        st2.task = st2.task.model_copy(
+            update={
+                {"tokens": "max_tokens_total", "calls": "max_llm_calls", "minutes": "max_runtime_minutes"}[
+                    what
+                ]: low
+            }
+        )
+        st2.save(paths2)
+        out3 = make_runner(paths2, recipe2, st2.task).drive()
+        h3 = Halt.read(paths2)
+        assert out3 is Outcome.HALTED_HONESTLY and h3 is not None and h3.reason.value == "budget", (
+            what,
+            out3,
+            h3,
+        )
+        assert "ceiling" in h3.message, h3.message
+        lifted = gw.raise_ceiling(str(paths2.run_dir), what, 10**9)
+        assert lifted[what] == 10**9, lifted
+        out4 = make_runner(paths2, recipe2, RunState.load(paths2).task).drive()
+        assert out4 is Outcome.COMPLETED, (what, Halt.read(paths2))
+        notes.append(what)
+    return f"halted at {h.step} on the role's ceiling, resumed once lifted; the task's {', '.join(notes)} ceilings each halt and lift through the gateway"
 
 
 def leg_parallel_steps_overlap(tmp: Path) -> str:

@@ -165,6 +165,39 @@ class Gateway:
         self.registry.forget(paths.run_dir)
         return str(paths.run_dir)
 
+    def raise_ceiling(self, run: str, what: str, value: int) -> dict[str, Any]:
+        """Lift a budget on a run's task: `what` is a role name (its token ceiling), `tokens`
+        (the run's total), `calls`, or `minutes`. The task in `state.json` is the owner, so the
+        change is one locked read-modify-write; the run is not resumed here (resume is its own
+        verb, and a person may want to lift more than one ceiling first)."""
+        paths = self._paths(run)
+
+        def fn(st: RunState) -> RunState:
+            t = st.task
+            if what in t.roles:
+                roles = dict(t.roles)
+                roles[what] = roles[what].model_copy(update={"budget_tokens": value})
+                st.task = t.model_copy(update={"roles": roles})
+            elif what == "tokens":
+                st.task = t.model_copy(update={"max_tokens_total": value})
+            elif what == "calls":
+                st.task = t.model_copy(update={"max_llm_calls": value})
+            elif what == "minutes":
+                st.task = t.model_copy(update={"max_runtime_minutes": value})
+            else:
+                raise KeyError(f"no ceiling named {what!r}: a role, tokens, calls or minutes")
+            return st
+
+        st = RunState.update(paths, fn)
+        self.registry.register(paths)
+        return {
+            "run_id": st.run_id,
+            "roles": {r: s.budget_tokens for r, s in st.task.roles.items()},
+            "tokens": st.task.max_tokens_total,
+            "calls": st.task.max_llm_calls,
+            "minutes": st.task.max_runtime_minutes,
+        }
+
     def delete(self, run: str) -> dict[str, Any]:
         """Erase a run: its folder, its registry row, its MLflow run and trace, its Prefect flow
         run. A live run is stopped first and the delete refused until it has stopped, so no

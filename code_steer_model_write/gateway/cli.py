@@ -69,6 +69,12 @@ def run_again(run: str, mlflow: bool = True) -> None:
     _out(_gw().run_again(run, mlflow=mlflow))
 
 
+@app.command("raise")
+def raise_ceiling(run: str, what: str, value: int) -> None:
+    """Lift a budget: WHAT is a role, tokens, calls or minutes."""
+    _out(_gw().raise_ceiling(run, what, value))
+
+
 @app.command()
 def delete(run: str) -> None:
     """Erase a run: folder, registry row, MLflow run and trace, Prefect flow run."""

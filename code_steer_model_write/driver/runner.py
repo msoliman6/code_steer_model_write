@@ -247,18 +247,38 @@ class Runner:
     def _principal(self, step: Step):
         return self.layers.identity.side(step.role) if step.role else self.layers.identity.user()
 
-    def _spent(self, role: str) -> int:
-        """Tokens this role has spent so far, from the record (rule 4: the log is the owner)."""
+    def _spent(self, role: str | None = None) -> int:
+        """Tokens this role (every role when None) has spent so far, from the record (rule 4:
+        the log is the owner)."""
         total = 0
         for e in self.events.read():
-            if e.kind == "call.usage" and e.role == role:
+            if e.kind == "call.usage" and (role is None or e.role == role):
                 total += int(e.data.get("input_tokens", 0)) + int(e.data.get("output_tokens", 0))
         return total
+
+    def _over_task_ceiling(self, step: Step) -> str | None:
+        """P1, the task's own ceilings (`max_tokens_total`, `max_llm_calls`, `max_runtime_minutes`):
+        the reason when one is crossed, else None. Read from the record, never estimated; the
+        settings were once recorded and enforced nowhere (ledger: a fact with no owner)."""
+        task = self.driver.state.task
+        if task.max_tokens_total is not None:
+            spent = self._spent()
+            if spent >= task.max_tokens_total:
+                return f"the run spent {spent} tokens of a {task.max_tokens_total} ceiling"
+        if task.max_llm_calls is not None:
+            calls = sum(1 for e in self.events.read() if e.kind == "call.started")
+            if calls >= task.max_llm_calls:
+                return f"the run made {calls} model calls of a {task.max_llm_calls} ceiling"
+        if task.max_runtime_minutes is not None:
+            minutes = (now() - self.driver.state.created_at).total_seconds() / 60
+            if minutes >= task.max_runtime_minutes:
+                return f"the run has taken {minutes:.0f} min of a {task.max_runtime_minutes} min ceiling"
+        return None
 
     def _execute(self, step: Step) -> Outcome | None:
         # L2 budgets (P1): the ceiling is a fact the task owns; the check happens before the
         # step is issued (section 4, L2); a run over its ceiling halts honestly, resumable
-        if step.kind is StepKind.AUTHOR and step.role:
+        if step.kind in (StepKind.AUTHOR, StepKind.TOOL) and step.role:
             ceiling = self.roles[step.role].budget_tokens
             if ceiling is not None:
                 spent = self._spent(step.role)
@@ -271,6 +291,9 @@ class Runner:
                             resumable=True,
                         )
                     )
+            over = self._over_task_ceiling(step)
+            if over is not None:
+                return self._halt(Halt(step=step.key, reason=HaltReason.BUDGET, message=over, resumable=True))
         # L9 at issue (section 2: a step is issued -> may this side author or judge this artifact?)
         who = self._principal(step)
         action = "author" if step.kind in (StepKind.AUTHOR, StepKind.TOOL) else "issue"
