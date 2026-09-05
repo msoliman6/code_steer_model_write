@@ -114,7 +114,7 @@ BOTTOM = [  # drawn right to left: L4 under L3, L6 under L2, L5 under L1
         "wrench",
     ),
     Box(
-        "L5", "L5  sandbox", "Docker SDK · Colima", "network off, the run folder the only mount", "red", "box"
+        "L5", "L5  sandbox", "Docker SDK · Colima", "network off, the run folder the only mount", "red", "bug"
     ),
 ]
 PLANES = [
@@ -241,11 +241,19 @@ def icon_svg(kind: str, x: float, y: float, s: float, color: str) -> str:
             + '<g><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.1-2.1z"/>'
             + '<animateTransform attributeName="transform" type="rotate" values="0 12 12;-14 12 12;0 12 12" dur="1.3s" repeatCount="indefinite"/></g></g>'
         )
-    if kind == "box":  # a sealed box whose lid lifts and settles
+    if kind == "bug":  # a bug between braces: it lunges for the edge, the brace snaps shut, it bounces back
         return (
             g
-            + '<path d="M3 9v9l9 4 9-4V9"/><path d="M12 22V13"/>'
-            + '<g><path d="M3 9l9-4 9 4-9 4z"/><animateTransform attributeName="transform" type="translate" values="0 0;0 -1.5;0 0" dur="1.5s" repeatCount="indefinite"/></g></g>'
+            + '<g><ellipse cx="12" cy="13.5" rx="3" ry="4.5" fill="'
+            + color
+            + '" stroke="none"/>'
+            + '<circle cx="12" cy="7.5" r="2"/>'
+            + '<path d="M9.5 11L6.5 9M9 14H5.5M9.5 17l-3 2M14.5 11l3-2M15 14h3.5M14.5 17l3 2"/>'
+            + '<animateTransform attributeName="transform" type="translate" values="0 0;4 -0.5;0.5 0;0 0;-4 0.5;-0.5 0;0 0" keyTimes="0;0.18;0.28;0.5;0.68;0.78;1" dur="2.4s" repeatCount="indefinite"/></g>'
+            + '<g><path d="M6.5 2.5c-2 0-2.5 1-2.5 3v3.5c0 1.5-1 2.5-2 3 1 .5 2 1.5 2 3v3.5c0 2 .5 3 2.5 3" stroke-width="2.4"/>'
+            + '<animateTransform attributeName="transform" type="translate" values="0 0;0 0;0 0;0 0;2.6 0;0 0;0 0" keyTimes="0;0.18;0.28;0.5;0.68;0.78;1" dur="2.4s" repeatCount="indefinite"/></g>'
+            + '<g><path d="M17.5 2.5c2 0 2.5 1 2.5 3v3.5c0 1.5 1 2.5 2 3-1 .5-2 1.5-2 3v3.5c0 2-.5 3-2.5 3" stroke-width="2.4"/>'
+            + '<animateTransform attributeName="transform" type="translate" values="0 0;-2.6 0;0 0;0 0;0 0;0 0;0 0" keyTimes="0;0.18;0.28;0.5;0.68;0.78;1" dur="2.4s" repeatCount="indefinite"/></g></g>'
         )
     if kind == "lock":  # a padlock that rocks
         return (
