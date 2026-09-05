@@ -140,6 +140,8 @@ class ClaudeCliBackend:
         if call.effort:
             cmd += ["--effort", call.effort]
         env = {**os.environ, "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1"}
+        if call.thinking:  # the role asked for extended thinking: a budget the CLI reads from its environment
+            env["MAX_THINKING_TOKENS"] = os.environ.get("CSMW_THINKING_TOKENS", "16000")
         if os.environ.get("CSMW_CLI_USE_LOGIN", "") not in ("", "0", "false"):
             env.pop("ANTHROPIC_API_KEY", None)  # the subscription login, not the key in the shell
         with tempfile.TemporaryDirectory() as empty:
@@ -292,8 +294,12 @@ class CodexCliBackend:
                 f'model_reasoning_effort="{call.effort}"',
                 "-c",
                 'sandbox_mode="read-only"',
-                "-",
             ]
+            if (
+                call.thinking
+            ):  # the role asked for thinking: Codex reasons on its effort and shows the reasoning in full
+                cmd += ["-c", 'model_reasoning_summary="detailed"']
+            cmd.append("-")
             prompt = call.system + "\n\n---\n\n" + call.user
             run = run_jsonl(
                 cmd,

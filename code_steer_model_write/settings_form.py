@@ -181,6 +181,13 @@ UNIVERSAL_FIELDS: list[FormField] = [
         default="low",
     ),
     FormField(
+        key="author_thinking",
+        name="author thinking",
+        description="extended thinking on the author's calls: the API backends switch it on; Claude Code takes a thinking budget (16K tokens, `CSMW_THINKING_TOKENS`); off leaves each backend's own default",
+        options=["off", "on"],
+        default="off",
+    ),
+    FormField(
         key="checker_backend",
         name="checker backend",
         description="the other vendor (rule 3): codex exec by default; pydantic_ai for any provider through its API; fake for the offline walk",
@@ -200,6 +207,13 @@ UNIVERSAL_FIELDS: list[FormField] = [
         description="the default: adversarial reading is the job, and a weak review looks exactly like convergence",
         options=CHECKER_EFFORT,
         default="high",
+    ),
+    FormField(
+        key="checker_thinking",
+        name="checker thinking",
+        description="extended thinking on the checker's calls: the API backends switch it on; Codex reasons at its effort and streams the reasoning in full; off leaves each backend's own default",
+        options=["off", "on"],
+        default="off",
     ),
 ]
 
@@ -366,10 +380,16 @@ def build_task(values: dict[str, str], *, recipe: str | None = None) -> TaskSpec
     }
     roles = {
         "author": RoleSpec(
-            backend=BackendName(v["author_backend"]), model=v["author_model"], effort=v["author_effort"]
+            backend=BackendName(v["author_backend"]),
+            model=v["author_model"],
+            effort=v["author_effort"],
+            thinking=v.get("author_thinking", "off") == "on",
         ),
         "checker": RoleSpec(
-            backend=BackendName(v["checker_backend"]), model=v["checker_model"], effort=v["checker_effort"]
+            backend=BackendName(v["checker_backend"]),
+            model=v["checker_model"],
+            effort=v["checker_effort"],
+            thinking=v.get("checker_thinking", "off") == "on",
         ),
     }
     stage_settings: dict[str, dict[str, dict[str, str]]] = {}

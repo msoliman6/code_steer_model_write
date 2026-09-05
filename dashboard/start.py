@@ -112,12 +112,18 @@ class Start(rx.State):
     @rx.var
     def author_cards(self) -> list[Card]:
         by = {c.key: c for c in self.cards}
-        return [by[k] for k in ("author_backend", "author_model", "author_effort") if k in by]
+        return [
+            by[k] for k in ("author_backend", "author_model", "author_effort", "author_thinking") if k in by
+        ]
 
     @rx.var
     def checker_cards(self) -> list[Card]:
         by = {c.key: c for c in self.cards}
-        return [by[k] for k in ("checker_backend", "checker_model", "checker_effort") if k in by]
+        return [
+            by[k]
+            for k in ("checker_backend", "checker_model", "checker_effort", "checker_thinking")
+            if k in by
+        ]
 
     @rx.var
     def stage_cards(self) -> dict[str, list[Card]]:
