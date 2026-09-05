@@ -82,7 +82,7 @@ PATH = [
         "L3  orchestration",
         "the driver · Prefect 3",
         "the next step from disk; detach, cancel, resume",
-        "red",
+        "blue",
     ),
     Box(
         "L4",
@@ -93,7 +93,7 @@ PATH = [
     ),
 ]
 EXEC = [
-    Box("L5", "L5  sandbox", "Docker SDK · Colima", "network off, the run folder the only mount", "blue"),
+    Box("L5", "L5  sandbox", "Docker SDK · Colima", "network off, the run folder the only mount", "red"),
     Box(
         "L6", "L6  tools", "git · pytest · ruff · pyright", "the typed registry, every call an event", "cyan"
     ),

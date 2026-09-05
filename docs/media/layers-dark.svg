@@ -13,8 +13,8 @@
 <text x="378.25" y="98" text-anchor="middle" font-size="14" font-weight="600" fill="#e6edf3">SQLite</text>
 <text x="378.25" y="124" text-anchor="middle" font-size="13" fill="#9aa4ae">the task, the budgets, the</text>
 <text x="378.25" y="141" text-anchor="middle" font-size="13" fill="#9aa4ae">registry</text>
-<rect x="511" y="24" width="221.5" height="132" rx="16" fill="rgba(239,68,68,0.18)" stroke="rgba(239,68,68,0.85)" stroke-width="1.5"/>
-<text x="621.75" y="54" text-anchor="middle" font-size="18" font-weight="700" letter-spacing="0.5" fill="#f87171">L3  ORCHESTRATION</text>
+<rect x="511" y="24" width="221.5" height="132" rx="16" fill="rgba(59,130,246,0.18)" stroke="rgba(59,130,246,0.85)" stroke-width="1.5"/>
+<text x="621.75" y="54" text-anchor="middle" font-size="18" font-weight="700" letter-spacing="0.5" fill="#7ab4fb">L3  ORCHESTRATION</text>
 <text x="621.75" y="80" text-anchor="middle" font-size="14" font-weight="600" fill="#e6edf3">the driver · Prefect 3</text>
 <text x="621.75" y="106" text-anchor="middle" font-size="13" fill="#9aa4ae">the next step from disk; detach,</text>
 <text x="621.75" y="123" text-anchor="middle" font-size="13" fill="#9aa4ae">cancel, resume</text>
@@ -23,8 +23,8 @@
 <text x="865.25" y="80" text-anchor="middle" font-size="14" font-weight="600" fill="#e6edf3">Claude Code · Codex</text>
 <text x="865.25" y="98" text-anchor="middle" font-size="14" font-weight="600" fill="#e6edf3">PydanticAI</text>
 <text x="865.25" y="124" text-anchor="middle" font-size="13" fill="#9aa4ae">one model call under a schema</text>
-<rect x="511" y="226" width="221.5" height="132" rx="16" fill="rgba(59,130,246,0.18)" stroke="rgba(59,130,246,0.85)" stroke-width="1.5"/>
-<text x="621.75" y="256" text-anchor="middle" font-size="18" font-weight="700" letter-spacing="0.5" fill="#7ab4fb">L5  SANDBOX</text>
+<rect x="511" y="226" width="221.5" height="132" rx="16" fill="rgba(239,68,68,0.18)" stroke="rgba(239,68,68,0.85)" stroke-width="1.5"/>
+<text x="621.75" y="256" text-anchor="middle" font-size="18" font-weight="700" letter-spacing="0.5" fill="#f87171">L5  SANDBOX</text>
 <text x="621.75" y="282" text-anchor="middle" font-size="14" font-weight="600" fill="#e6edf3">Docker SDK · Colima</text>
 <text x="621.75" y="308" text-anchor="middle" font-size="13" fill="#9aa4ae">network off, the run folder the</text>
 <text x="621.75" y="325" text-anchor="middle" font-size="13" fill="#9aa4ae">only mount</text>

@@ -13,7 +13,7 @@
 <text x="378.25" y="98" text-anchor="middle" font-size="14" font-weight="600" fill="#4b4b4b">SQLite</text>
 <text x="378.25" y="124" text-anchor="middle" font-size="13" fill="#7a7a7a">the task, the budgets, the</text>
 <text x="378.25" y="141" text-anchor="middle" font-size="13" fill="#7a7a7a">registry</text>
-<rect x="511" y="24" width="221.5" height="132" rx="16" fill="#fddede"/>
+<rect x="511" y="24" width="221.5" height="132" rx="16" fill="#dbeafe"/>
 <text x="621.75" y="54" text-anchor="middle" font-size="18" font-weight="700" letter-spacing="0.5" fill="#4b4b4b">L3  ORCHESTRATION</text>
 <text x="621.75" y="80" text-anchor="middle" font-size="14" font-weight="600" fill="#4b4b4b">the driver · Prefect 3</text>
 <text x="621.75" y="106" text-anchor="middle" font-size="13" fill="#7a7a7a">the next step from disk; detach,</text>
@@ -23,7 +23,7 @@
 <text x="865.25" y="80" text-anchor="middle" font-size="14" font-weight="600" fill="#4b4b4b">Claude Code · Codex</text>
 <text x="865.25" y="98" text-anchor="middle" font-size="14" font-weight="600" fill="#4b4b4b">PydanticAI</text>
 <text x="865.25" y="124" text-anchor="middle" font-size="13" fill="#7a7a7a">one model call under a schema</text>
-<rect x="511" y="226" width="221.5" height="132" rx="16" fill="#dbeafe"/>
+<rect x="511" y="226" width="221.5" height="132" rx="16" fill="#fddede"/>
 <text x="621.75" y="256" text-anchor="middle" font-size="18" font-weight="700" letter-spacing="0.5" fill="#4b4b4b">L5  SANDBOX</text>
 <text x="621.75" y="282" text-anchor="middle" font-size="14" font-weight="600" fill="#4b4b4b">Docker SDK · Colima</text>
 <text x="621.75" y="308" text-anchor="middle" font-size="13" fill="#7a7a7a">network off, the run folder the</text>
