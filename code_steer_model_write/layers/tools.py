@@ -103,6 +103,22 @@ class ToolRegistry:
 # ---- the first four tools ---------------------------------------------------------------
 
 
+def _schema(
+    props: dict[str, Any], required: list[str], examples: list[dict[str, Any]] | None = None
+) -> dict[str, Any]:
+    """A tool's argument schema as JSON Schema: what a tool-using step's model is offered, what
+    the before_tool_call rail checks the arguments against, and (examples) what the fake calls."""
+    out: dict[str, Any] = {
+        "type": "object",
+        "properties": props,
+        "required": required,
+        "additionalProperties": False,
+    }
+    if examples:
+        out["examples"] = examples
+    return out
+
+
 def _git(args: dict[str, Any]) -> Execution:
     repo = Path(args["repo"])
     return Execution(command=["git", "-C", str(repo), *args["argv"]], root=repo, timeout=60)
@@ -154,7 +170,17 @@ def default_registry(sandbox: Sandbox, events: "EventLog | None" = None) -> Tool
             spec=ToolSpec(
                 name="git",
                 description="git in a worktree: diff, ls-files, status, worktree",
-                args_schema={"repo": "path", "argv": "list[str]"},
+                args_schema=_schema(
+                    {
+                        "repo": {"type": "string", "description": "the worktree"},
+                        "argv": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "git's arguments",
+                        },
+                    },
+                    ["repo", "argv"],
+                ),
                 permissions=["read", "write:root"],
                 timeout=60,
                 binary="git",
@@ -167,7 +193,15 @@ def default_registry(sandbox: Sandbox, events: "EventLog | None" = None) -> Tool
             spec=ToolSpec(
                 name="pytest",
                 description="run a test directory against a source directory, JUnit out",
-                args_schema={"tests_dir": "path", "src_dir": "path", "junit": "path", "timeout": "int"},
+                args_schema=_schema(
+                    {
+                        "tests_dir": {"type": "string"},
+                        "src_dir": {"type": "string"},
+                        "junit": {"type": "string", "description": "where the JUnit XML is written"},
+                        "timeout": {"type": "integer"},
+                    },
+                    ["tests_dir", "src_dir", "junit"],
+                ),
                 permissions=["read", "write:root"],
                 timeout=300,
                 binary=None,
@@ -180,7 +214,18 @@ def default_registry(sandbox: Sandbox, events: "EventLog | None" = None) -> Tool
             spec=ToolSpec(
                 name="ruff",
                 description="format or check python files",
-                args_schema={"argv": "list[str]", "files": "list[path]"},
+                args_schema=_schema(
+                    {
+                        "argv": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "e.g. [\"check\"]",
+                        },
+                        "files": {"type": "array", "items": {"type": "string"}},
+                        "root": {"type": "string"},
+                    },
+                    ["argv", "files"],
+                ),
                 permissions=["read", "write:root"],
                 timeout=120,
                 binary="ruff",
@@ -193,7 +238,10 @@ def default_registry(sandbox: Sandbox, events: "EventLog | None" = None) -> Tool
             spec=ToolSpec(
                 name="pyright",
                 description="type-check python files, JSON out",
-                args_schema={"files": "list[path]"},
+                args_schema=_schema(
+                    {"files": {"type": "array", "items": {"type": "string"}}, "root": {"type": "string"}},
+                    ["files"],
+                ),
                 permissions=["read"],
                 timeout=300,
                 binary="pyright",

@@ -206,6 +206,23 @@ Agreed with the user on 2026-09-04. Nothing below is code; it is what the code w
   temp file and renames; the layout on disk is unchanged, every reader keeps working, and the
   same class reaches S3, GCS or Azure when a second machine needs the artifacts (the trigger
   in section 7 of the architecture). Walk 17/17, tests 109 + 1 skipped.
+- **Phase 9 — the tool-using step kind, across L4, L6 and L5: built 2026-09-04.**
+  `StepKind.TOOL`: a model call under a schema with a closed list of declared registry tools
+  (`Step.tools`, `Step.max_turns`). The runner hands the backend a callback per declared
+  tool (section 6, "ask with tools uses a callback"): every call the model makes goes L9
+  `decide(side, tool, name)` -> L10 `before_tool_call` (the arguments against the ToolSpec's
+  JSON schema, `jsonschema`) -> L6 `registry.invoke` -> L5 sandbox, and the model receives the
+  result, the denial or the refusal as its next input; the vendor never runs a tool. The four
+  tools carry JSON-schema arguments now (what the model is offered, what the rail checks, what
+  the fake calls from `examples`). P8 at issue: a step declaring a tool outside the profile's
+  `tools_allowed` never starts (a halt that says which). A program may declare its own tools
+  (`Program.tools`) and profile (`Program.profile`); both reach `default_layers` before the
+  policy sees the names. The fake calls every declared tool once through its callback;
+  PydanticAI's deferred-tool loop (phase 3) is the API path; the CLI logins have no
+  code-executed tool path (their own loops are the vendor-loop style, not in the system). Walk
+  18/18 (`gateway/tool-using-step`: the order L9 · L10 · L6 · L5 · result asserted from the
+  record, the answer landed under its schema, the P8 refusal), tests 110 + 1 skipped. The
+  coder does not use the kind; any second workflow may.
 
 ## The rule for every phase
 

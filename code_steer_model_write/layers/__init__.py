@@ -17,7 +17,7 @@ from .profile import CORRECTNESS, Profile
 from .rails import Rails
 from .sandbox import Sandbox, SubprocessSandbox
 from .stores import ArtifactStore, MemoryStore, NoMemory, StateStore
-from .tools import ToolRegistry, default_registry
+from .tools import Tool, ToolRegistry, default_registry
 
 if TYPE_CHECKING:
     from ..events import EventLog
@@ -53,7 +53,10 @@ _current: Layers | None = None
 
 
 def default_layers(
-    paths: "RunPaths | None" = None, events: "EventLog | None" = None, profile: Profile = CORRECTNESS
+    paths: "RunPaths | None" = None,
+    events: "EventLog | None" = None,
+    profile: Profile = CORRECTNESS,
+    tools: "list[Tool] | None" = None,
 ) -> Layers:
     """The first implementations behind each seam, chosen by the profile: Cedar as the policy
     engine (the runtime's own rules as the fallback the profile may name), Guardrails AI
@@ -77,7 +80,10 @@ def default_layers(
             print(f"sandbox: {sandbox_note}")
     else:
         sandbox = SubprocessSandbox(events=events)
-    tools = default_registry(sandbox, events=events)
+    registry = default_registry(sandbox, events=events)
+    for t in tools or []:  # a program's own tools (7.8), known to the policy from the start
+        registry.register(t)
+    tools = registry
     policy: Policy
     if profile.policy_engine == "cedar":
         from .cedar_policy import CedarPolicy

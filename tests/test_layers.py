@@ -216,7 +216,10 @@ def test_guardrails_rails_validate_refuse_and_never_rewrite(log: EventLog) -> No
     bad = Note(title="", body="fine")
     v2 = rails.after_answer(bad, CheckContext(), step="s1", role="author")
     assert not v2 and v2.problems and bad.title == "", "refused with problems, never rewritten"
-    assert rails.before_tool_call("git", {"argv": ["status"]}, step="s1", role="author")
+    assert rails.before_tool_call("git", {"repo": ".", "argv": ["status"]}, step="s1", role="author")
+    assert not rails.before_tool_call(
+        "git", {"argv": ["status"]}, step="s1", role="author"
+    )  # `repo` is required
     hooks = [(e.data["hook"], e.data["rail"]) for e in log.read() if e.kind == "rail.verdict"]
     assert hooks[0] == ("before_prompt", "guardrails-ai") and hooks[-1] == ("before_tool_call", "toolspec")
 
@@ -307,3 +310,20 @@ def test_container_tier_runs_offline_under_the_users_uid(tmp_path: Path, log: Ev
             f.unlink()
         if root != tmp_path:
             root.rmdir()
+
+
+# ---- L10 before_tool_call against the ToolSpec's schema (phase 9) ------------------------------
+
+
+def test_before_tool_call_checks_the_arguments_against_the_tool_schema(log: EventLog) -> None:
+    from code_steer_model_write.layers import install
+    from code_steer_model_write.layers.guardrails_rails import GuardrailsRails
+
+    layers = install(default_layers(None, log))
+    rails = GuardrailsRails(events=log, profile=layers.profile)
+    ok = rails.before_tool_call("pyright", {"files": ["a.py"]}, step="s", role="author")
+    bad = rails.before_tool_call("pyright", {"files": "a.py", "extra": 1}, step="s", role="author")
+    assert ok and not bad and any("not of type 'array'" in p.message for p in bad.problems)
+    assert any("extra" in p.message for p in bad.problems), [p.message for p in bad.problems]
+    vs = [e for e in log.read() if e.kind == "rail.verdict" and e.data["hook"] == "before_tool_call"]
+    assert [v.data["accept"] for v in vs] == [True, False] and vs[1].data["rail"] == "toolspec"

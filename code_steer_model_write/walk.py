@@ -600,8 +600,153 @@ def leg_container_tier(tmp: Path) -> str:
             shutil.rmtree(root, ignore_errors=True)
 
 
+def leg_tool_using_step(tmp: Path) -> str:
+    """The tool-using step kind (phase 9, across L4, L6 and L5): a program declares a tool of
+    its own and a TOOL step that may call it; the model (the fake) calls it once through the
+    callback; every call goes L9 decide -> L10 before_tool_call -> L6 registry -> L5 sandbox,
+    and the answer still lands under its schema. A second program declares a tool outside the
+    profile's allowance (P8) and never starts."""
+    from pydantic import Field
+
+    from .layers.profile import Profile
+    from .layers.sandbox import Execution
+    from .layers.tools import Tool, ToolSpec, _schema
+    from .prompts import PROMPTS_DIR  # noqa: F401 -- the templates live beside the package
+    from .spec.base import Artifact
+
+    class Note(Artifact):
+        text: str = Field(min_length=3)
+        bytes_seen: int = Field(ge=0)
+
+    run_dir = tmp / "run"
+    prompts = tmp / "prompts"
+    prompts.mkdir(parents=True)
+    (prompts / "count.md").write_text(
+        "You may call the `wc` tool on a file under the run folder, then answer ONE JSON object "
+        "matching the `Note` schema; code writes the file.\n\n{{BRIEF_MD}}\n"
+    )
+    run_dir.mkdir(parents=True)
+    (run_dir / "notes.txt").write_text("hello walk\n")
+
+    def _wc(args: dict[str, Any]) -> Execution:
+        return Execution(command=["wc", "-c", str(run_dir / args["file"])], root=run_dir, timeout=30)
+
+    wc = Tool(
+        spec=ToolSpec(
+            name="wc",
+            description="count the bytes of a file under the run folder",
+            args_schema=_schema({"file": {"type": "string"}}, ["file"], examples=[{"file": "notes.txt"}]),
+            permissions=["read"],
+            timeout=30,
+            binary="wc",
+        ),
+        build=_wc,
+    )
+
+    class ToolProgram:
+        name = "walk-tools"
+        prompts_root = prompts
+        fixtures_root = None
+        schemas = {"Note": Note}
+        code_steps: dict[str, Any] = {}
+        checks: dict[str, Any] = {}
+        tools = [wc]
+        profile = Profile(name="walk-tools", tools_allowed=["wc"], policy_engine="cedar")
+
+        def __init__(self, declared: list[str]) -> None:
+            self.declared = declared
+
+        def steps(self, state: RunState, paths: RunPaths, store: Store) -> list[Any]:
+            from .driver.steps import Step, StepKind
+
+            return [
+                Step(
+                    key="p0-count",
+                    kind=StepKind.TOOL,
+                    phase="0",
+                    prompt="count",
+                    schema_name="Note",
+                    role="author",
+                    sets={"BRIEF_MD": "## Brief\n\n- count notes.txt\n"},
+                    rendered_keys=["brief"],
+                    land="note",
+                    tools=self.declared,
+                    deliverables=["artifacts/note/v001.json"],
+                    note="the model counts with a tool",
+                )
+            ]
+
+        def land(self, step: Any, value: Any, ctx: Any) -> list[str]:
+            v = ctx.store.write(step.land, value)
+            return [f"artifacts/{step.land}/v{v:03d}.json"]
+
+        def gate_builders(self) -> dict[str, Any]:
+            return {}
+
+        def fakers(self, paths: RunPaths, store: Store) -> dict[str, Any]:
+            return {"Note": lambda call: {"text": "counted", "bytes_seen": 11}}
+
+    task = fake_task("debate")
+    RunState.create(RunPaths(run_dir=run_dir), task)
+    paths = RunPaths(run_dir=run_dir)
+    prog = ToolProgram(["wc"])
+    fake = FakeBackend(fixtures_root=None, fakers=prog.fakers(paths, Store(run_dir)))
+    runner = Runner(paths, prog, {"fake": fake}, task.roles, make_waiter(task.mode, {}), poll_seconds=0.02)  # type: ignore[arg-type]
+    out = runner.drive()
+    ev = events(paths)
+    assert out is Outcome.COMPLETED, (out, Halt.read(paths))
+    dec = [e for e in ev if e.kind == "policy.decision" and e.data.get("action") == "tool"]
+    assert dec and dec[0].data["allow"] and dec[0].data["resource"] == "wc", dec
+    ver = [e for e in ev if e.kind == "rail.verdict" and e.data.get("hook") == "before_tool_call"]
+    assert ver and ver[0].data["accept"] and ver[0].data["rail"] == "toolspec", ver
+    called = [e for e in ev if e.kind == "tool.called" and e.data["gen_ai.tool.name"] == "wc"]
+    res = [e for e in ev if e.kind == "tool.result" and e.data["gen_ai.tool.name"] == "wc"]
+    sbx = [e for e in ev if e.kind == "sandbox.run" and e.data.get("tool") == "wc"]
+    assert len(called) == 1 and len(res) == 1 and res[0].data["exit_code"] == 0 and len(sbx) == 1, (
+        called,
+        res,
+    )
+    order = [
+        e.kind
+        for e in ev
+        if e.kind
+        in ("policy.decision", "rail.verdict", "tool.called", "sandbox.run", "tool.result", "call.final")
+    ]
+    i = order.index("tool.called")
+    assert order[i - 2 : i + 3] == [
+        "policy.decision",
+        "rail.verdict",
+        "tool.called",
+        "sandbox.run",
+        "tool.result",
+    ], order
+    note = Store(run_dir).read("note", Note)
+    assert note.bytes_seen == 11
+    # P8: a step outside the allowance never starts
+    run2 = tmp / "run2"
+    run2.mkdir()
+    RunState.create(RunPaths(run_dir=run2), task)
+    prog2 = ToolProgram(["wc", "git"])
+    runner2 = Runner(
+        RunPaths(run_dir=run2),
+        prog2,
+        {"fake": fake},
+        task.roles,
+        make_waiter(task.mode, {}),
+        poll_seconds=0.02,
+    )  # type: ignore[arg-type]
+    out2 = runner2.drive()
+    h = Halt.read(RunPaths(run_dir=run2))
+    assert out2 is Outcome.BROKE and h is not None and "outside the profile's allowance" in h.message, (
+        out2,
+        h,
+    )
+    return "wc called once: L9 allow · L10 toolspec · L6 · L5 subprocess · the answer landed under Note; a step declaring git outside P8 never started"
+
+
 LEGS: dict[str, dict[str, Leg]] = {
     "gateway": {
+        "tool-using-step": leg_tool_using_step,
         "container-tier": leg_container_tier,
         "parallel-steps-overlap": leg_parallel_steps_overlap,
         "drives-a-run": leg_gateway_drives_a_run,

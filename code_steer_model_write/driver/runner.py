@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from ..ask import Accepted, CallContext, FnCheck, ask
-from ..backends.base import Backend
+from ..backends.base import Backend, ToolDef
 from ..config import RoleSpec
 from ..events import EventLog
 from ..layers import Layers, default_layers, install
@@ -58,7 +58,17 @@ class Runner:
         state = RunState.load(paths)
         self.events = EventLog(paths.events, state.run_id)
         self.driver = Driver(paths, program, self.events)
-        self.layers: Layers = install(default_layers(paths, self.events))
+        # the program may declare its profile (section 5); the correctness profile otherwise
+        from ..layers.profile import CORRECTNESS
+
+        self.layers: Layers = install(
+            default_layers(
+                paths,
+                self.events,
+                getattr(program, "profile", CORRECTNESS),
+                tools=list(getattr(program, "tools", [])),  # a program's own tools (7.8)
+            )
+        )
 
     # ---- lifecycle -----------------------------------------------------------------------
 
@@ -263,7 +273,20 @@ class Runner:
                     )
         # L9 at issue (section 2: a step is issued -> may this side author or judge this artifact?)
         who = self._principal(step)
-        action = "author" if step.kind is StepKind.AUTHOR else "issue"
+        action = "author" if step.kind in (StepKind.AUTHOR, StepKind.TOOL) else "issue"
+        if step.kind is StepKind.TOOL:
+            # P8: the profile's closed list; a step declaring a tool outside it never starts
+            allowed = set(self.layers.profile.tools_allowed)
+            outside = sorted(set(step.tools) - allowed)
+            if outside:
+                return self._halt(
+                    Halt(
+                        step=step.key,
+                        reason=HaltReason.BROKE,
+                        message=f"tool-using step declares {outside}, outside the profile's allowance {sorted(allowed)}",
+                        resumable=False,
+                    )
+                )
         d = self.layers.policy.decide(who, action, step.land or step.key, {"kind": step.kind.value})
         if not d:
             return self._halt(
@@ -272,7 +295,7 @@ class Runner:
         self.driver.start(step.key)
         ctx = self._ctx(step)
         try:
-            if step.kind is StepKind.AUTHOR:
+            if step.kind in (StepKind.AUTHOR, StepKind.TOOL):
                 return self._author(step, ctx)
             if step.kind is StepKind.RUN:
                 return self._run(step, ctx)
@@ -294,6 +317,38 @@ class Runner:
             raise DriverError(f"unknown step kind {step.kind}")
         except DriverError as e:
             return self._halt(Halt(step=step.key, reason=HaltReason.MISSING_DELIVERABLE, message=str(e)))
+
+    def _tool_defs(self, step: Step) -> list[ToolDef]:
+        """The declared tools as callbacks (section 6, "ask with tools uses a callback"): every
+        call the model makes goes L9 decide -> L10 before_tool_call -> L6 registry -> L5 sandbox,
+        and the model receives the result, a denial or a refusal as its next input. The vendor
+        never runs a tool."""
+        who = self._principal(step)
+        role = step.role or ""
+
+        def make(name: str) -> ToolDef:
+            spec = self.layers.tools.get(name).spec
+
+            def fn(**args: Any) -> dict[str, Any]:
+                d = self.layers.policy.decide(who, "tool", name, {"declared": list(step.tools), "tool": name})
+                if not d:
+                    return {"denied": d.reason, "decision": d.id}
+                v = self.layers.rails.before_tool_call(name, args, step=step.key, role=role)
+                if not v:
+                    return {"refused": [p.message for p in v.problems]}
+                r = self.layers.tools.invoke(name, args, step=step.key)
+                return {
+                    "exit_code": r.exit_code,
+                    "stdout": r.stdout[-4000:],
+                    "stderr": r.stderr[-2000:],
+                    "touched": r.touched[:50],
+                    "timed_out": r.timed_out,
+                    "tier": r.tier,
+                }
+
+            return ToolDef(name=name, description=spec.description, input_schema=spec.args_schema, fn=fn)
+
+        return [make(n) for n in step.tools]
 
     def _author(self, step: Step, ctx: ProgramContext) -> Outcome | None:
         assert step.prompt and step.schema_name and step.role
@@ -328,7 +383,8 @@ class Runner:
             fixture=step.fixture,
             rails=self.layers.rails,
         )
-        r = ask(prompt, schema, role=step.role, ctx=cctx, checks=checks)
+        tools = self._tool_defs(step) if step.kind is StepKind.TOOL else []
+        r = ask(prompt, schema, role=step.role, ctx=cctx, checks=checks, tools=tools)
         if isinstance(r, Accepted):
             produced = self.program.land(step, r.value, ctx)
             for d in produced:

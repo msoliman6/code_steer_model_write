@@ -21,6 +21,9 @@ class StepKind(StrEnum):
     CODE = "code"  # a registered python function (freeze, render, merge)
     CHECK = "check"  # a code check over artifacts; problems route by the step's policy
     GATE = "gate"  # a human (or auto) decision file
+    TOOL = (
+        "tool"  # a model call under a schema with declared tools: code runs each call through L9, L10, L6, L5
+    )
 
 
 class Step(BaseModel):
@@ -41,6 +44,9 @@ class Step(BaseModel):
     fixture: str | None = None
     check_extra: dict[str, Any] = Field(default_factory=dict)  # handed to CheckContext.extra
     land: str | None = None  # the artifact key the accepted answer is written to
+    # TOOL (phase 9): the closed list of registry tools this step may call, and the loop's ceiling
+    tools: list[str] = Field(default_factory=list)
+    max_turns: int = 6
     # RUN
     command: list[str] | None = None
     cwd: str | None = None

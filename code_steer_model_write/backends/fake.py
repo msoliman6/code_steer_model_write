@@ -104,6 +104,16 @@ class FakeBackend:
                 status="error", reason="tool call on a tool-less step", usage=Usage(input_tokens=10)
             )
         on_fact(Fact(kind="turn", text="fake turn 1"))
+        # a tool-bearing call (phase 9): the fake calls every declared tool once through its
+        # callback, with the example arguments the tool's schema carries, exactly as the vendor
+        # loop hands a call back; a name the step did not declare cannot reach the callback on
+        # any backend (only declared tools are offered), so L9's per-call decision is the record
+        # of what was allowed, never the only guard
+        for t in call.tools:
+            ex = (t.input_schema.get("examples") or [{}])[0]
+            on_fact(Fact(kind="tool", text=f"fake calls {t.name}", data={"tool": t.name, "args": ex}))
+            res = t.fn(**ex)
+            on_fact(Fact(kind="turn", text=f"fake got {json.dumps(res)[:120]}"))
         answer = self._answer(call)
         r = knobs.refuse()
         if r and r.role == call.role and (r.count is None or call.attempt <= r.count):

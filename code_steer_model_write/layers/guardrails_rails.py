@@ -146,7 +146,7 @@ class GuardrailsRails(SchemaRails):
         return v
 
     def before_tool_call(self, name: str, args: dict[str, Any], *, step: str, role: str) -> Verdict:
-        # the ToolSpec's schema check plus the L9 decision cover this (7.4); Guardrails has no tool hook
+        # the ToolSpec's schema is the rail (7.4): the arguments must fit it; Guardrails has no tool hook
         problems: list[Problem] = []
         try:
             json.dumps(args)
@@ -154,6 +154,18 @@ class GuardrailsRails(SchemaRails):
             problems.append(
                 Problem(code="rail.tool_args", message=f"arguments are not JSON-serialisable: {e}")
             )
+        if not problems:
+            from ..layers import current
+
+            try:
+                spec = current().tools.get(name).spec
+            except KeyError:
+                spec = None
+            if spec is not None and spec.args_schema.get("type") == "object":
+                import jsonschema
+
+                for err in jsonschema.Draft202012Validator(spec.args_schema).iter_errors(args):
+                    problems.append(Problem(code="rail.tool_args", message=f"{name}: {err.message}"))
         return self._record(
             Verdict(hook="before_tool_call", accept=not problems, problems=problems, rail="toolspec"),
             step=step,
