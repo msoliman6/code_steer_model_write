@@ -20,6 +20,7 @@ dependencies = [
     "pydantic-settings>=2.2",
     "jinja2>=3.1",
     "prefect>=3.0",
+    "docker>=7.1",  # L5's container tier (ARCHITECTURE.md 7.6): the Docker SDK over Colima or Docker
     "mlflow>=2.16",
     "reflex>=0.6",
     "anthropic>=0.40",
@@ -59,4 +60,4 @@ quote-style = "preserve"
 testpaths = ["tests"]
 
 [tool.setuptools.package-data]
-code_steer_model_write = ["data/*.json"]
+code_steer_model_write = ["data/*.json", "data/*.Dockerfile"]

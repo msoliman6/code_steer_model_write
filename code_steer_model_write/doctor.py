@@ -88,6 +88,15 @@ def run(*, deep: bool = False) -> int:
         )
     except Exception as e:  # noqa: BLE001 -- a seam whose tool cannot load is a halt, said in words
         d.halt(f"layers          a seam's tool did not load: {type(e).__name__}: {str(e)[:160]}")
+    try:
+        from .layers import container_sandbox
+
+        ok, why = container_sandbox.available()
+        (d.note if ok else d.warn)(
+            f"container       {why}" + ("" if ok else " -- the subprocess tier runs the checks (network on)")
+        )
+    except Exception as e:  # noqa: BLE001
+        d.warn(f"container       {type(e).__name__}: {str(e)[:120]}")
     for tool in ("ruff", "pyright", "pytest"):
         found = shutil.which(tool) or (tool == "pytest" and importlib.util.find_spec("pytest"))
         (d.note if found else d.warn)(

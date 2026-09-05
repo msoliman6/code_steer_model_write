@@ -180,6 +180,25 @@ Agreed with the user on 2026-09-04. Nothing below is code; it is what the code w
   verdict 5/5 pass, 5/5 fail on the null, 4 minor findings carried; tests ‖ source as one
   round; evals: pass 1.0, null-fail 1.0, carried 4, rounds 1.75, refused 2. Shown on the home
   with its trend point; the self-check passes on it. Phase 7's live pass.**
+- **Phase 8 — L5 with its tool: built 2026-09-04.** `layers/container_sandbox.py`: a
+  container per execution through the Docker SDK (`docker>=7.1`), the run folder the only
+  mount at its own absolute path (a root outside it mounted beside), network off unless the
+  execution says otherwise, the host user's uid, memory and CPU ceilings, wall-clock timeout,
+  gVisor's `runsc` as the runtime when the engine offers it, the same `ExecutionResult` and
+  `sandbox.run` event as the subprocess tier with `tier=container`. The image is the runtime's
+  own (`data/sandbox.Dockerfile`: python 3.11, git, pytest, ruff, pyright pinned with node from
+  the wheel so no run needs the network), built once by `csmw sandbox build`; `csmw sandbox
+  check|run`. The engine on macOS is Colima (`brew install colima docker`, `colima start`), on
+  Linux Docker; either answers the same socket. The tier is chosen by the profile's P9
+  (`sandbox_tier`) or the operator's `CSMW_SANDBOX=container`; asked for and unavailable, the
+  subprocess tier runs and `layers.installed` carries the reason (never a silent downgrade).
+  The doctor says what the engine and the image are. Found on the way: Colima shares only the
+  home directory, so a run folder outside it mounts empty (the walk and the tests use a folder
+  under `~/.csmw` when pytest's tmp is elsewhere); pyright with "latest" phoned npm on every
+  call and timed out with the network off (pinned). Walk 17/17 (`gateway/container-tier`:
+  pytest in a container in 0.2s; the leg says "skipped" and passes without an engine, since the
+  fallback is itself a recorded fact), tests 108 + 1 skipped, ruff clean, pyright clean on the
+  new files.
 
 ## The rule for every phase
 

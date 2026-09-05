@@ -226,3 +226,84 @@ def test_default_layers_record_what_they_installed(log: EventLog) -> None:
     inst = [e for e in log.read() if e.kind == "layers.installed"]
     assert len(inst) == 1 and inst[0].data["policy"] == "cedar" and inst[0].data["rails"] == "guardrails-ai"
     assert layers.profile.name == "correctness" and layers.profile.rails_after_answer == []
+
+
+# ---- L5, the container tier (phase 8) ---------------------------------------------------------
+
+
+def test_container_tier_falls_back_and_says_so(log: EventLog, monkeypatch) -> None:
+    """Asked for and unavailable: the subprocess tier runs, and the record says why."""
+    from code_steer_model_write.layers import container_sandbox
+
+    monkeypatch.setenv("CSMW_SANDBOX", "container")
+    monkeypatch.setattr(container_sandbox, "available", lambda **kw: (False, "no engine: test"))
+    layers = default_layers(None, log)
+    assert layers.sandbox.tier == "subprocess"
+    inst = [e for e in log.read() if e.kind == "layers.installed"][-1]
+    assert inst.data["sandbox"] == "subprocess" and "no engine: test" in inst.data["sandbox_note"]
+
+
+def test_container_tier_runs_offline_under_the_users_uid(tmp_path: Path, log: EventLog) -> None:
+    """With an engine and the image: network off, the root the only mount, files the user's,
+    the same result shape as the subprocess tier. Skipped, and said so, without an engine."""
+    import os
+
+    import pytest
+
+    from code_steer_model_write.layers import container_sandbox
+
+    ok, why = container_sandbox.available()
+    if not ok:
+        pytest.skip(f"container tier: {why}")
+    home = Path.home()
+    if not tmp_path.resolve().is_relative_to(home):
+        # Colima shares the home directory only; pytest's tmp lives outside it on macOS
+        root = home / ".csmw" / "test-sbx"
+        root.mkdir(parents=True, exist_ok=True)
+    else:
+        root = tmp_path
+    try:
+        for f in root.glob("*"):
+            f.unlink()
+        sb = container_sandbox.ContainerSandbox(events=log, mount_root=root)
+        r = sb.run(
+            Execution(
+                command=[
+                    sys.executable,
+                    "-c",
+                    "import os; open('out.txt','w').write(str(os.getuid())); print('hi')",
+                ],
+                root=root,
+                network=False,
+            )
+        )
+        assert (
+            r.exit_code == 0
+            and r.stdout.strip() == "hi"
+            and r.touched == ["out.txt"]
+            and r.tier == "container"
+        )
+        assert (root / "out.txt").read_text() == str(os.getuid()) and (
+            root / "out.txt"
+        ).stat().st_uid == os.getuid()
+        r2 = sb.run(
+            Execution(
+                command=[
+                    "python",
+                    "-c",
+                    "import urllib.request; urllib.request.urlopen('https://pypi.org', timeout=3)",
+                ],
+                root=root,
+                network=False,
+            )
+        )
+        assert r2.exit_code != 0, "the network was reachable with network=False"
+        r3 = sb.run(Execution(command=["python", "-c", "import time; time.sleep(5)"], root=root, timeout=1))
+        assert r3.timed_out and r3.exit_code == 124
+        runs = [e for e in log.read() if e.kind == "sandbox.run" and e.data["tier"] == "container"]
+        assert len(runs) == 3 and runs[0].data["network"] is False and runs[2].data["timed_out"]
+    finally:
+        for f in root.glob("*"):
+            f.unlink()
+        if root != tmp_path:
+            root.rmdir()

@@ -19,7 +19,8 @@ class Profile(BaseModel):
     other_vendor: bool = True
     # P8 -- tool allowance: the closed list a tool-using step may declare; empty = no tool-using steps
     tools_allowed: list[str] = Field(default_factory=list)
-    # P9 -- sandbox default per step kind
+    # P9 -- the sandbox tier for every code execution (the container tier needs an engine and the
+    # image; `CSMW_SANDBOX` overrides for one process, and a fallback is recorded, never silent)
     sandbox_tier: Literal["subprocess", "container"] = "subprocess"
     # P10 -- rails beyond the schema: Guardrails AI validators by registered name, per hook
     rails_before_prompt: list[str] = Field(default_factory=list)
@@ -30,4 +31,4 @@ class Profile(BaseModel):
 
 CORRECTNESS = Profile(name="correctness")
 """The reference profile: schema plus the existing checks, no validator beyond them, no
-tools, the subprocess tier by default (the container tier is phase 7), Cedar deciding."""
+tools, the subprocess tier by default (the container tier when asked and available), Cedar deciding."""

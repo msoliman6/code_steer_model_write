@@ -21,6 +21,7 @@ from .config import Mode
 from .driver.halt import Halt
 from .driver.runner import Runner
 from .events import EventLog
+from .layers import default_layers
 from .gates.gate import make_waiter, write_decision
 from .recipes import registry
 from .recipes.base import Recipe
@@ -561,8 +562,47 @@ def leg_parallel_steps_overlap(tmp: Path) -> str:
     return f"support ‖ challenge overlapped by {(min(a.done_at, b.done_at) - max(a.started_at, b.started_at)).total_seconds():.2f}s; every record whole"
 
 
+def leg_container_tier(tmp: Path) -> str:
+    """L5's container tier (phase 8): when an engine and the image are here, one pytest run of
+    the coder's own fake build executes in a container, network off, the run folder the only
+    mount, and the record says `tier=container`; without an engine the leg says so and passes,
+    since the walk is zero-setup and the fallback is itself a recorded fact."""
+    from .layers import container_sandbox
+
+    ok, why = container_sandbox.available()
+    if not ok:
+        return f"skipped: {why}"
+    home = Path.home()
+    root = tmp if tmp.resolve().is_relative_to(home) else home / ".csmw" / f"walk-{tmp.name}"
+    root.mkdir(parents=True, exist_ok=True)
+    try:
+        (root / "m.py").write_text("def f():\n    return 1\n")
+        (root / "test_m.py").write_text("from m import f\n\n\ndef test_f():\n    assert f() == 1\n")
+        paths = RunPaths(run_dir=root)
+        log = EventLog(paths.events, "walk-container")
+        with env(CSMW_SANDBOX="container"):
+            layers = default_layers(paths, log)
+        assert layers.sandbox.tier == "container", layers.installed()
+        r = layers.tools.invoke(
+            "pytest", {"tests_dir": root, "src_dir": root, "junit": root / "junit.xml", "timeout": 120}
+        )
+        assert r.exit_code == 0 and r.tier == "container" and (root / "junit.xml").exists(), (
+            r.exit_code,
+            r.stderr[-300:],
+        )
+        ev = [e for e in log.read() if e.kind == "sandbox.run"]
+        assert ev and ev[-1].data["tier"] == "container" and ev[-1].data["network"] is True
+        return f"pytest in a container ({why}), the run folder the only mount, {r.seconds}s"
+    finally:
+        if root != tmp:
+            import shutil
+
+            shutil.rmtree(root, ignore_errors=True)
+
+
 LEGS: dict[str, dict[str, Leg]] = {
     "gateway": {
+        "container-tier": leg_container_tier,
         "parallel-steps-overlap": leg_parallel_steps_overlap,
         "drives-a-run": leg_gateway_drives_a_run,
         "budget-halts-then-resumes": leg_budget_halts_then_resumes,

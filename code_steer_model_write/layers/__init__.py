@@ -7,6 +7,8 @@ implementations. Nothing here decides sequence: the Driver has no seam.
 
 from __future__ import annotations
 
+import os
+
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
@@ -56,7 +58,25 @@ def default_layers(
     """The first implementations behind each seam, chosen by the profile: Cedar as the policy
     engine (the runtime's own rules as the fallback the profile may name), Guardrails AI
     behind the rails, a subprocess sandbox, the four code tools. Every choice is in-process."""
-    sandbox = SubprocessSandbox(events=events)
+    sandbox: Sandbox
+    tier = os.environ.get(
+        "CSMW_SANDBOX", profile.sandbox_tier
+    )  # the operator's dial over the profile's default
+    sandbox_note = ""
+    if tier == "container":
+        from . import container_sandbox
+
+        ok, why = container_sandbox.available()
+        if ok:
+            sandbox = container_sandbox.ContainerSandbox(
+                events=events, mount_root=paths.run_dir if paths else None
+            )
+        else:  # the fallback is a fact in the record, never a silent downgrade
+            sandbox = SubprocessSandbox(events=events)
+            sandbox_note = f"container asked for, not available ({why}); subprocess tier"
+            print(f"sandbox: {sandbox_note}")
+    else:
+        sandbox = SubprocessSandbox(events=events)
     tools = default_registry(sandbox, events=events)
     policy: Policy
     if profile.policy_engine == "cedar":
@@ -77,6 +97,8 @@ def default_layers(
     )
     if events is not None:
         installed: dict[str, Any] = dict(layers.installed())
+        if sandbox_note:
+            installed["sandbox_note"] = sandbox_note
         events.append("layers.installed", **installed)
     return layers
 

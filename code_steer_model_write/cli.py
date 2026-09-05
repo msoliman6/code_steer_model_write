@@ -229,6 +229,33 @@ def cmd_doctor(a: argparse.Namespace) -> int:
     return doctor_run(deep=a.deep)
 
 
+def cmd_sandbox(a: argparse.Namespace) -> int:
+    from .layers import container_sandbox as cs
+
+    if a.sandbox_cmd == "build":
+        print(f"built {cs.IMAGE}: {cs.build()}")
+        return 0
+    if a.sandbox_cmd == "check":
+        ok, why = cs.available()
+        print(("available: " if ok else "unavailable: ") + why)
+        return 0 if ok else 1
+    from .layers.sandbox import Execution
+
+    ok, why = cs.available()
+    if not ok:
+        print(f"unavailable: {why}")
+        return 2
+    argv = a.argv[1:] if a.argv and a.argv[0] == "--" else a.argv
+    r = cs.ContainerSandbox().run(Execution(command=argv, root=Path.cwd(), network=a.network, timeout=600))
+    sys.stdout.write(r.stdout)
+    sys.stderr.write(r.stderr)
+    print(
+        f"[{r.tier}] exit {r.exit_code} in {r.seconds}s · touched {len(r.touched)}"
+        + (" · TIMED OUT" if r.timed_out else "")
+    )
+    return r.exit_code
+
+
 def cmd_dash(a: argparse.Namespace) -> int:
     import sys as _sys
 
@@ -343,6 +370,16 @@ def main(argv: list[str] | None = None) -> int:
     q = ps.add_parser("view")
     q.add_argument("run_dir")
     p.set_defaults(fn=cmd_dash)
+    p = sub.add_parser(
+        "sandbox", help="the container tier (L5): build the image, check the engine, run one command"
+    )
+    ps = p.add_subparsers(dest="sandbox_cmd", required=True)
+    ps.add_parser("build", help="build the sandbox image from data/sandbox.Dockerfile")
+    ps.add_parser("check", help="is an engine answering and the image there")
+    q = ps.add_parser("run", help="run one command in the tier, the cwd the only mount, network off")
+    q.add_argument("--network", action="store_true")
+    q.add_argument("argv", nargs=argparse.REMAINDER, help="the command, after `--`")
+    p.set_defaults(fn=cmd_sandbox)
     p = sub.add_parser("figure", help="the workflow figure from a recipe")
     p.add_argument("recipe")
     p.add_argument("-o", "--out", default="docs/media/workflow.svg")
