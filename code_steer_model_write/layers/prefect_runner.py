@@ -20,6 +20,21 @@ from ..workflow.names import DEPLOYMENT, FLOW_NAME
 from .runner import RunHandle, _handle
 
 
+def _run(coro: Any) -> Any:
+    """Run a coroutine to completion from sync code, whether or not an event loop is already
+    running in this thread (a page's handler, an MCP tool): under a running loop it goes to a
+    worker thread with a loop of its own. `asyncio.run` alone raised there, the probe reported
+    "unavailable", and the Gateway fell back to the LocalRunner with only a print to say so."""
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return asyncio.run(coro)
+    from concurrent.futures import ThreadPoolExecutor
+
+    with ThreadPoolExecutor(max_workers=1, thread_name_prefix="prefect") as pool:
+        return pool.submit(asyncio.run, coro).result()
+
+
 class PrefectRunner:
     name = "prefect"
 
@@ -47,7 +62,7 @@ class PrefectRunner:
                     await c.read_deployment_by_name(self.deployment)  # raises when not served
                     return True, f"deployment {self.deployment} on {c.api_url}"
 
-            return asyncio.run(probe())
+            return _run(probe())
         except Exception as e:  # noqa: BLE001 -- the reason travels to the caller
             return False, f"{type(e).__name__}: {str(e)[:160]}"
 
@@ -60,12 +75,14 @@ class PrefectRunner:
             self.deployment, parameters={"run_dir": str(paths.run_dir)}, timeout=0, as_subflow=False
         )
         if asyncio.iscoroutine(fr):  # sync-compatible in Prefect 3; typed as async
-            fr = asyncio.run(fr)
+            fr = _run(fr)
         atomic_write_text(
             self._id_path(paths), json.dumps({"flow_run_id": str(fr.id), "deployment": self.deployment})
         )
         st = RunState.load(paths)
-        return RunHandle(run_id=st.run_id, run_dir=str(paths.run_dir), status="RUNNING", pid=None)
+        return RunHandle(
+            run_id=st.run_id, run_dir=str(paths.run_dir), status="RUNNING", pid=None, runner=self.name
+        )
 
     def cancel(self, paths: RunPaths, *, reason: str = "cancelled through Prefect") -> RunHandle:
         fid = self._flow_run_id(paths)
@@ -79,7 +96,7 @@ class PrefectRunner:
                     await c.set_flow_run_state(fid, Cancelling(), force=True)
 
             try:
-                asyncio.run(do())
+                _run(do())
             except Exception:  # noqa: BLE001 -- the STOP file still stops the run at its next boundary
                 pass
         return _handle(paths)

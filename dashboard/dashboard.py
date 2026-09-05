@@ -2269,7 +2269,9 @@ class H(rx.State):
                 gw.resume(run_dir)
             elif verb == "again":
                 h = gw.run_again(run_dir)
-                self.note = f"started {h.run_id}"
+                self.note = f"started {h.run_id} on the {h.runner} runner" + (
+                    f" ({gw.fallback_reason})" if gw.fallback_reason else ""
+                )
             elif verb == "forget":
                 gw.forget(run_dir)
         except Exception as e:  # noqa: BLE001 -- the reason is shown, never swallowed

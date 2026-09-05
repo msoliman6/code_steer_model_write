@@ -60,6 +60,8 @@ class ArtifactInfo(BaseModel):
 class Gateway:
     """One instance per process: a runner behind the Runner seam and the registry."""
 
+    fallback_reason: str = ""  # why the asked-for runner was not used, when it was not
+
     def __init__(self, runner: Runner | None = None, registry: RunRegistry | None = None) -> None:
         self.runner: Runner = runner or self._pick_runner()
         self.registry = registry or RunRegistry()
@@ -80,6 +82,7 @@ class Gateway:
             if ok:
                 return pr
             print(f"runner: prefect asked for but not available ({why}); using local")
+            Gateway.fallback_reason = why  # the page and the tools can say it, not only the log
         return LocalRunner()
 
     # ---- workflows ---------------------------------------------------------------------------

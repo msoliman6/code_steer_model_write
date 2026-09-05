@@ -24,6 +24,7 @@ class RunHandle(BaseModel):
     run_dir: str
     status: str
     pid: int | None = None
+    runner: str = "local"  # which Runner took the run: the caller sees a fallback, never just a print
 
 
 class Runner(Protocol):
