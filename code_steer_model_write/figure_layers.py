@@ -195,29 +195,29 @@ def icon_svg(kind: str, x: float, y: float, s: float, color: str) -> str:
             + '<path d="M3 6h18M3 12h18M3 18h18"/>'
             + '<circle cx="8" cy="6" r="2" fill="'
             + color
-            + '"><animate attributeName="cx" values="8;14;8" dur="1s" repeatCount="indefinite"/></circle>'
+            + '"><animate attributeName="cx" values="8;14;8" dur="2s" repeatCount="indefinite"/></circle>'
             + '<circle cx="16" cy="12" r="2" fill="'
             + color
             + '"><animate attributeName="cx" values="16;9;16" dur="2.5s" repeatCount="indefinite"/></circle>'
             + '<circle cx="11" cy="18" r="2" fill="'
             + color
-            + '"><animate attributeName="cx" values="11;17;11" dur="1.5s" repeatCount="indefinite"/></circle></g>'
+            + '"><animate attributeName="cx" values="11;17;11" dur="3s" repeatCount="indefinite"/></circle></g>'
         )
     if kind == "gear":  # a gear that turns
         return (
             g
             + '<g><circle cx="12" cy="12" r="3.5"/>'
             + '<path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/>'
-            + '<animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s" repeatCount="indefinite"/></g></g>'
+            + '<animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="4s" repeatCount="indefinite"/></g></g>'
         )
     if kind == "brain":  # a dot with two arcs circling it: reasoning
         return (
             g
             + '<circle cx="12" cy="12" r="3" fill="'
             + color
-            + '" stroke="none"><animate attributeName="r" values="3;3.8;3" dur="1s" repeatCount="indefinite"/></circle>'
+            + '" stroke="none"><animate attributeName="r" values="3;3.8;3" dur="1.5s" repeatCount="indefinite"/></circle>'
             + '<g><path d="M20 12a8 8 0 0 0-8-8M4 12a8 8 0 0 0 8 8"/><path d="M19 8.5l1 3.5-3.5-.6M5 15.5l-1-3.5 3.5.6"/>'
-            + '<animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s" repeatCount="indefinite"/></g></g>'
+            + '<animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="2s" repeatCount="indefinite"/></g></g>'
         )
     if kind == "wrench":  # a wrench that tightens
         return (
@@ -291,7 +291,7 @@ def render(theme: Theme = "dark") -> str:
         if theme == "dark":
             fill = rgba(rgb, 0.18 if strong else 0.10)
             anim = (
-                f'<animate attributeName="fill" values="{fill};{rgba(rgb, 0.2)};{fill}" dur="1.5s" repeatCount="indefinite"/>'
+                f'<animate attributeName="fill" values="{fill};{rgba(rgb, 0.2)};{fill}" dur="3s" repeatCount="indefinite"/>'
                 if pulse
                 else ""
             )
@@ -310,7 +310,7 @@ def render(theme: Theme = "dark") -> str:
         x2: float,
         y2: float,
         *,
-        dur: str = "1.6s",
+        dur: str = "0.8s",
         head: bool = True,
         note: str = "",
         note_at: tuple[float, float] | None = None,
@@ -377,14 +377,15 @@ def render(theme: Theme = "dark") -> str:
             anchor="end",
         )
         dashed(b.cx + 8, band_top, b.cx + 8, b.y + b.h + 2, dur="0.6s", opacity=0.6)
-    # the person reads the record: from the floor, up the left margin, into L1 -- never across a card
-    xm = M / 2
+    # the person reads the record: from the floor's left edge, up the margin, round the corner
+    # and into L1 -- one path, one arrowhead, never across a card
+    xm = 7.0
+    r = 6.0
     L.append(
-        f'<path d="M{M:g},{floor.cy:g} H{xm:g} V{l1.cy:g}" fill="none" stroke="{arrow}" stroke-width="{aw}" stroke-linecap="round" stroke-dasharray="3 9" opacity="0.4"><animate attributeName="stroke-dashoffset" from="24" to="0" dur="0.6s" repeatCount="indefinite"/></path>'
+        f'<path d="M{M - 1:g},{floor.cy:g} H{xm + r:g} A{r:g},{r:g} 0 0 1 {xm:g},{floor.cy - r:g} V{l1.cy + r:g} A{r:g},{r:g} 0 0 1 {xm + r:g},{l1.cy:g} H{l1.x - 2:g}" fill="none" stroke="{arrow}" stroke-width="{aw}" stroke-linecap="round" stroke-dasharray="4 8" opacity="0.5" marker-end="url(#ah)"><animate attributeName="stroke-dashoffset" from="24" to="0" dur="1.2s" repeatCount="indefinite"/></path>'
     )
-    dashed(xm, l1.cy, l1.x - 2, l1.cy, dur="0.6s", opacity=0.4)
     L.append(
-        f'<text x="{xm + 4:g}" y="{l1.y + l1.h + 18:g}" font-size="11.5" fill="{muted}" transform="rotate(-90 {xm + 4:g},{l1.y + l1.h + 18:g})" text-anchor="end">reads the record</text>'
+        f'<text x="{xm + 5:g}" y="{l1.y + l1.h + 30:g}" font-size="11.5" fill="{muted}" transform="rotate(-90 {xm + 5:g},{l1.y + l1.h + 30:g})" text-anchor="end">reads the record</text>'
     )
     # the planes: thin bands across the width that breathe, each with its icon
     for p in planes:
