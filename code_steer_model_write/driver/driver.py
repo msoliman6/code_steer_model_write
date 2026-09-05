@@ -50,39 +50,47 @@ class Driver:
             if rec and rec.done_at is not None:
                 missing = self._delivered(s)
                 if missing:
-                    reopened.append(s.key)
-                    rec.done_at = None
-                    rec.deliverables = []
+                    reopened.append(s.key)  # reopened under the lock below, never on this copy
                 else:
                     done.add(s.key)
-        if reopened:
-            st.save(self.paths)
-            for k in reopened:
-                self.events.append("step.issued", step=k, reopened=True, reason="deliverable missing")
         pending = [s for s in steps if s.key not in done]
         ready = [s for s in pending if all(a in done for a in s.after)]
+
+        def apply(cur: RunState) -> list[str]:
+            issued: list[str] = []
+            for k in reopened:
+                rec = cur.steps.get(k)
+                if rec is not None:
+                    rec.done_at = None
+                    rec.deliverables = []
+            for s in ready:
+                if s.key not in cur.steps:
+                    cur.steps[s.key] = StepRecord(key=s.key, kind=s.kind.value)
+                    issued.append(s.key)
+            return issued
+
+        issued = RunState.update(self.paths, apply) if (reopened or ready) else []
+        for k in reopened:
+            self.events.append("step.issued", step=k, reopened=True, reason="deliverable missing")
         for s in ready:
-            if s.key not in st.steps:
-                st.steps[s.key] = StepRecord(key=s.key, kind=s.kind.value)
+            if s.key in issued:
                 self.events.append("step.issued", step=s.key, step_kind=s.kind.value, phase=s.phase)
-        if any(s.key not in self.state.steps for s in ready):
-            st.save(self.paths)
         return ready
 
     def start(self, key: str) -> None:
-        st = self.state
-        rec = st.steps.get(key)
-        if rec is None:
-            raise DriverError(f"step {key!r} was never issued")
-        rec.started_at = now()
-        rec.attempts += 1
-        st.save(self.paths)
-        self.events.append("step.started", step=key, attempt=rec.attempts)
+        def apply(st: RunState) -> int:
+            rec = st.steps.get(key)
+            if rec is None:
+                raise DriverError(f"step {key!r} was never issued")
+            rec.started_at = now()
+            rec.attempts += 1
+            return rec.attempts
+
+        attempts = RunState.update(self.paths, apply)
+        self.events.append("step.started", step=key, attempt=attempts)
 
     def done(self, key: str, deliverables: list[str] | None = None) -> None:
-        st = self.state
-        rec = st.steps.get(key)
-        if rec is None:
+        if key not in self.state.steps:
             raise DriverError(f"step {key!r} was never issued")
         step = next((s for s in self.all_steps() if s.key == key), None)
         required = list(step.deliverables) if step else []
@@ -90,14 +98,19 @@ class Driver:
         missing = [d for d in required if not self.paths.resolve(d).exists()]
         if missing:
             raise DriverError(f"step {key!r} claims done but deliverables are missing: {missing}")
-        rec.done_at = now()
-        rec.deliverables = required
-        st.save(self.paths)
+
+        def apply(cur: RunState) -> None:
+            r = cur.steps.get(key)
+            if r is None:
+                raise DriverError(f"step {key!r} was never issued")
+            r.done_at = now()
+            r.deliverables = required
+
+        RunState.update(self.paths, apply)
         self.events.append("step.done", step=key, deliverables=required)
 
     def undo(self, key: str) -> None:
-        st = self.state
-        rec = st.steps.pop(key, None)
+        rec = RunState.update(self.paths, lambda cur: cur.steps.pop(key, None))
         if rec is None:
             raise DriverError(f"nothing to undo: step {key!r} has no record")
         stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -109,7 +122,6 @@ class Driver:
                 dst.parent.mkdir(parents=True, exist_ok=True)
                 shutil.move(str(src), str(dst))
                 moved.append(d)
-        st.save(self.paths)
         self.events.append("step.undone", step=key, moved=moved)
 
     def is_complete(self) -> bool:

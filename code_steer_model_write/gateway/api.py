@@ -61,9 +61,26 @@ class Gateway:
     """One instance per process: a runner behind the Runner seam and the registry."""
 
     def __init__(self, runner: Runner | None = None, registry: RunRegistry | None = None) -> None:
-        self.runner: Runner = runner or LocalRunner()
+        self.runner: Runner = runner or self._pick_runner()
         self.registry = registry or RunRegistry()
         self.registry.add_dir(Path(Settings().runs_dir))  # this process's runs directory is always indexed
+
+    @staticmethod
+    def _pick_runner() -> Runner:
+        """`CSMW_RUNNER=prefect` asks for the Prefect runner (7.3); it is used only when the
+        server and the served deployment answer, otherwise the LocalRunner, and the choice is
+        printed, never silent."""
+        import os
+
+        if os.environ.get("CSMW_RUNNER", "local").lower() == "prefect":
+            from ..layers.prefect_runner import PrefectRunner
+
+            pr = PrefectRunner()
+            ok, why = pr.available()
+            if ok:
+                return pr
+            print(f"runner: prefect asked for but not available ({why}); using local")
+        return LocalRunner()
 
     # ---- workflows ---------------------------------------------------------------------------
 

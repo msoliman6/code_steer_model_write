@@ -89,5 +89,32 @@ def serve() -> None:
     main()
 
 
+prefect_app = typer.Typer(
+    no_args_is_help=True,
+    add_completion=False,
+    help="Prefect as the Runner (7.3): the packaged server and the serve process",
+)
+app.add_typer(prefect_app, name="prefect")
+
+
+@prefect_app.command("serve")
+def prefect_serve(limit: int = 4) -> None:
+    """Serve the run deployment: takes runs from the Prefect server and executes them. One
+    command; pair it with `prefect server start`."""
+    from ..workflow.flows import serve
+
+    serve(limit=limit)
+
+
+@prefect_app.command("check")
+def prefect_check() -> None:
+    """Is the Prefect runner available: the server reachable, the deployment served?"""
+    from ..layers.prefect_runner import PrefectRunner
+
+    ok, why = PrefectRunner().available()
+    typer.echo(("available: " if ok else "not available: ") + why)
+    raise typer.Exit(0 if ok else 1)
+
+
 if __name__ == "__main__":
     app()

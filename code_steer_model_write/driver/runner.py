@@ -44,6 +44,7 @@ class Runner:
         *,
         poll_seconds: float = 0.5,
         gate_timeout: float | None = None,
+        parallel: int = 4,
     ) -> None:
         self.paths = paths
         self.program = program
@@ -52,6 +53,7 @@ class Runner:
         self.gate_waiter = gate_waiter
         self.poll = poll_seconds
         self.gate_timeout = gate_timeout
+        self.parallel = max(1, int(os.environ.get("CSMW_PARALLEL", parallel)))
         state = RunState.load(paths)
         self.events = EventLog(paths.events, state.run_id)
         self.driver = Driver(paths, program, self.events)
@@ -60,13 +62,14 @@ class Runner:
     # ---- lifecycle -----------------------------------------------------------------------
 
     def _set(self, status: RunStatus, outcome: Outcome | None = None, **extra: Any) -> None:
-        st = self.driver.state
-        st.status = status
-        if outcome is not None:
-            st.outcome = outcome
-        if status is RunStatus.COMPLETED:
-            st.completed_at = now()
-        st.save(self.paths)
+        def apply(st: RunState) -> None:
+            st.status = status
+            if outcome is not None:
+                st.outcome = outcome
+            if status is RunStatus.COMPLETED:
+                st.completed_at = now()
+
+        RunState.update(self.paths, apply)
         self.events.append(
             "run.status", status=status.value, outcome=outcome.value if outcome else None, **extra
         )
@@ -74,7 +77,6 @@ class Runner:
     def begin(self) -> Outcome | None:
         """Clear a halt (resume), mark RUNNING, take the runner record. Returns an outcome only
         if the run cannot start (another live runner holds it)."""
-        st = self.driver.state
         if runner_alive(self.paths):
             other = RunnerRecord.read(self.paths)
             self.events.append(
@@ -91,9 +93,12 @@ class Runner:
         h = Halt.read(self.paths)
         if h is not None:
             Halt.clear(self.paths)
-            st.resumed_count += 1
-            st.last_halt = h.line()
-            st.save(self.paths)
+
+            def resumed(cur: RunState) -> None:
+                cur.resumed_count += 1
+                cur.last_halt = h.line()
+
+            RunState.update(self.paths, resumed)
             self.events.append("run.status", status="RESUMED", from_step=h.step)
         self._set(RunStatus.RUNNING)
         return None
@@ -149,12 +154,9 @@ class Runner:
                 ready = self.driver.next()
                 if not ready:
                     return self.finish()
-                for step in ready:
-                    outcome = self._execute(step)
-                    if outcome is not None:
-                        return outcome
-                    if (self.paths.run_dir / "STOP").exists():
-                        break
+                outcome = self._execute_ready(ready)
+                if outcome is not None:
+                    return outcome
         except Exception as e:  # noqa: BLE001 -- the driver itself broke; report, never crash silently
             tb = traceback.format_exc(limit=8)
             return self._halt(
@@ -168,6 +170,28 @@ class Runner:
             )
         finally:
             self._close_record()
+
+    def _execute_ready(self, ready: list[Step]) -> Outcome | None:
+        """The ready steps have no dependency on each other (the Driver derived them so), so
+        they run at once (ARCHITECTURE.md 7.3: tests ‖ source). One step at a time when only
+        one is ready or the profile says so; a halt in any of them ends the round, the others
+        finish their step first so no half-landed step is left (section 4, L3)."""
+        if len(ready) == 1 or self.parallel <= 1:
+            for step in ready:
+                outcome = self._execute(step)
+                if outcome is not None:
+                    return outcome
+                if (self.paths.run_dir / "STOP").exists():
+                    break
+            return None
+        from concurrent.futures import ThreadPoolExecutor
+
+        self.events.append("run.progress", parallel=[s.key for s in ready])
+        with ThreadPoolExecutor(
+            max_workers=min(self.parallel, len(ready)), thread_name_prefix="step"
+        ) as pool:
+            outcomes = list(pool.map(self._execute, ready))
+        return next((o for o in outcomes if o is not None), None)
 
     def _halt(self, h: Halt) -> Outcome:
         h.write(self.paths)

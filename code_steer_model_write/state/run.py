@@ -9,13 +9,15 @@ from __future__ import annotations
 from datetime import datetime
 from enum import StrEnum
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable, TypeVar
 
 from pydantic import BaseModel, Field
 
 from ..spec.events import now
 from ..spec.task import TaskSpec
 from .lock import atomic_write_text, locked
+
+T = TypeVar("T")
 
 
 class RunStatus(StrEnum):
@@ -190,6 +192,18 @@ class RunState(BaseModel):
         self.updated_at = now()
         with locked(paths.state):
             atomic_write_text(paths.state, self.model_dump_json(indent=2))
+
+    @classmethod
+    def update(cls, paths: RunPaths, fn: "Callable[[RunState], T]") -> "T":
+        """Load, mutate, write -- under one lock, so two steps finishing at once cannot lose
+        each other's records (ledger: a shared record written by parallel workers; phase 5
+        runs independent steps in parallel). Every writer of a step record goes through here."""
+        with locked(paths.state):
+            st = cls.load(paths)
+            out = fn(st)
+            st.updated_at = now()
+            atomic_write_text(paths.state, st.model_dump_json(indent=2))
+        return out
 
     @classmethod
     def create(cls, paths: RunPaths, task: TaskSpec) -> "RunState":

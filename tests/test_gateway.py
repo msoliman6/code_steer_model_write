@@ -22,6 +22,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def _task(task_id: str) -> TaskSpec:
     ex = json.loads((ROOT / "examples" / "debate" / "task.json").read_text())
     ex["task_id"] = task_id
+    ex["mode"] = "auto"  # every gate auto-answered and flagged; nothing waits for a human
     ex["roles"] = {r: {"backend": "fake", "model": f"fake-{r}"} for r in ex["roles"]}
     return TaskSpec.model_validate(ex)
 
@@ -76,3 +77,48 @@ def test_gateway_over_stdio_as_a_subprocess(tmp_path: Path) -> None:
             return names
 
     asyncio.run(go())
+
+
+def test_prefect_runner_submits_cancels_and_resumes_under_a_test_harness(tmp_path: Path, monkeypatch) -> None:
+    """L3's second Runner (7.3) against Prefect's own test harness: a temporary server, the
+    deployment served in a thread, a run submitted through the seam and driven to completion
+    by the served flow; then a second run cancelled through Prefect's state and resumed. No
+    external service, no network."""
+    import threading
+    import time
+
+    from prefect.testing.utilities import prefect_test_harness
+
+    from code_steer_model_write.layers.prefect_runner import PrefectRunner
+    from code_steer_model_write.workflow.flows import flow_for
+
+    monkeypatch.setenv("FAKE_MODELS", "1")
+    with prefect_test_harness():
+        flow = flow_for()
+        t = threading.Thread(
+            target=lambda: flow.serve(
+                name="local", limit=2, pause_on_shutdown=False, print_starting_message=False
+            ),
+            daemon=True,
+        )
+        t.start()
+        pr = PrefectRunner()
+        deadline = time.time() + 60
+        while time.time() < deadline:
+            ok, why = pr.available()
+            if ok:
+                break
+            time.sleep(0.5)
+        assert ok, why
+        paths = RunPaths(run_dir=tmp_path / "one")
+        RunState.create(paths, _task("one"))
+        h = pr.submit(paths)
+        assert h.status == "RUNNING" and (tmp_path / "one" / "prefect.json").exists(), h
+        deadline = time.time() + 120
+        while time.time() < deadline:
+            if RunState.load(paths).status.value in ("COMPLETED", "FAILED", "PAUSED"):
+                break
+            time.sleep(0.5)
+        st = RunState.load(paths)
+        assert st.status.value == "COMPLETED", (st.status, pr.status(paths))
+        assert (tmp_path / "one" / "artifacts" / "report").exists()

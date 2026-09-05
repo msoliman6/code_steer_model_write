@@ -87,6 +87,27 @@ Agreed with the user on 2026-09-04. Nothing below is code; it is what the code w
   `csmw gateway serve`); `start.sh` and `status.sh` deleted; `build` and `status` call the
   tools; `dashboard.sh` and `bootstrap.sh` stay (a page to start, an environment to make).
   Dependencies `mcp>=2.1`, `typer>=0.19,<0.28`. Walk 15/15, tests 104, ruff and pyright clean.
+- **Phase 5 — L3 with its tool: built 2026-09-04.** First the record: `RunState.update()`
+  is one locked read-modify-write and every writer of a step record or a run status goes
+  through it (ledger: a shared record written by parallel workers -- the driver loaded, mutated
+  and wrote with only the write under the lock). Then the loop: `Runner._execute_ready()` runs
+  the Driver's independent ready steps at once in a thread pool (`CSMW_PARALLEL`, default 4);
+  walk leg `gateway/parallel-steps-overlap` proves the debate's support ‖ challenge overlap in
+  time with every record whole. Then the tool: `workflow/flows.py` holds a module-level Prefect
+  flow `csmw-run` (Prefect's serve executes a flow run in a fresh process by loading the flow's
+  file, so a flow built at runtime cannot be served -- found the hard way), with a cancel hook
+  that writes the halt, and `drive_with_prefect` submits ready steps as parallel task runs;
+  `layers/prefect_runner.py` is the second Runner behind the seam (submit through the served
+  deployment, cancel through Prefect's state plus the STOP file, resume = submit again, the
+  flow-run id beside the run in `prefect.json`); the Gateway picks it under `CSMW_RUNNER=prefect`
+  only when the server and the deployment answer, else the LocalRunner, said aloud; `csmw
+  gateway prefect serve|check`. Tested under Prefect's own harness: a temporary server, the
+  deployment served in a thread, a run submitted and driven to completion by Prefect's process.
+  Two classes surfaced by parallelism and fixed at the class: the MLflow mirror relied on a
+  thread-local active run, so worker threads opened runs of their own (a second owner of a
+  fact) -- every write now names the run id; the walk paired tool calls with results by order
+  (a message parsed by position) -- paired by call id. Walk 16/16, tests 105, ruff and pyright
+  clean.
   **Live:** `live-3` halted at contract arbitration (a refusal with no re-ask, in the CLI
   backend; fixed at the class, ledger). `live-4` (2026-09-04, Haiku 4.5 low + gpt-5.4-mini
   low, auto, one round): COMPLETED, 27 steps, 0 halts, 0 resumes, 3 refusals all recovered,

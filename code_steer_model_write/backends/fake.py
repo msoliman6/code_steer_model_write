@@ -81,6 +81,13 @@ class FakeBackend:
         return generic_instance(call.schema_)
 
     def complete(self, call: CallSpec, on_fact: Callable[[Fact], None]) -> CallResult:
+        # FAKE_SLEEP: a walk knob so that two parallel steps overlap measurably (phase 5)
+        import os as _os
+        import time as _time
+
+        _pause = float(_os.environ.get("FAKE_SLEEP", "0") or 0)
+        if _pause > 0:
+            _time.sleep(_pause)
         key = (call.role, call.schema_name)
         n = self._attempts.get(key, 0) + 1
         self._attempts[key] = n

@@ -146,10 +146,10 @@ def assert_layers(paths: RunPaths, *, expect_tools: bool) -> str:
         assert {c.data["gen_ai.tool.name"] for c in called} >= {"pytest"}, (
             "pytest did not go through the registry"
         )
-    for c, r in zip(called, results, strict=True):
-        assert c.data["gen_ai.tool.call.id"] == r.data["gen_ai.tool.call.id"], (
-            "a result with the wrong call id"
-        )
+    # paired by call id, never by order: parallel steps interleave their tool events
+    by_id = {r.data["gen_ai.tool.call.id"] for r in results}
+    for c in called:
+        assert c.data["gen_ai.tool.call.id"] in by_id, f"a call with no result: {c.data['gen_ai.tool.name']}"
     return f"{len(decisions)} decisions, {len(verdicts)} verdicts, {len(called)} tool calls in the {runs[0].data['tier'] if runs else 'no'} tier"
 
 
@@ -508,8 +508,32 @@ def leg_budget_halts_then_resumes(tmp: Path) -> str:
     return f"halted at {h.step} on the ceiling, resumed once the ceiling was lifted, completed"
 
 
+def leg_parallel_steps_overlap(tmp: Path) -> str:
+    """L3 (ARCHITECTURE.md 7.3): independent ready steps run at once. The debate's support and
+    challenge steps depend only on the hypotheses, so their records must overlap in time, and
+    both must land whole under the locked state update (ledger: a shared record written by
+    parallel workers). The fake backend sleeps a little so overlap is measurable."""
+    with env(FAKE_SLEEP="0.6"):
+        paths, recipe, task = start("debate", tmp / "run")
+        out = make_runner(paths, recipe, task).drive()
+    assert out is Outcome.COMPLETED, Halt.read(paths)
+    st = RunState.load(paths)
+    a, b = st.steps["p1-support"], st.steps["p1-challenge"]
+    assert a.started_at and a.done_at and b.started_at and b.done_at, "both records landed whole"
+    overlap = min(a.done_at, b.done_at) > max(a.started_at, b.started_at)
+    assert overlap, (
+        f"the two steps ran one after the other: {a.started_at}..{a.done_at} / {b.started_at}..{b.done_at}"
+    )
+    par = [e for e in events(paths) if e.kind == "run.progress" and "parallel" in e.data]
+    assert par and set(par[0].data["parallel"]) >= {"p1-support", "p1-challenge"}, par
+    ks = kinds(paths)
+    assert ks.count("step.started") == len(st.steps) and "halt" not in ks
+    return f"support ‖ challenge overlapped by {(min(a.done_at, b.done_at) - max(a.started_at, b.started_at)).total_seconds():.2f}s; every record whole"
+
+
 LEGS: dict[str, dict[str, Leg]] = {
     "gateway": {
+        "parallel-steps-overlap": leg_parallel_steps_overlap,
         "drives-a-run": leg_gateway_drives_a_run,
         "budget-halts-then-resumes": leg_budget_halts_then_resumes,
     },

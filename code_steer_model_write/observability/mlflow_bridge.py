@@ -17,7 +17,12 @@ class MlflowMirror:
 
         self.mlflow = mlflow
         mlflow.set_tracking_uri(tracking_uri)
-        mlflow.set_experiment(recipe)
+        exp = mlflow.set_experiment(recipe)
+        self._exp_id = exp.experiment_id
+        # every write names the run: a worker thread with no "active run" of its own would
+        # otherwise make MLflow start a second run for it (ledger: a second owner of a fact)
+        self._client = mlflow.MlflowClient(tracking_uri=tracking_uri)
+        self._rid: str = ""
         self.run_id = run_id
         self.run_dir = run_dir
         self._run = None
@@ -35,9 +40,12 @@ class MlflowMirror:
         m = self.mlflow
         try:
             if e.kind == "run.status" and e.data.get("status") in ("RUNNING",) and self._run is None:
-                self._run = m.start_run(
-                    run_name=self.run_id, tags={"workflow_run_id": self.run_id, "recipe": self.run_dir.name}
+                self._run = self._client.create_run(
+                    experiment_id=self._exp_id,
+                    run_name=self.run_id,
+                    tags={"workflow_run_id": self.run_id, "recipe": self.run_dir.name},
                 )
+                self._rid = self._run.info.run_id
                 self._root = m.start_span_no_context(
                     name=f"run:{self.run_id}", attributes={"workflow_run_id": self.run_id}
                 )
@@ -64,7 +72,7 @@ class MlflowMirror:
                     + int(e.data.get("output_tokens", 0))
                 )
                 if self._run is not None:
-                    m.log_metric(f"tokens_{e.role}", self._tokens[e.role], step=e.seq)
+                    self._client.log_metric(self._rid, f"tokens_{e.role}", self._tokens[e.role], step=e.seq)
             elif e.kind in ("call.final", "call.error") and e.step:
                 sp = self._spans.pop(f"{e.step}:call:{e.attempt}", None)
                 if sp is not None:
@@ -76,7 +84,7 @@ class MlflowMirror:
                     sp.end(status="OK")
             elif e.kind == "halt":
                 if self._run is not None:
-                    m.set_tag("halt", f"{e.step}: {e.data.get('reason')}")
+                    self._client.set_tag(self._rid, "halt", f"{e.step}: {e.data.get('reason')}")
             elif e.kind == "run.status" and e.data.get("status") in (
                 "COMPLETED",
                 "PAUSED",
@@ -88,7 +96,6 @@ class MlflowMirror:
             print(f"[mlflow] mirror error on {e.kind}: {ex}")
 
     def finish(self, status: str, outcome: str | None) -> None:
-        m = self.mlflow
         for sp in list(self._spans.values()):
             try:
                 sp.end(status="ERROR")
@@ -100,11 +107,11 @@ class MlflowMirror:
             self._root.end(status="OK" if status == "COMPLETED" else "ERROR")
             self._root = None
         if self._run is not None:
-            m.set_tag("status", status)
-            m.set_tag("outcome", outcome or "")
-            m.log_metric("calls", self._calls)
+            self._client.set_tag(self._rid, "status", status)
+            self._client.set_tag(self._rid, "outcome", outcome or "")
+            self._client.log_metric(self._rid, "calls", self._calls)
             for role, n in self._tokens.items():
-                m.log_metric(f"tokens_{role}_total", n)
+                self._client.log_metric(self._rid, f"tokens_{role}_total", n)
             for name in ("report.json", "REPORT.md", "events.jsonl", "state.json"):
                 p = (
                     self.run_dir / name
@@ -112,6 +119,6 @@ class MlflowMirror:
                     else self.run_dir / "artifacts" / "report" / "v001.json"
                 )
                 if p.exists():
-                    m.log_artifact(str(p))
-            m.end_run()
+                    self._client.log_artifact(self._rid, str(p))
+            self._client.set_terminated(self._rid)
             self._run = None
