@@ -71,6 +71,17 @@ def _stage_side_rows(recipe_name: str) -> list[FormField]:
                     inherits=f"{role}_effort",
                 )
             )
+            out.append(
+                FormField(
+                    key=f"{st.id}_{role}_thinking",
+                    name=f"{st.title} · {role} thinking",
+                    group=f"stage:{st.id}",
+                    description=f"Extended thinking for the {role} on this stage; `as {role}` inherits the {role} row above",
+                    options=[f"as {role}", "off", "on"],
+                    default=f"as {role}",
+                    inherits=f"{role}_thinking",
+                )
+            )
     return out
 
 
@@ -400,6 +411,7 @@ def build_task(values: dict[str, str], *, recipe: str | None = None) -> TaskSpec
             stage_settings.setdefault(stage, {})[role] = {
                 "model": v[f.key],
                 "effort": v[f"{stage}_{role}_effort"],
+                "thinking": v.get(f"{stage}_{role}_thinking", "off"),
             }
     return TaskSpec(
         task_id=values.get("run_name", "run").strip() or "run",
@@ -422,7 +434,11 @@ def stage_role(task: TaskSpec, stage: str, role: str) -> RoleSpec:
     if not over:
         return base
     return base.model_copy(
-        update={"model": over.get("model", base.model), "effort": over.get("effort", base.effort)}
+        update={
+            "model": over.get("model", base.model),
+            "effort": over.get("effort", base.effort),
+            "thinking": (over["thinking"] == "on") if "thinking" in over else base.thinking,
+        }
     )
 
 
@@ -430,14 +446,19 @@ def _stage_meta(f: FormField, recipe_name: str) -> dict[str, str]:
     """For a per-stage row: the side (author/checker), its function on that stage (writer or
     checker), and the field (model/effort); the page lays the pair out on one line."""
     if not f.group.startswith("stage:"):
-        return {"side": "", "func": "", "field": ""}
+        # a side's base row: the field is the word after the side (backend, model, effort, thinking)
+        field = f.key.split("_", 1)[1] if f.key.startswith(("author_", "checker_")) else ""
+        return {"side": "", "func": "", "field": field}
     from .recipes import registry as recipes
 
     stage = f.group.split(":", 1)[1]
-    side = "checker" if f.key.endswith(("_checker_model", "_checker_effort")) else "author"
+    side = "checker" if "_checker_" in f.key else "author"
     st = next(x for x in recipes.get(recipe_name).spec.stages if x.id == stage)
     func = st.side_labels.get(side) or ("writer" if st.author == side else "checker")
-    return {"side": side, "func": func, "field": "effort" if f.key.endswith("_effort") else "model"}
+    field = (
+        "effort" if f.key.endswith("_effort") else ("thinking" if f.key.endswith("_thinking") else "model")
+    )
+    return {"side": side, "func": func, "field": field}
 
 
 def form_model(values: dict[str, str]) -> list[dict[str, Any]]:

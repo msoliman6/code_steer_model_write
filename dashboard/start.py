@@ -273,9 +273,25 @@ GLASS_STROKE = [(k, f"1px solid {T.tint(k, 0.55)}") for k in T.STAGE_HUES]
 STAGE_SELECT_BORDER = [(k, f"1px solid {T.tint(k, 0.45)}") for k in T.STAGE_HUES]
 
 
-def side_row(model: Card, effort: Card, hue) -> rx.Component:
-    """One block per side of a stage: the side's glyph and what it does here, the model, the
-    effort; a rule on the left in the side's colour, dropdown borders in the stage's tint."""
+def field_label(text) -> rx.Component:
+    """What a dropdown is (backend, model, effort, thinking), small, centred, between the boxes."""
+    return rx.text(
+        text,
+        **MONO,
+        font_size=SMALL,
+        color=T.MUTED,
+        text_transform="uppercase",
+        letter_spacing="0.08em",
+        text_align="center",
+        width="100%",
+        padding_top="4px",
+    )
+
+
+def side_row(model: Card, effort: Card, thinking: Card, hue) -> rx.Component:
+    """One block per side of a stage: the side's glyph and what it does here, then the model,
+    the effort and the thinking, each named above its dropdown; a rule on the left in the
+    side's colour, dropdown borders in the stage's tint."""
     color = rx.cond(model.side == "author", T.ACTOR["a"], T.ACTOR["b"])
     border = rx.match(hue, *STAGE_SELECT_BORDER, f"1px solid {T.BORDER}")
     return rx.vstack(
@@ -295,9 +311,15 @@ def side_row(model: Card, effort: Card, hue) -> rx.Component:
             justify="center",
             width="100%",
         ),
+        field_label("model"),
         centered_select(model.options, model.value, lambda v: Start.set_value(model.key, v), border=border),
+        field_label("effort"),
         centered_select(
             effort.options, effort.value, lambda v: Start.set_value(effort.key, v), border=border
+        ),
+        field_label("thinking"),
+        centered_select(
+            thinking.options, thinking.value, lambda v: Start.set_value(thinking.key, v), border=border
         ),
         spacing="1",
         width="86%",
@@ -334,8 +356,8 @@ def stage_column(t: Tile) -> rx.Component:
             padding=T.SPACE["md"],
             width="100%",
         ),
-        rx.cond(cards.length() >= 2, side_row(cards[0], cards[1], t.hue), rx.fragment()),
-        rx.cond(cards.length() >= 4, side_row(cards[2], cards[3], t.hue), rx.fragment()),
+        rx.cond(cards.length() >= 3, side_row(cards[0], cards[1], cards[2], t.hue), rx.fragment()),
+        rx.cond(cards.length() >= 6, side_row(cards[3], cards[4], cards[5], t.hue), rx.fragment()),
         spacing="3",
         width="100%",
         flex="1 1 0",
@@ -366,14 +388,20 @@ def side_column(cards, side: str, title: str) -> rx.Component:
         ),
         rx.foreach(
             cards,
-            lambda c: centered_select(
-                c.options,
-                c.value,
-                lambda v: Start.set_value(c.key, v),
-                border=f"1px solid {T.tint_hex(color, 0.45)}",
+            lambda c: rx.vstack(
+                field_label(c.field),
+                centered_select(
+                    c.options,
+                    c.value,
+                    lambda v: Start.set_value(c.key, v),
+                    border=f"1px solid {T.tint_hex(color, 0.45)}",
+                ),
+                spacing="0",
+                width="100%",
+                align="center",
             ),
         ),
-        spacing="2",
+        spacing="1",
         width="250px",
         align="center",
         margin="0 auto",

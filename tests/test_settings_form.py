@@ -20,12 +20,16 @@ def test_fields_are_one_owner_and_render_as_cards():
     assert [c["key"] for c in cards if c["group"] == "stage:contracts"] == [
         "contracts_author_model",
         "contracts_author_effort",
+        "contracts_author_thinking",
         "contracts_checker_model",
         "contracts_checker_effort",
+        "contracts_checker_thinking",
     ]
     assert [c["func"] for c in cards if c["group"] == "stage:verification"] == [
         "Attacks properties",
         "Attacks properties",
+        "Attacks properties",
+        "Writes properties",
         "Writes properties",
         "Writes properties",
     ]
