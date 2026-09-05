@@ -254,7 +254,9 @@ def test_pycheck_compile_and_skips(tmp_path, monkeypatch):
     assert r.problems and r.problems[0].code == "compile"
     good = tmp_path / "good.py"
     good.write_text("import os\n\ndef f():\n    return 1\n")
-    monkeypatch.setenv("PATH", "/usr/bin:/bin")  # no ruff, no pyright on this PATH
+    # the tools resolve beside the interpreter first, then on PATH; an empty PATH alone no
+    # longer hides them (the fresh install found pytest on the shell's PATH and not in the venv)
+    monkeypatch.setattr("code_steer_model_write.checks.pycheck.resolve_binary", lambda name: None)
     r2 = check_python([good])
     assert r2.ok and set(r2.skipped) == {"ruff format", "ruff check", "pyright"}
 

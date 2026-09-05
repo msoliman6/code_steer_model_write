@@ -29,16 +29,17 @@ dependencies = [
     "mlflow>=2.16",
     "reflex>=0.6",
     "anthropic>=0.40",
+    # L6's registered tools ship with the runtime: a fresh install once had a registry whose
+    # tools were absent, and the doctor looked on the shell's PATH while the tool ran through the venv
+    "pytest>=8",
+    "ruff>=0.5",
+    "pyright>=1.1",
 ]
 
 [project.optional-dependencies]
 openai-api = ["openai>=3.8", "tiktoken>=0.12"]  # PydanticAI's OpenAI path; install as a second step, see above
 agent-sdk = ["claude-agent-sdk>=0.1"]
-checks = ["ruff>=0.5", "pyright>=1.1", "pytest>=8", "pytest-json-report>=1.5", "jsonschema>=4"]
-dev = [
-    "ruff>=0.5", "pyright>=1.1", "pytest>=8", "pytest-json-report>=1.5", "jsonschema>=4",
-    "copier>=9",
-]
+dev = ["pytest-json-report>=1.5", "copier>=9"]
 
 [project.scripts]
 csmw = "code_steer_model_write.cli:main"

@@ -5,12 +5,12 @@ silent pass (rule 10)."""
 from __future__ import annotations
 
 import py_compile
-import shutil
 from pathlib import Path
 
 from pydantic import BaseModel, Field
 
 from ..config import RUFF_IGNORE, RUFF_SELECT
+from ..layers.tools import resolve_binary
 from ..spec.base import Problem
 
 
@@ -46,14 +46,14 @@ def _root(files: list[Path]) -> Path:
 
 
 def ruff_format(files: list[Path]) -> bool:
-    if not shutil.which("ruff"):
+    if not resolve_binary("ruff"):
         return False
     _tools().invoke("ruff", {"argv": ["format", "--isolated", "-q"], "files": files, "root": _root(files)})
     return True
 
 
 def ruff_problems(files: list[Path]) -> tuple[list[Problem], bool]:
-    if not shutil.which("ruff"):
+    if not resolve_binary("ruff"):
         return [], False
     r = _tools().invoke(
         "ruff",
@@ -83,7 +83,7 @@ def ruff_problems(files: list[Path]) -> tuple[list[Problem], bool]:
 
 
 def pyright_problems(files: list[Path]) -> tuple[list[Problem], bool]:
-    if not shutil.which("pyright"):
+    if not resolve_binary("pyright"):
         return [], False
     r = _tools().invoke("pyright", {"files": files, "root": _root(files)})
     out: list[Problem] = []

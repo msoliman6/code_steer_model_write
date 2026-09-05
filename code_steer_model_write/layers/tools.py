@@ -10,6 +10,7 @@ declares one."""
 
 from __future__ import annotations
 
+import os
 import shutil
 import sys
 from pathlib import Path
@@ -40,6 +41,17 @@ class ToolSpec(BaseModel):
 CommandBuilder = Callable[[dict[str, Any]], Execution]
 
 
+def resolve_binary(name: str) -> str | None:
+    """The executable a command tool runs: the one beside this interpreter first (the venv the
+    runtime is installed in), then the PATH. The tool and the doctor resolve through this one
+    function (ledger: a check that reads the wrong record -- the doctor once found a pytest on
+    the shell's PATH while the tool ran `python -m pytest` in a venv that had none)."""
+    beside = Path(sys.executable).parent / name
+    if beside.exists() and os.access(beside, os.X_OK):
+        return str(beside)
+    return shutil.which(name)
+
+
 class Tool(BaseModel):
     model_config = {"arbitrary_types_allowed": True}
 
@@ -66,7 +78,7 @@ class ToolRegistry:
 
     def available(self, name: str) -> bool:
         t = self.get(name)
-        return t.spec.binary is None or shutil.which(t.spec.binary) is not None
+        return t.spec.binary is None or resolve_binary(t.spec.binary) is not None
 
     def invoke(self, name: str, args: dict[str, Any], *, step: str | None = None) -> ExecutionResult:
         """Log before, run in the sandbox, log after. Allowance is L9's and rails are L10's;
@@ -152,14 +164,18 @@ def _pytest(args: dict[str, Any]) -> Execution:
 def _ruff(args: dict[str, Any]) -> Execution:
     files = [str(f) for f in args["files"]]
     return Execution(
-        command=["ruff", *args["argv"], *files], root=Path(args.get("root", Path.cwd())), timeout=120
+        command=[resolve_binary("ruff") or "ruff", *args["argv"], *files],
+        root=Path(args.get("root", Path.cwd())),
+        timeout=120,
     )
 
 
 def _pyright(args: dict[str, Any]) -> Execution:
     files = [str(f) for f in args["files"]]
     return Execution(
-        command=["pyright", "--outputjson", *files], root=Path(args.get("root", Path.cwd())), timeout=300
+        command=[resolve_binary("pyright") or "pyright", "--outputjson", *files],
+        root=Path(args.get("root", Path.cwd())),
+        timeout=300,
     )
 
 

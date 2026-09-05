@@ -17,3 +17,6 @@ docker>=7.1
 obstore>=0.5
 jsonschema>=4
 # then, as a second step: pip install "openai>=3.8" tiktoken  (Guardrails pins openai<3; see pyproject)
+pytest>=8
+ruff>=0.5
+pyright>=1.1

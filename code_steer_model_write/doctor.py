@@ -98,7 +98,11 @@ def run(*, deep: bool = False) -> int:
     except Exception as e:  # noqa: BLE001
         d.warn(f"container       {type(e).__name__}: {str(e)[:120]}")
     for tool in ("ruff", "pyright", "pytest"):
-        found = shutil.which(tool) or (tool == "pytest" and importlib.util.find_spec("pytest"))
+        # the same fact the tool uses: pytest runs as `python -m pytest` in this interpreter, the
+        # others as the binary beside it, then PATH (`layers.tools.resolve_binary`)
+        from .layers.tools import resolve_binary
+
+        found = importlib.util.find_spec("pytest") if tool == "pytest" else resolve_binary(tool)
         (d.note if found else d.warn)(
             f"{tool:15s} "
             + ("found" if found else "not on PATH: that check is SKIPPED and recorded per step")

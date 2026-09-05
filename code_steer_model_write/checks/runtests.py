@@ -35,12 +35,17 @@ def _pytest(tests_dir: Path, src_dir: Path, junit: Path, *, timeout: int = 300) 
 
     junit = junit.resolve()  # one canonical form, the same the tool writes (section 4, L7)
     # L6 -> L5: the registered pytest tool runs in the sandbox with an explicit environment
-    current().tools.invoke(
+    r = current().tools.invoke(
         "pytest", {"tests_dir": tests_dir, "src_dir": src_dir, "junit": junit, "timeout": timeout}
     )
     cases: dict[str, list[tuple[str, str]]] = {}
     if not junit.exists():
-        return {}
+        # pytest ran the tests or it did not run at all; a missing JUnit file is the second, and
+        # that is a halt with the reason, never a verdict of "missing" on every property (ledger:
+        # a message that hides the reason -- the fresh install's pytest was absent and the run
+        # completed with 0/1 pass)
+        tail = (r.stderr or r.stdout or "").strip().splitlines()[-3:]
+        raise RuntimeError(f"pytest did not run (exit {r.exit_code}): " + " | ".join(tail))
     root = ET.parse(junit).getroot()
     for tc in root.iter("testcase"):
         nid = canonical_id(tc.get("classname", ""), tc.get("name", ""), tests_dir.parent)
