@@ -231,9 +231,9 @@ the shell; the API path through PydanticAI exists for deployments that have keys
 ## First run
 
 ```bash
-just walk                      # every workflow on fake models, 18 legs, zero tokens, about a minute
-just dash                      # the page: the home, a run, the start page
-just run examples/code_builder/task.json
+FAKE_MODELS=1 .venv/bin/csmw walk all          # every workflow on fake models, 18 legs, zero tokens, about a minute
+.venv/bin/csmw dash serve --port 3007           # the page: the home, a run, the start page
+.venv/bin/csmw run examples/code_builder/task.json
 ```
 
 `docs/QUICKSTART.md` lists every command; `docs/HACKATHON-30MIN.md` is the first half hour.
@@ -274,8 +274,8 @@ stages, roles, schemas, checks, gates and evaluations, and registers itself by e
 runtime discovers it and runs it with every layer in place. Scaffold one outside this repo:
 
 ```bash
-just new-recipe my_workflow    # the skeleton, with a walk leg and a fake for every schema
-copier copy gh:msoliman6/code_steer_model_write ../my-workflow   # or a whole project from the template
+.venv/bin/python scripts/new_recipe.py my_workflow   # the skeleton: a walk leg and a fake for every schema
+pip install copier && copier copy gh:msoliman6/code_steer_model_write ../my-workflow   # or a whole project from the template
 ```
 
 `docs/ADD-A-RECIPE.md` is the guide. A change that belongs to every workflow, a fixed check, a
