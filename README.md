@@ -140,6 +140,63 @@ seam; the offline walk proves every layer with fake models before any live run.
 | L9 authorization | may this principal do this action on this resource, every decision an event | Cedar (`cedarpy`), one policy file |
 | L10 guardrails | is this interaction safe: before the prompt, after the answer, before a tool call | the schema and the checks; Guardrails AI validators by profile; the ToolSpec's schema |
 
+The layering is not a vendor's diagram. Seven execution layers with governance and observability
+cross-cutting is the shape the reference architectures converge on [1, 2, 3]; the separation of
+the planes from the model is the reference-monitor principle [4, 5] as the agent-security papers
+apply it [6, 7, 8]. Per layer, what the design rests on:
+
+| layer | grounded in |
+|---|---|
+| L1 UI | agents must have well-defined human controllers, and their actions must be observable to them [9]; the human-in-the-loop gates of the practitioner guides [10, 11] |
+| L2 control plane | the task, budget and run record as the control plane of the agent OS [12]; the pattern catalogue's "limited budget for model calling" [2] |
+| L3 orchestration | the decision procedure of a cognitive architecture: a fixed loop that derives the next step, the model never sequencing [13]; the kernel and scheduler of AIOS [12] |
+| L4 agent runtime | one model call under a schema as the cognitive architecture's action space [13]; the pattern catalogue's output-schema patterns [2] |
+| L5 sandbox | security function isolation [14]; capabilities and isolation against the "lethal trifecta" of private data, untrusted content and exfiltration [15, 6]; the agent-sandbox designs of the CLIs [16, 17] |
+| L6 tools | privilege control per tool with a closed declared list [7]; the Model Context Protocol's tool contract [18] |
+| L7 state | the three-way split of run state, versioned artifacts and memory [19]; memory as a tier apart from working state [20, 21, 22]; provenance of every artifact [23, 24] |
+| L8 observability | provenance graphs of agent runs as the basis of accountability [23, 24]; repudiation and untraceability as a named agent threat [25]; observability as a governance principle [9, 3] |
+| L9 authorization | the reference monitor [4]; attribute-based access control and the policy-decision / policy-enforcement split [26, 27]; context-derived security policies for agents [8]; least privilege for agent powers [9, 5] |
+| L10 guardrails | prompt injection as the top LLM threat [28]; capability-based defence [6]; the injection benchmark the rails are measured against [29]; a formal frame for agent security [30] |
+
+<details>
+<summary><b>References</b></summary>
+
+1. A reference architecture for LLM-based agentic systems: Interface, Core, Control, Memory, Tooling, Governance and Observability cross-cutting. arXiv 2026. https://arxiv.org/abs/2602.10479
+2. Liu et al., "Agent Design Pattern Catalogue" (CSIRO). arXiv 2024. https://arxiv.org/abs/2405.10467
+3. Lu et al., "A Reference Architecture for Designing Foundation Model based Agents" (CSIRO). arXiv 2023. https://arxiv.org/abs/2311.13148
+4. Anderson, "Computer Security Technology Planning Study" (the reference monitor). 1972. https://csrc.nist.gov/files/pubs/conference/1998/10/08/proceedings-of-the-21st-nissc-1998/final/docs/early-cs-papers/ande72a.pdf
+5. Saltzer and Schroeder, "The Protection of Information in Computer Systems". 1975. https://www.cs.virginia.edu/~evans/cs551/saltzer/
+6. Debenedetti et al., "CaMeL: Defeating Prompt Injections by Design" (Google DeepMind, ETH). arXiv 2025. https://arxiv.org/abs/2503.18813
+7. Shi et al., "Progent: Programmable Privilege Control for LLM Agents". arXiv 2025. https://arxiv.org/abs/2504.11703
+8. Tsai and Bagdasarian, "Conseca: Context-derived Security Policies for LLM Agents". arXiv 2025. https://arxiv.org/abs/2501.17070
+9. Google, "An Introduction to Google's Approach for Secure AI Agents". 2025. https://research.google/pubs/an-introduction-to-googles-approach-for-secure-ai-agents/
+10. Anthropic, "Building Effective Agents". 2024. https://www.anthropic.com/research/building-effective-agents
+11. OpenAI, "A Practical Guide to Building Agents". 2025. https://cdn.openai.com/business-guides-and-resources/a-practical-guide-to-building-agents.pdf
+12. Mei et al., "AIOS: LLM Agent Operating System". arXiv 2024, COLM 2025. https://arxiv.org/abs/2403.16971
+13. Sumers, Yao, Narasimhan and Griffiths, "Cognitive Architectures for Language Agents" (CoALA). TMLR 2024. https://arxiv.org/abs/2309.02427
+14. NIST SP 800-53 rev. 5, control SC-3, security function isolation. https://csrc.nist.gov/pubs/sp/800/53/r5/upd1/final
+15. Willison, "The Lethal Trifecta for AI Agents". 2025. https://simonwillison.net/2025/Jun/16/the-lethal-trifecta/
+16. Anthropic, Claude Code sandboxing. https://code.claude.com/docs/en/sandboxing
+17. OpenAI, Codex agent approvals and security. https://learn.chatgpt.com/codex/agent-approvals-security
+18. Model Context Protocol, specification, architecture. https://modelcontextprotocol.io/specification/2025-06-18/architecture
+19. Google, Agent Development Kit: state, memory and artifacts. https://google.github.io/adk-docs/agents/
+20. Packer et al., "MemGPT: Towards LLMs as Operating Systems". arXiv 2023. https://arxiv.org/abs/2310.08560
+21. Park et al., "Generative Agents: Interactive Simulacra of Human Behavior". UIST 2023. https://arxiv.org/abs/2304.03442
+22. Zhang et al., "A Survey on the Memory Mechanism of Large Language Model based Agents". arXiv 2024. https://arxiv.org/abs/2404.13501
+23. Souza et al., "PROV-AGENT". IEEE e-Science 2025. https://arxiv.org/abs/2508.02866
+24. Wu, Castelo, Liu, Silva and Freire, "AgentTrails". VLDB 2026 DASHSys workshop. https://arxiv.org/abs/2607.18816
+25. OWASP, "Agentic AI Threats and Mitigations" (T8, repudiation and untraceability). 2025. https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/
+26. NIST SP 800-162, "Guide to Attribute Based Access Control". https://nvlpubs.nist.gov/nistpubs/specialpublications/NIST.sp.800-162.pdf
+27. OASIS, XACML 3.0 core specification (PDP, PEP, PIP, PAP). https://docs.oasis-open.org/xacml/3.0/xacml-3.0-core-spec-os-en.html
+28. OWASP, "Top 10 for LLM Applications" 2025 (LLM01 prompt injection, LLM06 excessive agency). https://genai.owasp.org/llm-top-10/
+29. Debenedetti et al., "AgentDojo". NeurIPS 2024 Datasets and Benchmarks. https://arxiv.org/abs/2406.13352
+30. Siu et al., "A Framework for Formalizing LLM Agent Security". arXiv 2026. https://arxiv.org/abs/2603.19469
+
+The reading behind these, dated and with what each source says verbatim, is in the architecture
+repository, `production_agentic_workflow/docs/research/`.
+
+</details>
+
 Every subsystem receives the same run id, and the page joins on it:
 
 ```text
