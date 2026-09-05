@@ -2297,20 +2297,26 @@ class H(rx.State):
 
     @rx.event
     def remove_selected(self):
-        """Two clicks: the first asks, the second forgets every ticked run. The folders stay."""
+        """Two clicks: the first asks, the second erases every ticked run -- the folder, the
+        registry row, the MLflow run and trace, the Prefect flow run. A running run is refused
+        and named; stop it first."""
         if not self.confirm_remove:
             self.confirm_remove = True
             return
         gw = _gateway()
-        n = 0
+        gone, refused = [], []
         for d in self.selected:
             try:
-                gw.forget(d)
-                n += 1
+                r = gw.delete(d)
+                gone.append(r["run_id"])
             except Exception as e:  # noqa: BLE001
-                self.note = f"remove: {type(e).__name__}: {e}"
+                refused.append(f"{Path(d).name}: {e}")
         self.selected, self.confirm_remove = [], False
-        self.note = f"{n} run{'s' if n != 1 else ''} removed from the list; every folder stays on disk"
+        self.note = (
+            f"deleted {', '.join(gone)}: folder, registry row, MLflow run and trace, Prefect flow run"
+            if gone
+            else ""
+        ) + (("; " if gone else "") + "refused " + "; ".join(refused) if refused else "")
         self._reload()
 
     def _reload(self) -> None:
@@ -2696,13 +2702,13 @@ def home_page() -> rx.Component:
                                 rx.button(
                                     rx.cond(
                                         H.confirm_remove,
-                                        f"remove {H.selected.length()} from the list?",
-                                        f"remove {H.selected.length()}",
+                                        f"delete {H.selected.length()} run(s) and every trace of them?",
+                                        f"delete {H.selected.length()}",
                                     ),
                                     size="1",
                                     variant=rx.cond(H.confirm_remove, "solid", "soft"),
                                     color_scheme=rx.cond(H.confirm_remove, "red", "gray"),
-                                    title="the list forgets them; every folder stays on disk",
+                                    title="erases the folder, the registry row, the MLflow run and trace, the Prefect flow run",
                                     on_click=H.remove_selected,
                                 ),
                                 rx.fragment(),

@@ -70,6 +70,12 @@ def run_again(run: str, mlflow: bool = True) -> None:
 
 
 @app.command()
+def delete(run: str) -> None:
+    """Erase a run: folder, registry row, MLflow run and trace, Prefect flow run."""
+    _out(_gw().delete(run))
+
+
+@app.command()
 def forget(run: str) -> None:
     """Stop listing a run; the folder stays."""
     print(_gw().forget(run))

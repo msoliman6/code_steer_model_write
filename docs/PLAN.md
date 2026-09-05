@@ -1055,8 +1055,11 @@ Four pieces, in build order:
    Sort by any column, filter by status and recipe, search by name; a row opens the run page.
    Four counters above it: running, completed, halted, failed. Row actions call the gateway
    (§L2): cancel, pause, resume, **run again** (the task copied unchanged, the next free id,
-   submitted), and **remove** -- the registry forgets the run and never touches its folder.
-   Deleting a run is a filesystem decision a person makes; the page has no such button.
+   submitted). Checkboxes and one **delete** for the ticked runs, asked once before it acts
+   (the user's decision, 2026-09-05, after Prefect's bulk delete): the folder, the registry
+   row, the MLflow run and trace, the Prefect flow run all go, a running run is refused by
+   name, and the note says what was erased and what was not found. `run_forget` stays on the
+   gateway for a host that only wants a run out of the list.
 2. **The step timeline** in Evidence, under the three swimlanes (which answer "who was busy",
    the timeline answers "which step"): one row per step, a bar from `step.started` to
    `step.done` on the run's clock, coloured by step kind, the model call a darker segment

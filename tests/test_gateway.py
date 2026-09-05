@@ -122,3 +122,35 @@ def test_prefect_runner_submits_cancels_and_resumes_under_a_test_harness(tmp_pat
         st = RunState.load(paths)
         assert st.status.value == "COMPLETED", (st.status, pr.status(paths))
         assert (tmp_path / "one" / "artifacts" / "report").exists()
+
+
+def test_gateway_delete_erases_the_folder_the_row_and_the_mlflow_record(tmp_path: Path, monkeypatch) -> None:
+    """The home's delete: after it, nothing of the run remains -- not the folder, not the registry
+    row, not the MLflow run or its trace. A running run is refused by name."""
+    import time
+
+    import mlflow
+
+    monkeypatch.setenv("FAKE_MODELS", "1")
+    monkeypatch.setenv("CSMW_MLFLOW_TRACKING_URI", f"sqlite:///{tmp_path / 'mlflow.db'}")
+    from code_steer_model_write.config import Settings
+
+    uri = Settings().mlflow_tracking_uri
+    gw = Gateway(registry=RunRegistry(tmp_path / "r.db"))
+    h = gw.run(_task("gone").model_dump(mode="json"), run_dir=str(tmp_path / "gone"), mlflow=True)
+    t0 = time.time()
+    while gw.status(h.run_dir).status not in ("COMPLETED", "FAILED", "PAUSED", "STALE"):
+        assert time.time() - t0 < 120
+        time.sleep(0.3)
+    time.sleep(1.0)  # the mirror flushes its trace queue at the child's exit
+    c = mlflow.MlflowClient(tracking_uri=uri)
+    exp = c.get_experiment_by_name("debate")
+    assert exp is not None and c.search_runs([exp.experiment_id], filter_string="tags.workflow_run_id = 'gone'")
+    out = gw.delete(h.run_dir)
+    assert "the run folder" in out["erased"] and "the registry row" in out["erased"]
+    assert any(x.startswith("mlflow run") for x in out["erased"]), out
+    assert not Path(h.run_dir).exists()
+    assert gw.registry.find("gone") is None
+    assert not c.search_runs([exp.experiment_id], filter_string="tags.workflow_run_id = 'gone'")
+    with pytest.raises(KeyError):
+        gw.status(h.run_dir)

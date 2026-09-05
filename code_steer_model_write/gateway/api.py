@@ -18,7 +18,7 @@ from ..layers.registry import RunRegistry
 from ..layers.runner import LocalRunner, RunHandle, Runner
 from ..spec.task import TaskSpec
 from ..state.lock import atomic_write_text
-from ..state.run import RunPaths, RunState
+from ..state.run import runner_alive, RunPaths, RunState
 
 
 class WorkflowInfo(BaseModel):
@@ -164,6 +164,74 @@ class Gateway:
         paths = self._paths(run)
         self.registry.forget(paths.run_dir)
         return str(paths.run_dir)
+
+    def delete(self, run: str) -> dict[str, Any]:
+        """Erase a run: its folder, its registry row, its MLflow run and trace, its Prefect flow
+        run. A live run is stopped first and the delete refused until it has stopped, so no
+        process writes into a folder that is gone. Returns what was erased and what was not
+        found, in words; nothing here is silent or partial."""
+        import shutil
+
+        paths = self._paths(run)
+        st = RunState.load(paths)
+        out: dict[str, Any] = {
+            "run_id": st.run_id,
+            "run_dir": str(paths.run_dir),
+            "erased": [],
+            "not_found": [],
+        }
+        if st.status.value == "RUNNING" and runner_alive(paths):
+            raise RuntimeError(f"{st.run_id} is running; stop it first, then delete")
+        # MLflow: the run named after this one in the recipe's experiment, and its trace
+        try:
+            import mlflow
+
+            c = mlflow.MlflowClient(tracking_uri=Settings().mlflow_tracking_uri)
+            exp = c.get_experiment_by_name(st.recipe)
+            if exp is not None:
+                runs = c.search_runs(
+                    [exp.experiment_id], filter_string=f"tags.workflow_run_id = '{st.run_id}'"
+                )
+                for r in runs:
+                    traces = c.search_traces(
+                        experiment_ids=[exp.experiment_id], run_id=r.info.run_id, include_spans=False
+                    )
+                    ids = [t.info.trace_id for t in traces]
+                    if ids:
+                        n = c.delete_traces(exp.experiment_id, trace_ids=ids)
+                        out["erased"].append(f"{n} mlflow trace(s)")
+                    c.delete_run(r.info.run_id)
+                    out["erased"].append(f"mlflow run {r.info.run_id[:8]}")
+            if not any(x.startswith("mlflow") for x in out["erased"]):
+                out["not_found"].append("mlflow")
+        except Exception as e:  # noqa: BLE001 -- the store may be absent; said, never fatal
+            out["not_found"].append(f"mlflow: {type(e).__name__}")
+        # Prefect: the flow run whose id sits beside the run
+        pj = paths.run_dir / "prefect.json"
+        if pj.exists():
+            try:
+                from ..layers.prefect_runner import PrefectRunner, _run
+
+                fid = PrefectRunner()._flow_run_id(paths)
+                if fid:
+                    from uuid import UUID
+
+                    from prefect.client.orchestration import get_client
+
+                    async def do() -> None:
+                        async with get_client() as pc:
+                            await pc.delete_flow_run(UUID(fid))
+
+                    _run(do())
+                    out["erased"].append(f"prefect flow run {fid[:8]}")
+            except Exception as e:  # noqa: BLE001
+                out["not_found"].append(f"prefect: {type(e).__name__}")
+        # the folder, then the row
+        shutil.rmtree(paths.run_dir)
+        out["erased"].append("the run folder")
+        self.registry.drop(paths.run_dir)
+        out["erased"].append("the registry row")
+        return out
 
     def _paths(self, run: str) -> RunPaths:
         p = Path(run)

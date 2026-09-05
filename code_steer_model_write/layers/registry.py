@@ -143,6 +143,11 @@ class RunRegistry:
         with sqlite3.connect(self.path) as c:
             c.execute("UPDATE runs SET hidden = 1 WHERE run_dir = ?", (str(Path(run_dir).resolve()),))
 
+    def drop(self, run_dir: Path | str) -> None:
+        """The row goes, for a run whose folder is gone (the Gateway's delete)."""
+        with sqlite3.connect(self.path) as c:
+            c.execute("DELETE FROM runs WHERE run_dir = ?", (str(Path(run_dir).resolve()),))
+
     def remember(self, run_dir: Path | str) -> None:
         with sqlite3.connect(self.path) as c:
             c.execute("UPDATE runs SET hidden = 0 WHERE run_dir = ?", (str(Path(run_dir).resolve()),))

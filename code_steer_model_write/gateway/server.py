@@ -69,6 +69,11 @@ def build(gateway: Gateway | None = None) -> MCPServer:
         return gw.forget(run)
 
     @srv.tool()
+    def run_delete(run: str) -> dict[str, Any]:
+        """Erase a run: its folder, its registry row, its MLflow run and trace, its Prefect flow run. Refused while it runs."""
+        return gw.delete(run)
+
+    @srv.tool()
     def run_list() -> list[dict[str, Any]]:
         """Every run the registry knows, across all runs directories, newest first."""
         return gw.list_runs()
