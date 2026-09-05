@@ -93,7 +93,7 @@ TOP = [
         "the driver · Prefect 3",
         "the next step from disk; detach, cancel, resume",
         "blue",
-        "gear",
+        "conductor",
     ),
 ]
 BOTTOM = [  # drawn right to left: L4 under L3, L6 under L2, L5 under L1
@@ -103,7 +103,7 @@ BOTTOM = [  # drawn right to left: L4 under L3, L6 under L2, L5 under L1
         "Claude Code · Codex · PydanticAI",
         "one model call under a schema",
         "orange",
-        "brain",
+        "clock",
     ),
     Box(
         "L6",
@@ -203,21 +203,37 @@ def icon_svg(kind: str, x: float, y: float, s: float, color: str) -> str:
             + color
             + '"><animate attributeName="cx" values="11;17;11" dur="3s" repeatCount="indefinite"/></circle></g>'
         )
-    if kind == "gear":  # a gear that turns
+    if kind == "conductor":  # a conductor: the baton arm beats time, the other arm sways
         return (
             g
-            + '<g><circle cx="12" cy="12" r="3.5"/>'
-            + '<path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/>'
-            + '<animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="4s" repeatCount="indefinite"/></g></g>'
-        )
-    if kind == "brain":  # a dot with two arcs circling it: reasoning
-        return (
-            g
-            + '<circle cx="12" cy="12" r="3" fill="'
+            + '<circle cx="12" cy="6" r="3"/>'
+            + '<path d="M10.2 11.2l1.8 1 1.8-1v2.4l-1.8-1-1.8 1z" fill="'
             + color
-            + '" stroke="none"><animate attributeName="r" values="3;3.8;3" dur="1.5s" repeatCount="indefinite"/></circle>'
-            + '<g><path d="M20 12a8 8 0 0 0-8-8M4 12a8 8 0 0 0 8 8"/><path d="M19 8.5l1 3.5-3.5-.6M5 15.5l-1-3.5 3.5.6"/>'
-            + '<animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="2s" repeatCount="indefinite"/></g></g>'
+            + '" stroke="none"/>'
+            + '<path d="M9.5 13.5L8 22M14.5 13.5L16 22"/>'
+            + '<g><path d="M9 13L5.5 9.5 4 5.5"/>'
+            + '<animateTransform attributeName="transform" type="rotate" values="0 9 13;9 9 13;0 9 13;-7 9 13;0 9 13" dur="1.2s" repeatCount="indefinite"/></g>'
+            + '<g><path d="M15 13l3.5-3.5"/><path d="M18.5 9.5L22.5 2" stroke-width="2.6"/>'
+            + '<animateTransform attributeName="transform" type="rotate" values="0 15 13;-28 15 13;0 15 13;18 15 13;0 15 13" dur="1.2s" repeatCount="indefinite"/></g></g>'
+        )
+    if kind == "clock":  # a clock with an outer arrow that circles it; the minute hand sweeps
+        return (
+            g
+            + '<circle cx="12" cy="12" r="6.2"/>'
+            + '<circle cx="12" cy="6.8" r="0.7" fill="'
+            + color
+            + '" stroke="none"/><circle cx="17.2" cy="12" r="0.7" fill="'
+            + color
+            + '" stroke="none"/>'
+            + '<circle cx="12" cy="17.2" r="0.7" fill="'
+            + color
+            + '" stroke="none"/><circle cx="6.8" cy="12" r="0.7" fill="'
+            + color
+            + '" stroke="none"/>'
+            + '<path d="M12 12V8.6"/>'
+            + '<g><path d="M12 12h3"/><animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="4s" repeatCount="indefinite"/></g>'
+            + '<g><path d="M12 1.6A10.4 10.4 0 1 1 1.6 12" stroke-width="2.2"/><path d="M9.2 1.2L12.4 1.6 11.6 4.6"/>'
+            + '<animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="3s" repeatCount="indefinite"/></g></g>'
         )
     if kind == "wrench":  # a wrench that tightens
         return (
