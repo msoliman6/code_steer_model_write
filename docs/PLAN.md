@@ -209,8 +209,13 @@ It changes little, which is the point of the seams:
    Typer.
 5. **L3.** Prefect as Runner; `nohup` and `STOP` retired; the parallel build.
 6. **L8.** MLflow on SQLite through OpenTelemetry; the scorers; the Evals tab; tracing on.
-7. **L5.** The Docker tier, the probe, the doctor line; the coder's checks in the container.
-8. **The tool-using step kind**, across L4, L6 and L5. Not needed by the coder; needed
+7. **L1, the pages** (§7d, agreed 2026-09-04 after live-8): the runs page as the home, the
+   step timeline, run again, trends over runs. Everything it shows exists already: the
+   registry, each run's events and `evals.json`. Placed before the Docker tier because a live
+   run's worth of data now proves it.
+8. **L5.** The Docker tier, the probe, the doctor line; the coder's checks in the container;
+   obstore behind ArtifactStore (local now, object storage later).
+9. **The tool-using step kind**, across L4, L6 and L5. Not needed by the coder; needed
    before any other recipe. The MemoryStore's LanceDB implementation belongs with the first
    recipe that declares memory, not here.
 
@@ -951,6 +956,48 @@ handed the full trajectory by code" since v1 has no thread resume.)
 **Verification.** `tests/test_figure.py`: the code-builder recipe renders to an SVG structurally
 equal to the reference (same element count, texts, colours, positions within 1px); every colour
 in the output is a token; both themes render; the README embed references both files.
+
+## 7d. The pages after Prefect and MLflow (phase 7 of version 3, agreed 2026-09-04)
+
+What was learned from Prefect's and MLflow's pages against ours, on live-8: a summary and a
+runs list across every run, controls on the row, a Gantt of steps, a runs table with metric
+columns. What was not taken and why: schedules, triggers, work pools, automations, judges,
+review queues, prompt registries, a hosted gateway, downloads (every trace and artifact is a
+file in the run folder already), a second price table (costs stay "at API rates" from the
+vendored map). The rule that holds: **every page reads what exists** -- the registry, each
+run's `state.json` and `events.jsonl`, each run's `evals.json`; no new store, no new event,
+no change to the runtime below the page. The registry is the one owner of the run list; the
+tab strip becomes a view of it.
+
+Four pieces, in build order:
+
+1. **The runs page, the home.** One table from the registry: run, recipe, status, verdict,
+   steps done, elapsed, tokens, cost at API rates, the eval columns from `evals.json`, started.
+   Sort by any column, filter by status and recipe, search by name; a row opens the run page.
+   Four counters above it: running, completed, halted, failed. Row actions call the gateway
+   (§L2): cancel, pause, resume, **run again** (the task copied unchanged, the next free id,
+   submitted), and **remove** -- the registry forgets the run and never touches its folder.
+   Deleting a run is a filesystem decision a person makes; the page has no such button.
+2. **The step timeline** in Evidence, under the three swimlanes (which answer "who was busy",
+   the timeline answers "which step"): one row per step, a bar from `step.started` to
+   `step.done` on the run's clock, coloured by step kind, the model call a darker segment
+   inside the step's bar, tokens at the row's end. Overlapping rows show the parallel build.
+   A pure function `events -> rows` (`dashboard/timeline.py`), testable without a browser, and
+   one component.
+3. **Run again** on the run page, beside Start: one gateway call, the task carried unchanged
+   so a rerun compares like for like.
+4. **Trends** on the home: the eval columns of the last twenty runs of one recipe as small line
+   charts above the table, so a regression in the workflow shows as a trend. Reads what piece
+   1 loaded.
+
+**Verification** (rule 12). `csmw dash selfcheck` extends to the home: the counters, the rows
+and their columns equal the registry plus the runs' files; the timeline rows of a known run
+(the walk's) equal the rows computed from its events; run again produces a run whose
+`task.json` differs from the source's in `task_id` only. The walk's `gateway/drives-a-run`
+leg lists the run on the home through the same reader the page uses.
+
+**Size.** Pieces 1 and 2 a day; 3 and 4 an hour each once 1 exists. Phase 7 is done by the rule
+for every phase: walk green, one live clean pass shown on the new home, then `v3` tags.
 
 ## 8. Developer experience
 
