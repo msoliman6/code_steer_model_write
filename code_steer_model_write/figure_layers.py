@@ -15,13 +15,15 @@ from .figure import ARROW, ARROW_W, FONT, TEXT, W, _esc, rgba
 
 Theme = Literal["dark", "light"]
 
-# the README's group colours: control violet, runtime red, execution blue, state teal, planes gold
-HUES = {
-    "violet": ((86, 70, 237), "#9c8cf5", "#e6e2f5"),
-    "red": ((208, 74, 69), "#e06661", "#fbe1cc"),
-    "blue": ((36, 150, 237), "#6eb4f0", "#dbe3ee"),
-    "teal": ((47, 163, 154), "#43bdb2", "#d4efe8"),
-    "gold": ((187, 128, 9), "#d69a26", "#fbf0c4"),
+HUES = {  # one hue per box, vibrant and distinct; the planes light yellow, the floor teal
+    "violet": ((124, 92, 255), "#a894ff", "#e8e2ff"),
+    "pink": ((236, 72, 153), "#f472b6", "#fbdcec"),
+    "red": ((239, 68, 68), "#f87171", "#fddede"),
+    "orange": ((249, 115, 22), "#fb923c", "#ffe4cc"),
+    "blue": ((59, 130, 246), "#7ab4fb", "#dbeafe"),
+    "cyan": ((6, 182, 212), "#22d3ee", "#cff5fb"),
+    "yellow": ((234, 179, 8), "#facc15", "#fef3c7"),
+    "teal": ((20, 184, 166), "#2dd4bf", "#ccfbf1"),
 }
 
 
@@ -73,7 +75,7 @@ PATH = [
         "L2  control plane",
         "MCP SDK · pydantic · Typer · SQLite",
         "the task, the budgets, the registry",
-        "violet",
+        "pink",
     ),
     Box(
         "L3",
@@ -83,30 +85,34 @@ PATH = [
         "red",
     ),
     Box(
-        "L4", "L4  agent runtime", "Claude Code · Codex · PydanticAI", "one model call under a schema", "red"
+        "L4",
+        "L4  agent runtime",
+        "Claude Code · Codex · PydanticAI",
+        "one model call under a schema",
+        "orange",
     ),
 ]
 EXEC = [
     Box("L5", "L5  sandbox", "Docker SDK · Colima", "network off, the run folder the only mount", "blue"),
     Box(
-        "L6", "L6  tools", "git · pytest · ruff · pyright", "the typed registry, every call an event", "blue"
+        "L6", "L6  tools", "git · pytest · ruff · pyright", "the typed registry, every call an event", "cyan"
     ),
 ]
 PLANES = [
-    Band("L9", "L9  authorization", "Cedar", "every step, every write, every tool call", "gold"),
+    Band("L9", "L9  authorization", "Cedar", "every step, every write, every tool call", "yellow"),
     Band(
         "L10",
         "L10  guardrails",
         "Guardrails AI · the schema",
         "before the prompt, after the answer, before a tool call",
-        "gold",
+        "yellow",
     ),
     Band(
         "L8",
         "L8  observability",
         "MLflow 3 · OpenTelemetry",
         "every event a span, every run evaluated",
-        "gold",
+        "yellow",
     ),
 ]
 FLOOR = Band("L7", "L7  state", "files · SQLite · obstore", "the record every layer reads and writes", "teal")
@@ -165,7 +171,7 @@ def render(theme: Theme = "dark") -> str:
         rgb, _, flat = HUES[hue]
         if theme == "dark":
             L.append(
-                f'<rect x="{x:g}" y="{y:g}" width="{w:g}" height="{h:g}" rx="{r}" fill="{rgba(rgb, 0.14 if strong else 0.08)}" stroke="{rgba(rgb, 0.7 if strong else 0.5)}" stroke-width="1.5"/>'
+                f'<rect x="{x:g}" y="{y:g}" width="{w:g}" height="{h:g}" rx="{r}" fill="{rgba(rgb, 0.18 if strong else 0.10)}" stroke="{rgba(rgb, 0.85 if strong else 0.6)}" stroke-width="1.5"/>'
             )
         else:
             L.append(f'<rect x="{x:g}" y="{y:g}" width="{w:g}" height="{h:g}" rx="{r}" fill="{flat}"/>')
