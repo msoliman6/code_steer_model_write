@@ -239,6 +239,17 @@ Agreed with the user on 2026-09-04. Nothing below is code; it is what the code w
   null-fail 1.0, carried 6, rounds 1.75, refused 1; the self-check passes on it. The clean pass
   phases 8 and 9 owed, and the last of version 3: all ten layers live on their tools. Both
   code repositories and the architecture repository tagged `v3`.**
+  **`fresh-1` (2026-09-05, the install proven before going public): a clean clone of the
+  coder under an empty HOME, the plugin's own bootstrap (clone the runtime with `gh`, a venv,
+  the two pip steps), then one live run through that venv's gateway on the CLI logins. The
+  first pass found three install bugs the dev machine had hidden (ledger 09-05: "ready" over a
+  failed pip, the openai pin, pytest absent from the venv and a doctor that looked at the
+  shell's PATH, a verify that wrote "missing" over a pytest that never ran; then Python 3.14
+  with no ceiling in `requires-python`). After the fixes, from scratch again: bootstrap 2.5
+  min, doctor finds ruff, pyright and pytest beside the interpreter with a bare PATH, run
+  COMPLETED, 25 steps, 0 halts, 0 resumes, 16 min, 241K tokens; verdict 7/7 pass, 7/7 fail on
+  the null, 3 findings carried; pytest ran eight times from the fresh venv. Both code
+  repositories public the same day; the architecture repository stays private.**
 
 ## The rule for every phase
 
