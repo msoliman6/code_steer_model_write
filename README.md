@@ -28,7 +28,7 @@
 <a href="https://www.cedarpolicy.com/"><img alt="authorization: Cedar" src="https://img.shields.io/badge/authorization-Cedar-5a4fcf?style=flat-square"></a>
 <a href="https://www.guardrailsai.com/"><img alt="guardrails: Guardrails AI" src="https://img.shields.io/badge/guardrails-Guardrails%20AI-1f6feb?style=flat-square"></a>
 <a href="LICENSE"><img alt="license: MIT" src="https://img.shields.io/badge/license-MIT-bb8009?style=flat-square"></a>
-<a href="https://www.python.org/"><img alt="python: 3.11+" src="https://img.shields.io/badge/python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white"></a>
+<a href="https://www.python.org/"><img alt="python: 3.11 to 3.13" src="https://img.shields.io/badge/python-3.11%20to%203.13-3776AB?style=flat-square&logo=python&logoColor=white"></a>
 <a href="https://docs.anthropic.com/en/docs/claude-code"><img alt="Claude Code: author" src="https://img.shields.io/badge/Claude_Code-author-d97757?style=flat-square"></a>
 <a href="https://openai.com/codex/"><img alt="OpenAI Codex: adversarial checker" src="https://img.shields.io/badge/OpenAI_Codex-adversarial%20checker-10a37f?style=flat-square"></a>
 </p>
@@ -211,7 +211,7 @@ layer, seam and rule; this repository is its runtime.
 
 ```bash
 git clone https://github.com/msoliman6/code_steer_model_write && cd code_steer_model_write
-python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
+python3.13 -m venv .venv && .venv/bin/pip install -e ".[dev]"   # 3.11, 3.12 or 3.13
 .venv/bin/pip install "openai>=3.8" tiktoken   # a second step on purpose: see below
 .venv/bin/csmw doctor          # exit 0 ready; every line it checked is printed
 ```

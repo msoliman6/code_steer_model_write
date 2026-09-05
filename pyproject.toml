@@ -7,7 +7,7 @@ name = "code_steer_model_write"
 version = "0.1.0"
 description = "Code steers, models write: a template for reliable agentic AI workflows."
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.14"  # Guardrails AI (L10) has no 3.14 build yet; the range is the honest one
 license = { text = "MIT" }
 dependencies = [
     "pydantic>=2.5",
