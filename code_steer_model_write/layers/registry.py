@@ -15,14 +15,15 @@ from ..state.run import RunPaths, RunState, runner_alive
 SCHEMA = """
 PRAGMA journal_mode=WAL;
 CREATE TABLE IF NOT EXISTS runs (
-    run_id TEXT PRIMARY KEY,
+    run_dir TEXT PRIMARY KEY,
+    run_id TEXT NOT NULL,
     task_id TEXT NOT NULL,
     recipe TEXT NOT NULL,
-    run_dir TEXT NOT NULL UNIQUE,
     registered_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     last_seen DATETIME DEFAULT CURRENT_TIMESTAMP,
     status TEXT,
-    outcome TEXT
+    outcome TEXT,
+    hidden INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE IF NOT EXISTS runs_dirs (
     path TEXT PRIMARY KEY,
@@ -41,6 +42,23 @@ class RunRegistry:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with sqlite3.connect(self.path) as c:
             c.executescript(SCHEMA)
+            info = list(c.execute("PRAGMA table_info(runs)"))
+            cols = {r[1] for r in info}
+            pk = [r[1] for r in info if r[5]]
+            if pk != ["run_dir"]:
+                # an index keyed by run id: two projects each with a `live-1` collided (a key that
+                # is not the identity -- the folder is). Rebuilt keyed by the folder; rows kept.
+                c.executescript(
+                    "ALTER TABLE runs RENAME TO runs_old;"
+                    + SCHEMA.split("CREATE TABLE IF NOT EXISTS runs_dirs")[0].replace(
+                        "PRAGMA journal_mode=WAL;", ""
+                    )
+                    + "INSERT OR IGNORE INTO runs (run_dir, run_id, task_id, recipe, registered_at, last_seen, status, outcome)"
+                    " SELECT run_dir, run_id, task_id, recipe, registered_at, last_seen, status, outcome FROM runs_old;"
+                    "DROP TABLE runs_old;"
+                )
+            elif "hidden" not in cols:  # an index made before the home page could forget a run
+                c.execute("ALTER TABLE runs ADD COLUMN hidden INTEGER NOT NULL DEFAULT 0")
 
     # ---- runs directories ---------------------------------------------------------------------
 
@@ -109,14 +127,30 @@ class RunRegistry:
                     r["status"] = "missing"
         return rows
 
-    def runs(self) -> list[dict]:
+    def runs(self, *, hidden: bool = False) -> list[dict]:
         with sqlite3.connect(self.path) as c:
             c.row_factory = sqlite3.Row
-            return [dict(r) for r in c.execute("SELECT * FROM runs ORDER BY registered_at DESC")]
+            q = (
+                "SELECT * FROM runs"
+                + ("" if hidden else " WHERE hidden = 0")
+                + " ORDER BY registered_at DESC"
+            )
+            return [dict(r) for r in c.execute(q)]
+
+    def forget(self, run_dir: Path | str) -> None:
+        """The home's "remove": the index stops listing the run; its folder is never touched, and
+        a scan does not bring it back (docs/PLAN.md §7d). `remember` undoes it."""
+        with sqlite3.connect(self.path) as c:
+            c.execute("UPDATE runs SET hidden = 1 WHERE run_dir = ?", (str(Path(run_dir).resolve()),))
+
+    def remember(self, run_dir: Path | str) -> None:
+        with sqlite3.connect(self.path) as c:
+            c.execute("UPDATE runs SET hidden = 0 WHERE run_dir = ?", (str(Path(run_dir).resolve()),))
 
     def find(self, run_id: str) -> RunPaths | None:
         with sqlite3.connect(self.path) as c:
             row = c.execute(
-                "SELECT run_dir FROM runs WHERE run_id = ? OR run_dir = ?", (run_id, run_id)
+                "SELECT run_dir FROM runs WHERE run_dir = ? OR run_id = ? ORDER BY registered_at DESC",
+                (run_id, run_id),
             ).fetchone()
         return RunPaths(run_dir=Path(row[0])) if row else None

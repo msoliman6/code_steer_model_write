@@ -24,6 +24,9 @@ from code_steer_model_write.recipes import registry
 from code_steer_model_write.spec.events import Event
 from code_steer_model_write.state.run import RunPaths, RunState, runner_alive
 
+from . import timeline
+from .timeline import TimelineRow
+
 
 def _fmt_dur(seconds: float | None) -> str:
     if seconds is None:
@@ -144,6 +147,7 @@ class RunView(BaseModel):
     agent_runs: list[AgentRun]
     steps: list[StepRow] = []
     segments: list[Segment]
+    timeline: list[TimelineRow] = Field(default_factory=list)  # §7d piece 2: one row per step
     token_series: dict[str, list[tuple[float, int]]]
     events: list[dict[str, Any]]
     carried: list[dict[str, Any]]
@@ -499,6 +503,10 @@ def build_view(run_dir: Path | str) -> RunView:
         agent_runs=agent_runs,
         steps=steps,
         segments=segments,
+        timeline=[
+            r.model_copy(update={"lane": sides.get(r.role, "code") if r.role else "code"})
+            for r in timeline.rows(evs, now=now)
+        ],
         token_series=series,
         events=ev_rows,
         carried=carried,

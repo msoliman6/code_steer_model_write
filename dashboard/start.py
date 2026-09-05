@@ -158,14 +158,14 @@ class Start(rx.State):
         RunState.create(RunPaths(run_dir=run_dir), task)
         atomic_write_text(run_dir / "task.json", task.model_dump_json(indent=2))
         subprocess.Popen(
-            [sys.executable, "-m", "code_steer_model_write.cli", "resume", str(run_dir), "--no-mlflow"],
+            [sys.executable, "-m", "code_steer_model_write.cli", "resume", str(run_dir)],
             stdout=(run_dir / "runner.log").open("w"),
             stderr=subprocess.STDOUT,
             start_new_session=True,
             cwd=str(Path.cwd()),
         )
         self.started = task.task_id
-        return rx.redirect("/")
+        return rx.redirect("/run")
 
 
 def centered_select(options, value, on_change, *, width: str = "100%", border=None) -> rx.Component:

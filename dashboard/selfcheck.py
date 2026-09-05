@@ -101,6 +101,42 @@ def check(run_dir: Path | str) -> tuple[list[str], list[str]]:
             rel = str(p.relative_to(paths.run_dir))
             if rel not in live and not rel.endswith(".lock"):
                 probs.append(f"refresh hash does not cover live file {rel}")
+    # §7d: the home's row for this run says what the view says, and the timeline is the record
+    from . import home, timeline
+
+    hr = home.row_for(paths.run_dir)
+    need(hr.id == v.run_id and hr.recipe == v.recipe, "home row: identity differs from the view")
+    need(
+        hr.dot == v.dot and hr.ring == v.dot_ring,
+        f"home row dot {hr.dot}/{hr.ring} != the view's {v.dot}/{v.dot_ring}",
+    )
+    need(
+        hr.tokens == sum(v.tokens.values()),
+        f"home row tokens {hr.tokens} != the view's {sum(v.tokens.values())}",
+    )
+    need(hr.steps_done == sum(1 for r in st.steps.values() if r.done_at), "home row steps done != state.json")
+    if v.process == "completed":
+        need(hr.verdict == v.product, f"home row verdict {hr.verdict!r} != the view's {v.product!r}")
+        ep = paths.run_dir / "evals.json"
+        if ep.exists():
+            want = {
+                str(r["metric"])
+                for r in json.loads(ep.read_text()).get("results", [])
+                if isinstance(r.get("value"), (int, float))
+            }
+            need(set(hr.eval_values) == want, "home row evals != evals.json")
+    tl = timeline.rows(evs)
+    need([r.step for r in v.timeline] == [r.step for r in tl], "the view's timeline != rows from the events")
+    started = [k for k, r in st.steps.items() if r.started_at is not None]
+    need(len(tl) == len(started), f"{len(tl)} timeline rows, {len(started)} steps started in state.json")
+    need(all(r.end >= r.start for r in tl), "a timeline row ends before it starts")
+    par = [e for e in evs if e.kind == "run.progress" and e.data.get("parallel")]
+    for e in par:
+        keys = list(e.data["parallel"])
+        ov = {(a, b) for a, b, _ in timeline.overlaps(tl)} | {(b, a) for a, b, _ in timeline.overlaps(tl)}
+        by = {r.step: r for r in tl}
+        if all(k in by and by[k].done for k in keys) and len(keys) >= 2:
+            need((keys[0], keys[1]) in ov, f"parallel round {keys} shows no overlap on the timeline")
     # every colour used by the page module is a token
     src = Path(__file__).parent / "dashboard.py"
     if src.exists():

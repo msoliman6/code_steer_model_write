@@ -63,6 +63,18 @@ def resume(run: str, mlflow: bool = True) -> None:
     _out(_gw().resume(run, mlflow=mlflow))
 
 
+@app.command("again")
+def run_again(run: str, mlflow: bool = True) -> None:
+    """A new run with the same task, beside this one."""
+    _out(_gw().run_again(run, mlflow=mlflow))
+
+
+@app.command()
+def forget(run: str) -> None:
+    """Stop listing a run; the folder stays."""
+    print(_gw().forget(run))
+
+
 @app.command()
 def logs(run: str, after: int = 0, limit: int = 200) -> None:
     """A page of the event log after sequence `after`."""

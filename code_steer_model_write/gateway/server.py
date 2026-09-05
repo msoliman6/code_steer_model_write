@@ -59,6 +59,16 @@ def build(gateway: Gateway | None = None) -> MCPServer:
         return gw.resume(run)
 
     @srv.tool()
+    def workflow_run_again(run: str) -> RunHandle:
+        """Start a new run with the same task as `run`, beside it, so the two compare like for like."""
+        return gw.run_again(run)
+
+    @srv.tool()
+    def run_forget(run: str) -> str:
+        """Stop listing a run; its folder is never touched. Returns the run dir it stopped listing."""
+        return gw.forget(run)
+
+    @srv.tool()
     def run_list() -> list[dict[str, Any]]:
         """Every run the registry knows, across all runs directories, newest first."""
         return gw.list_runs()

@@ -148,6 +148,20 @@ class Gateway:
         self.registry.register(paths)
         return self.runner.submit(paths, mlflow=mlflow)
 
+    def run_again(self, run: str, *, mlflow: bool = True) -> RunHandle:
+        """The task of `run`, carried unchanged into a new run beside it (the next free `-N`), so
+        a rerun compares like for like (docs/PLAN.md §7d, piece 3)."""
+        paths = self._paths(run)
+        task = json.loads((paths.run_dir / "task.json").read_text())
+        return self.run(task, runs_dir=str(paths.run_dir.parent), mlflow=mlflow)
+
+    def forget(self, run: str) -> str:
+        """The registry stops listing the run; the folder stays (a filesystem decision a person
+        makes). Returns the run dir it forgot."""
+        paths = self._paths(run)
+        self.registry.forget(paths.run_dir)
+        return str(paths.run_dir)
+
     def _paths(self, run: str) -> RunPaths:
         p = Path(run)
         if (p / "state.json").exists():

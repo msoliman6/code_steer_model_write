@@ -20,7 +20,7 @@ from code_steer_model_write.spec.decisions import Decision, GateDecision
 from code_steer_model_write.state.lock import atomic_write_text
 from code_steer_model_write.state.run import RunPaths
 
-from . import theme as T
+from . import home, theme as T
 from .glyphs import side_mark
 from .model import build_view, render_artifact
 from .start import start_page
@@ -62,27 +62,6 @@ def _settings_rows(run_dir: str) -> list["SettingRow"]:
     return rows
 
 
-def _run_dot(d: Path, st: dict[str, Any]) -> tuple[str, str]:
-    """The tab's dot from the run's files: cheap, no events read. Green running, amber waiting
-    for you, red halted or broke, grey done (ringed green when clean, amber when items carried)."""
-    from code_steer_model_write.state.run import RunPaths, runner_alive
-
-    status = st.get("status", "")
-    if status in ("PAUSED", "FAILED", "CANCELLED") or (d / "halt.json").exists():
-        return "halted", ""
-    if status == "RUNNING" and not runner_alive(RunPaths(run_dir=d)):
-        return "halted", ""  # stale: the record says running, the runner is gone
-    if status == "COMPLETED":
-        return "done", ("warn" if st.get("carried") else "ok")
-    gates = d / "gates"
-    if gates.exists() and any(
-        not (gates / (g.name[: -len(".ask.json")] + ".decision.json")).exists()
-        for g in gates.glob("*.ask.json")
-    ):
-        return "waiting", ""
-    return ("running", "") if status == "RUNNING" else ("queued", "")
-
-
 def _registry():
     """The Run Registry (ARCHITECTURE.md L2/L7): one index across every runs directory. This
     page's own runs directory is always registered, so a run started by hand is not lost."""
@@ -110,7 +89,7 @@ def _runs() -> list[dict[str, str]]:
         if not (d / "state.json").exists():
             continue
         st = json.loads((d / "state.json").read_text())
-        dot, ring = _run_dot(d, st)
+        dot, ring = home.run_dot(d, st)
         out.append(
             {
                 "id": st["run_id"],
@@ -287,6 +266,22 @@ class Seg:
 
 
 @dataclasses.dataclass
+class TLRow:
+    step: str = ""
+    kind: str = ""
+    lane: str = "code"
+    color: str = ""  # the lane's colour, resolved in Python (one owner: theme.ACTOR)
+    left: float = 0.0
+    width: float = 0.0
+    call_left: float = 0.0
+    call_width: float = 0.0
+    has_call: bool = False
+    label: str = ""  # tokens in K/M
+    seconds: str = ""
+    done: bool = True
+
+
+@dataclasses.dataclass
 class EventRow:
     seq: int = 0
     time: str = ""
@@ -423,6 +418,8 @@ class S(rx.State):
     steps: list[StepRow] = []
     hidden_runs: str = rx.LocalStorage("[]", name="csmw_hidden_runs")  # closed tabs, this browser
     segments: list[Seg] = []
+    timeline: list[TLRow] = []  # §7d piece 2
+    tl_total: str = ""
     events: list[EventRow] = []
     carried: list[CarriedRow] = []
     model_rows: list[ModelRow] = []
@@ -493,6 +490,26 @@ class S(rx.State):
                 kind=sg["kind"],
             )
             for sg in d["segments"]
+        ]
+        tl = d.get("timeline", [])
+        span = max([r["end"] for r in tl] + [1.0])
+        self.tl_total = _fmt_secs(span)
+        self.timeline = [
+            TLRow(
+                step=r["step"],
+                kind=r["kind"],
+                lane=r["lane"],
+                color=T.ACTOR.get(r["lane"], T.ACTOR["code"]),
+                left=round(100 * r["start"] / span, 2),
+                width=max(0.4, round(100 * (r["end"] - r["start"]) / span, 2)),
+                call_left=round(100 * (r["call_start"] or 0) / span, 2),
+                call_width=max(0.4, round(100 * ((r["call_end"] or 0) - (r["call_start"] or 0)) / span, 2)),
+                has_call=r["call_start"] is not None,
+                label=T.k(r["tokens"]) if r["tokens"] else "",
+                seconds=_fmt_secs(r["end"] - r["start"]),
+                done=bool(r["done"]),
+            )
+            for r in tl
         ]
         self.events = [
             EventRow(**{f.name: e[f.name] for f in dataclasses.fields(EventRow)}) for e in d["events"]
@@ -786,16 +803,18 @@ class S(rx.State):
 
     @rx.event
     def resume_run(self):
-        """A stale or halted run continues from disk in a detached `csmw resume`."""
-        import subprocess
-        import sys
+        """A stale or halted run continues from disk through the Gateway (L2): the same detached
+        runner the CLI and the MCP server use, tracing on."""
+        _gateway().resume(self.run_dir)
 
-        subprocess.Popen(
-            [sys.executable, "-m", "code_steer_model_write.cli", "resume", self.run_dir, "--no-mlflow"],
-            stdout=(Path(self.run_dir) / "runner.log").open("a"),
-            stderr=subprocess.STDOUT,
-            start_new_session=True,
-        )
+    @rx.event
+    def run_again(self):
+        """§7d piece 3: the task carried unchanged into a new run beside this one."""
+        h = _gateway().run_again(self.run_dir)
+        self.run_dir = h.run_dir
+        self.picked = ""
+        self.hash_ = ""
+        self.load_runs()
 
     @rx.event
     def stop_run(self):
@@ -817,6 +836,21 @@ class S(rx.State):
             self.view_tab = "evidence"
             self.detail_full = True
         return None
+
+
+def _gateway():
+    from code_steer_model_write.gateway.api import Gateway
+
+    return Gateway()
+
+
+def _fmt_secs(x: float) -> str:
+    x = int(x)
+    return (
+        f"{x}s"
+        if x < 60
+        else (f"{x // 60}:{x % 60:02d}" if x < 3600 else f"{x // 3600}h{(x % 3600) // 60:02d}")
+    )
 
 
 # ---- styles --------------------------------------------------------------------------------
@@ -1519,6 +1553,78 @@ def lane_row(lane: str) -> rx.Component:
     )
 
 
+def timeline_row(r: TLRow) -> rx.Component:
+    """§7d piece 2: the step's bar in its lane's colour, the model call a darker segment inside
+    it, the key at the left and the tokens at the right. Overlapping rows are the parallel build."""
+    color = r.color
+    return rx.hstack(
+        rx.text(
+            r.step,
+            **MONO,
+            color=T.MUTED,
+            font_size=SMALL,
+            width="176px",
+            min_width="176px",
+            white_space="nowrap",
+            overflow="hidden",
+            text_overflow="ellipsis",
+            title=f"{r.kind} · {r.seconds}",
+        ),
+        rx.box(
+            rx.box(
+                position="absolute",
+                left=f"{r.left}%",
+                width=f"{r.width}%",
+                height="10px",
+                top="3px",
+                background=color,
+                opacity=rx.cond(r.done, "0.55", "0.35"),
+                border_radius="2px",
+            ),
+            rx.cond(
+                r.has_call,
+                rx.box(
+                    position="absolute",
+                    left=f"{r.call_left}%",
+                    width=f"{r.call_width}%",
+                    height="10px",
+                    top="3px",
+                    background=color,
+                    border_radius="2px",
+                    title="the model call",
+                ),
+                rx.fragment(),
+            ),
+            position="relative",
+            height="16px",
+            width="100%",
+            background=T.SUBCARD,
+            border_radius="3px",
+        ),
+        rx.text(
+            r.seconds,
+            **MONO,
+            color=T.DIM,
+            font_size=SMALL,
+            width="52px",
+            min_width="52px",
+            text_align="right",
+        ),
+        rx.text(
+            r.label,
+            **MONO,
+            color=T.MUTED,
+            font_size=SMALL,
+            width="56px",
+            min_width="56px",
+            text_align="right",
+        ),
+        width="100%",
+        align="center",
+        spacing="2",
+    )
+
+
 def event_row(e: EventRow) -> rx.Component:
     return rx.hstack(
         rx.text(e.time, **MONO, color=T.DIM, min_width="44px"),
@@ -1546,6 +1652,18 @@ def evidence() -> rx.Component:
             rx.text(f"The whole run · {S.elapsed}", **MONO, color=T.MUTED, font_size=SMALL),
             width="100%",
             padding_top=T.SPACE["sm"],
+        ),
+        rx.el.details(
+            rx.el.summary(
+                rx.text(
+                    f"STEP TIMELINE · {S.timeline.length()} · {S.tl_total}",
+                    **{**EYEBROW, "color": T.DIM},
+                    display="inline",
+                )
+            ),
+            rx.vstack(rx.foreach(S.timeline, timeline_row), spacing="0", width="100%", padding_top="6px"),
+            id="run-timeline",
+            open=True,
         ),
         rx.el.details(
             rx.el.summary(
@@ -1766,7 +1884,7 @@ NAV = [
     ("settings", "Settings"),
     ("providers", "Providers"),
 ]
-NAV_LINKS = [("new", "New run", "/new")]
+NAV_LINKS = [("runs", "Runs", "/"), ("new", "New run", "/new")]
 
 
 def nav_row(key: str, label: str, *, active_key=None, href: str | None = None) -> rx.Component:
@@ -1821,7 +1939,7 @@ def brand() -> rx.Component:
 def sidebar(active: str | None = None) -> rx.Component:
     """The shell's left column: the brand, the views of a run, then the links (New run)."""
     # on the run page the view rows switch the view in place; on any other page they link home
-    rows = [nav_row(k, v, active_key=active, href="/") if active else nav_row(k, v) for k, v in NAV]
+    rows = [nav_row(k, v, active_key=active, href="/run") if active else nav_row(k, v) for k, v in NAV]
     rows += [nav_row(k, v, active_key=active or "", href=h) for k, v, h in NAV_LINKS]
     return rx.vstack(
         brand(),
@@ -1882,6 +2000,18 @@ def bottom_bar() -> rx.Component:
         rx.cond(
             S.control == "broke",
             rx.link("New run like this ▸", href="/new", **MONO, font_size=SMALL, color=T.TEXT),
+            rx.fragment(),
+        ),
+        rx.cond(
+            (S.control == "done") | (S.control == "halted") | (S.control == "stale") | (S.control == "broke"),
+            rx.button(
+                "run again",
+                size="1",
+                variant="soft",
+                color_scheme="gray",
+                title="the same task, a new run beside this one",
+                on_click=S.run_again,
+            ),
             rx.fragment(),
         ),
         run_control_button(),
@@ -1980,11 +2110,432 @@ def index() -> rx.Component:
     )
 
 
+# ---- the home: every run (§7d piece 1), the trends (piece 4) --------------------------------
+
+
+@dataclasses.dataclass
+class HomeRowV:
+    id: str = ""
+    recipe: str = ""
+    bucket: str = ""
+    verdict: str = ""
+    steps: str = ""
+    elapsed: str = ""
+    tokens: str = ""
+    cost: str = ""
+    started: str = ""
+    dir: str = ""
+    dot: str = "queued"
+    ring: str = ""
+    pass_rate: str = ""
+    null_fail_rate: str = ""
+    carried_findings: str = ""
+    rounds_to_converge: str = ""
+    refused_answers: str = ""
+    can_stop: bool = False
+    can_resume: bool = False
+    is_done: bool = False
+
+
+HOME_COLUMNS = [  # key, label, width; the workflow rides in the run cell as on the tab strip
+    ("id", "run", "196px"),
+    ("status", "status", "90px"),
+    ("verdict", "verdict", "minmax(170px, 1fr)"),
+    ("steps", "steps", "52px"),
+    ("elapsed", "time", "52px"),
+    ("tokens", "tokens", "58px"),
+    ("cost", "cost", "58px"),
+    ("pass_rate", "pass", "44px"),
+    ("null_fail_rate", "null", "44px"),
+    ("carried_findings", "carried", "74px"),
+    ("rounds_to_converge", "rounds", "66px"),
+    ("refused_answers", "refused", "74px"),
+    ("started", "started", "96px"),
+]
+HOME_GRID = " ".join(w for _, _, w in HOME_COLUMNS) + " 196px"
+HOME_MIN_W = "1200px"  # below this the card scrolls sideways, like a browser's table; nothing wraps
+
+
+class H(rx.State):
+    """The home's state: the rows from the registry (the one owner), the filters, the sort, the
+    counters and the trends, every one a pure function in `dashboard/home.py`."""
+
+    rows: list[HomeRowV] = []
+    total: int = 0
+    n_running: int = 0
+    n_completed: int = 0
+    n_halted: int = 0
+    n_failed: int = 0
+    status: str = "all"
+    recipe: str = "all"
+    recipes: list[str] = []
+    query: str = ""
+    sort_key: str = "started"
+    sort_desc: bool = True
+    trend: list[dict[str, Any]] = []
+    trend_recipe: str = ""
+    note: str = ""
+
+    def _reload(self) -> None:
+        all_rows = home.rows(_registry())
+        c = home.counters(all_rows)
+        self.total, self.n_running, self.n_completed = c["all"], c["running"], c["completed"]
+        self.n_halted, self.n_failed = c["halted"] + c["stale"], c["failed"]
+        self.recipes = home.recipes(all_rows)
+        shown = home.sorted_rows(
+            home.filtered(all_rows, status=self.status, recipe=self.recipe, query=self.query),
+            self.sort_key,
+            self.sort_desc,
+        )
+        self.rows = [
+            HomeRowV(
+                id=r.id,
+                recipe=r.recipe,
+                bucket=r.bucket,
+                verdict=r.verdict or (r.halt if r.bucket in ("halted", "failed") else ""),
+                steps=r.steps,
+                elapsed=r.elapsed,
+                tokens=r.tokens_label,
+                cost=r.cost,
+                started=r.started,
+                dir=r.dir,
+                dot=r.dot,
+                ring=r.ring,
+                pass_rate=r.evals.get("pass_rate", ""),
+                null_fail_rate=r.evals.get("null_fail_rate", ""),
+                carried_findings=r.evals.get("carried_findings", ""),
+                rounds_to_converge=r.evals.get("rounds_to_converge", ""),
+                refused_answers=r.evals.get("refused_answers", ""),
+                can_stop=r.bucket == "running",
+                can_resume=r.bucket in ("halted", "stale"),
+                is_done=r.bucket in ("completed", "failed", "halted", "stale"),
+            )
+            for r in shown
+        ]
+        tr = self.recipe if self.recipe != "all" else (self.recipes[0] if self.recipes else "")
+        if self.recipes and tr not in self.recipes:
+            tr = self.recipes[0]
+        self.trend_recipe = tr
+        self.trend = home.trends(all_rows, tr) if tr else []
+
+    @rx.event
+    def load(self):
+        self._reload()
+
+    @rx.event(background=True)
+    async def poll(self):
+        while True:
+            await asyncio.sleep(T.POLL_SECONDS)
+            async with self:
+                self._reload()
+
+    @rx.event
+    def set_status(self, v: str):
+        self.status = v
+        self._reload()
+
+    @rx.event
+    def set_recipe(self, v: str):
+        self.recipe = v
+        self._reload()
+
+    @rx.event
+    def set_query(self, v: str):
+        self.query = v
+        self._reload()
+
+    @rx.event
+    def sort_by(self, key: str):
+        if key == self.sort_key:
+            self.sort_desc = not self.sort_desc
+        else:
+            self.sort_key, self.sort_desc = key, key in ("started", "tokens", "elapsed", "cost")
+        self._reload()
+
+    @rx.event
+    async def open(self, run_dir: str):
+        s = await self.get_state(S)
+        s.run_dir, s.picked, s.hash_ = run_dir, "", ""
+        return rx.redirect("/run")
+
+    def _act(self, verb: str, run_dir: str) -> None:
+        gw = _gateway()
+        try:
+            if verb == "stop":
+                gw.cancel(run_dir)
+            elif verb == "pause":
+                gw.pause(run_dir)
+            elif verb == "resume":
+                gw.resume(run_dir)
+            elif verb == "again":
+                h = gw.run_again(run_dir)
+                self.note = f"started {h.run_id}"
+            elif verb == "forget":
+                gw.forget(run_dir)
+        except Exception as e:  # noqa: BLE001 -- the reason is shown, never swallowed
+            self.note = f"{verb}: {type(e).__name__}: {e}"
+        self._reload()
+
+    @rx.event
+    def act(self, verb: str, run_dir: str):
+        self._act(verb, run_dir)
+
+
+def home_counter(label: str, n, color) -> rx.Component:
+    return rx.vstack(
+        rx.text(n, **MONO, font_size="22px", font_weight="700", color=color, line_height="1"),
+        rx.text(label, **EYEBROW),
+        spacing="1",
+        align="start",
+        **SUBCARD,
+        min_width="120px",
+    )
+
+
+def home_head_cell(key: str, label: str) -> rx.Component:
+    active = H.sort_key == key
+    return rx.text(
+        rx.cond(active, rx.cond(H.sort_desc, f"{label} ▾", f"{label} ▴"), label),
+        **{k: v for k, v in EYEBROW.items() if k != "color"},
+        color=rx.cond(active, T.TEXT, T.MUTED),
+        cursor="pointer",
+        white_space="nowrap",
+        overflow="hidden",
+        text_overflow="ellipsis",
+        on_click=H.sort_by(key),
+    )
+
+
+def home_action(label: str, verb: str, r, *, show) -> rx.Component:
+    return rx.cond(
+        show,
+        rx.text(
+            label,
+            **MONO,
+            font_size=SMALL,
+            color=T.MUTED,
+            cursor="pointer",
+            _hover={"color": T.TEXT},
+            on_click=H.act(verb, r.dir).stop_propagation,
+        ),
+        rx.fragment(),
+    )
+
+
+def home_row(r: HomeRowV) -> rx.Component:
+    def cell(v, **kw) -> rx.Component:
+        style = {"font_size": SMALL, "color": T.MUTED, **kw}
+        return rx.text(v, **MONO, white_space="nowrap", overflow="hidden", text_overflow="ellipsis", **style)
+
+    return rx.grid(
+        rx.hstack(
+            status_dot(r.dot, r.ring),
+            cell(r.id, color=T.TEXT, font_size=BODY, flex_shrink="0"),
+            cell(r.recipe, color=T.DIM, min_width="0"),
+            spacing="2",
+            align="center",
+            min_width="0",
+        ),
+        pill(
+            r.bucket,
+            rx.match(
+                r.bucket,
+                ("running", "ok"),
+                ("completed", "ok"),
+                ("halted", "warn"),
+                ("stale", "warn"),
+                ("failed", "bad"),
+                "neutral",
+            ),
+        ),
+        cell(r.verdict, color=T.MUTED, title=r.verdict),
+        cell(r.steps, color=T.MUTED),
+        cell(r.elapsed, color=T.MUTED),
+        cell(r.tokens, color=T.MUTED),
+        cell(r.cost, color=T.MUTED),
+        cell(r.pass_rate, color=T.MUTED),
+        cell(r.null_fail_rate, color=T.MUTED),
+        cell(r.carried_findings, color=T.MUTED),
+        cell(r.rounds_to_converge, color=T.MUTED),
+        cell(r.refused_answers, color=T.MUTED),
+        cell(r.started, color=T.DIM),
+        rx.hstack(
+            home_action("stop", "stop", r, show=r.can_stop),
+            home_action("pause", "pause", r, show=r.can_stop),
+            home_action("resume", "resume", r, show=r.can_resume),
+            home_action("again", "again", r, show=r.is_done),
+            home_action("remove", "forget", r, show=r.is_done),
+            spacing="3",
+            justify="end",
+            width="100%",
+        ),
+        grid_template_columns=HOME_GRID,
+        align_items="center",
+        gap="10px",
+        width="100%",
+        min_width=HOME_MIN_W,
+        padding="8px 10px",
+        border_bottom=f"1px solid {T.BORDER}",
+        cursor="pointer",
+        _hover={"background": T.SUBCARD},
+        on_click=H.open(r.dir),
+    )
+
+
+def home_filter_chip(label: str, value: str, current, on_click) -> rx.Component:
+    return rx.button(
+        label,
+        size="1",
+        color_scheme="gray",
+        variant=rx.cond(current == value, "solid", "soft"),
+        on_click=on_click,
+    )
+
+
+def trend_chart(metric: str, label: str, color: str) -> rx.Component:
+    return rx.vstack(
+        rx.text(label, **EYEBROW),
+        rx.recharts.line_chart(
+            rx.recharts.line(
+                data_key=metric, stroke=color, dot=False, stroke_width=2, is_animation_active=False
+            ),
+            rx.recharts.y_axis(hide=True),
+            rx.recharts.x_axis(data_key="run", hide=True),
+            rx.recharts.tooltip(),
+            data=H.trend,
+            height=70,
+            width="100%",
+            margin={"top": 4, "right": 4, "bottom": 0, "left": 4},
+        ),
+        spacing="1",
+        align="start",
+        **SUBCARD,
+        flex="1",
+        min_width="0",
+    )
+
+
+def home_page() -> rx.Component:
+    return rx.hstack(
+        sidebar(active="runs"),
+        rx.box(
+            rx.vstack(
+                rx.hstack(
+                    home_counter("running", H.n_running, T.OK),
+                    home_counter("completed", H.n_completed, T.TEXT),
+                    home_counter("halted", H.n_halted, T.WARN),
+                    home_counter("failed", H.n_failed, T.BAD),
+                    rx.spacer(),
+                    rx.link(
+                        rx.button("New run ▸", size="2", variant="soft", color_scheme="gray"), href="/new"
+                    ),
+                    spacing="3",
+                    align="center",
+                    width="100%",
+                ),
+                rx.cond(
+                    H.trend.length() > 1,
+                    rx.box(
+                        eyebrow(
+                            "TRENDS",
+                            rx.text(f"{H.trend_recipe} · last {H.trend.length()} runs with evals", **EYEBROW),
+                        ),
+                        rx.hstack(
+                            trend_chart("pass_rate", "pass rate", T.OK),
+                            trend_chart("null_fail_rate", "null-fail rate", T.ACTOR["b"]),
+                            trend_chart("carried_findings", "carried", T.WARN),
+                            trend_chart("rounds_to_converge", "rounds", T.ACTOR["a"]),
+                            trend_chart("refused_answers", "refused", T.BAD),
+                            spacing="3",
+                            width="100%",
+                        ),
+                        **CARD,
+                    ),
+                    rx.fragment(),
+                ),
+                rx.box(
+                    eyebrow(
+                        "RUNS",
+                        rx.hstack(
+                            rx.input(
+                                placeholder="search",
+                                value=H.query,
+                                on_change=H.set_query,
+                                size="1",
+                                width="180px",
+                            ),
+                            rx.foreach(
+                                ["all", "running", "completed", "halted", "failed"],
+                                lambda v: home_filter_chip(v, v, H.status, H.set_status(v)),
+                            ),
+                            rx.cond(
+                                H.recipes.length() > 1,
+                                rx.hstack(
+                                    home_filter_chip("every workflow", "all", H.recipe, H.set_recipe("all")),
+                                    rx.foreach(
+                                        H.recipes, lambda v: home_filter_chip(v, v, H.recipe, H.set_recipe(v))
+                                    ),
+                                    spacing="1",
+                                ),
+                                rx.fragment(),
+                            ),
+                            spacing="1",
+                            align="center",
+                        ),
+                    ),
+                    rx.grid(
+                        *[home_head_cell(k, lbl) for k, lbl, _ in HOME_COLUMNS],
+                        rx.text("", **EYEBROW),
+                        grid_template_columns=HOME_GRID,
+                        gap="10px",
+                        width="100%",
+                        min_width=HOME_MIN_W,
+                        padding="6px 10px",
+                        border_bottom=f"1px solid {T.BORDER_STRONG}",
+                    ),
+                    rx.cond(
+                        H.rows.length() > 0,
+                        rx.vstack(rx.foreach(H.rows, home_row), spacing="0", width="100%"),
+                        rx.text("No runs match.", color=T.DIM, padding="12px 10px"),
+                    ),
+                    rx.text(
+                        rx.cond(
+                            H.note != "", H.note, f"{H.rows.length()} of {H.total} runs · costs at API rates"
+                        ),
+                        **MONO,
+                        color=T.DIM,
+                        font_size=SMALL,
+                        padding_top="8px",
+                    ),
+                    **CARD,
+                    overflow_x="auto",
+                ),
+                spacing="4",
+                width="100%",
+                padding=T.SPACE["lg"],
+            ),
+            flex="1",
+            width="100%",
+            overflow_y="auto",
+            min_height="100vh",
+        ),
+        spacing="0",
+        align="start",
+        width="100%",
+        background=T.SURFACE,
+        color=T.TEXT,
+        font_family=T.SANS,
+        font_size=BODY,
+        on_mount=[H.load, H.poll],
+    )
+
+
 app = rx.App(
     theme=rx.theme(appearance="dark", gray_color="slate"),
     # the browser-tab icon is the same PNG as the brand tile, so the two can never differ in colour;
     # the query string retires the icon a browser cached before the mark was recoloured
     head_components=[rx.el.link(rel="icon", type="image/png", href="/logo-64.png?v=3")],
 )
-app.add_page(index, route="/", title="csmw")
+app.add_page(home_page, route="/", title="csmw · runs")
+app.add_page(index, route="/run", title="csmw")
 app.add_page(start_page, route="/new", title="csmw · new run")

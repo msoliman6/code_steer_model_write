@@ -470,15 +470,45 @@ def leg_gateway_drives_a_run(tmp: Path) -> str:
                 st["cancelled_then_resumed"] = (
                     False  # the run outran the cancel; the tool still answered honestly
                 )
+            # §7d: run again carries the task unchanged; forget stops the listing, keeps the folder
+            h3 = (await c.call_tool("workflow_run_again", {"run": h["run_dir"]})).structured_content
+            assert h3["run_dir"] != h["run_dir"] and h3["run_id"].startswith("gw"), h3
+            t_a = json.loads((Path(h["run_dir"]) / "task.json").read_text())
+            t_b = json.loads((Path(h3["run_dir"]) / "task.json").read_text())
+            assert {k for k in t_a if t_a[k] != t_b.get(k)} <= {"task_id"}, (
+                "run again changed more than the id"
+            )
+            await c.call_tool("workflow_cancel", {"run": h3["run_dir"]})
+            gone = (await c.call_tool("run_forget", {"run": h2["run_dir"]})).structured_content["result"]
+            runs = (await c.call_tool("run_list", {})).structured_content["result"]
+            assert Path(gone, "state.json").exists() and all(r["run_dir"] != gone for r in runs), runs
+            st["again"] = h3["run_id"]
             return st
 
     st = asyncio.run(drive())
+    # the home page reads the same registry through the same reader the page uses (§7d); the
+    # page is the runtime repo's own package, so a walk from a project venv skips this and says so
+    try:
+        from dashboard import home as _home
+    except ImportError:
+        home_note = "home reader not installed here"
+    else:
+        rows = _home.rows(gw.registry)
+        mine = [r for r in rows if r.dir == str((tmp / "run").resolve())]  # the registry's form
+        assert mine and mine[0].bucket == "completed" and mine[0].verdict == st["verdict"], [
+            r.dir for r in rows
+        ]
+        assert mine[0].steps_done == st["steps_done"] and mine[0].eval_values, mine[0]
+        assert _home.counters(rows)["all"] == len(rows) and str((tmp / "run2").resolve()) not in {
+            r.dir for r in rows
+        }
+        home_note = "listed on the home"
     cr = (
         "cancelled at a step boundary and resumed once"
         if st.get("cancelled_then_resumed")
         else "the second run outran the cancel"
     )
-    return f"run through the gateway: {st['steps_done']}/{st['steps_total']} steps · {st['verdict']} · logs paged by seq · {cr}"
+    return f"run through the gateway: {st['steps_done']}/{st['steps_total']} steps · {st['verdict']} · logs paged by seq · {cr} · {st['again']} run again · gw2 forgotten · {home_note}"
 
 
 def leg_budget_halts_then_resumes(tmp: Path) -> str:
