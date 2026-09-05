@@ -3,114 +3,58 @@
 <img src="docs/media/banner.svg" alt="Code steers, models write" width="720">
 </picture></p>
 
-<p align="center"><b>Code steers, models write: a template for agentic AI workflows that are versatile, reliable and fast to start.</b></p>
+<p align="center"><b>Code steers, models write: the runtime beneath a production-grade agentic workflow.</b><br>Ten layers, each behind a seam with one production-grade package. A workflow is declared as data and runs on it; code decides every step, a model only ever answers.<br>Proven live, end to end, by the <a href="https://github.com/msoliman6/csmw_coder">csmw coder</a>: two model sides of different vendors building a Python module, with tests, on their own logins.</p>
 
 <p align="center">
+<a href="https://reflex.dev/"><img alt="UI: Reflex" src="https://img.shields.io/badge/UI-Reflex-5646ED?style=flat-square&logo=reflex&logoColor=white"></a>
+<a href="https://jinja.palletsprojects.com/"><img alt="pages: Jinja2" src="https://img.shields.io/badge/pages-Jinja2-B41717?style=flat-square&logo=jinja&logoColor=white"></a>
+<a href="https://docs.pydantic.dev/"><img alt="schemas: pydantic v2" src="https://img.shields.io/badge/schemas-pydantic%20v2-E92063?style=flat-square&logo=pydantic&logoColor=white"></a>
+<a href="https://modelcontextprotocol.io/"><img alt="gateway: MCP SDK" src="https://img.shields.io/badge/gateway-MCP%20SDK-30363d?style=flat-square"></a>
+<a href="https://typer.tiangolo.com/"><img alt="CLI: Typer" src="https://img.shields.io/badge/CLI-Typer-1f6feb?style=flat-square"></a>
+<a href="https://www.sqlite.org/"><img alt="run registry: SQLite" src="https://img.shields.io/badge/run%20registry-SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white"></a>
+<a href="https://www.prefect.io/"><img alt="runner: Prefect 3" src="https://img.shields.io/badge/runner-Prefect%203-d04a45?style=flat-square&logo=prefect&logoColor=white"></a>
+<a href="https://docs.anthropic.com/en/docs/claude-code"><img alt="author: Claude Code" src="https://img.shields.io/badge/author-Claude%20Code-d97757?style=flat-square"></a>
+<a href="https://github.com/openai/codex"><img alt="checker: OpenAI Codex" src="https://img.shields.io/badge/checker-OpenAI%20Codex-10a37f?style=flat-square"></a>
+<a href="https://ai.pydantic.dev/"><img alt="API path: PydanticAI" src="https://img.shields.io/badge/API%20path-PydanticAI-E92063?style=flat-square&logo=pydantic&logoColor=white"></a>
+<a href="https://docs.docker.com/engine/api/sdk/"><img alt="sandbox: Docker SDK" src="https://img.shields.io/badge/sandbox-Docker%20SDK-2496ED?style=flat-square&logo=docker&logoColor=white"></a>
+<a href="https://github.com/abiosoft/colima"><img alt="engine: Colima" src="https://img.shields.io/badge/engine-Colima-2496ED?style=flat-square"></a>
+<a href="https://git-scm.com/"><img alt="tool: git" src="https://img.shields.io/badge/tool-git-F05032?style=flat-square&logo=git&logoColor=white"></a>
+<a href="https://docs.pytest.org/"><img alt="verification: pytest" src="https://img.shields.io/badge/verification-pytest-0A9EDC?style=flat-square&logo=pytest&logoColor=white"></a>
+<a href="https://docs.astral.sh/ruff/"><img alt="check: ruff" src="https://img.shields.io/badge/check-ruff-D7FF64?style=flat-square&logo=ruff&logoColor=black"></a>
+<a href="https://github.com/microsoft/pyright"><img alt="check: pyright" src="https://img.shields.io/badge/check-pyright-9a6ee0?style=flat-square"></a>
+<a href="https://developmentseed.org/obstore/"><img alt="artifacts: obstore" src="https://img.shields.io/badge/artifacts-obstore-003B57?style=flat-square"></a>
+<a href="https://mlflow.org/"><img alt="traces & evals: MLflow 3" src="https://img.shields.io/badge/traces%20%26%20evals-MLflow%203-2fa39a?style=flat-square&logo=mlflow&logoColor=white"></a>
+<a href="https://opentelemetry.io/docs/specs/semconv/gen-ai/"><img alt="names: OpenTelemetry" src="https://img.shields.io/badge/names-OpenTelemetry-425CC7?style=flat-square&logo=opentelemetry&logoColor=white"></a>
+<a href="https://www.cedarpolicy.com/"><img alt="authorization: Cedar" src="https://img.shields.io/badge/authorization-Cedar-5a4fcf?style=flat-square"></a>
+<a href="https://www.guardrailsai.com/"><img alt="guardrails: Guardrails AI" src="https://img.shields.io/badge/guardrails-Guardrails%20AI-1f6feb?style=flat-square"></a>
 <a href="LICENSE"><img alt="license: MIT" src="https://img.shields.io/badge/license-MIT-bb8009?style=flat-square"></a>
 <a href="https://www.python.org/"><img alt="python: 3.11+" src="https://img.shields.io/badge/python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white"></a>
-</p>
-<p align="center">
 <a href="https://docs.anthropic.com/en/docs/claude-code"><img alt="Claude Code: author" src="https://img.shields.io/badge/Claude_Code-author-d97757?style=flat-square"></a>
 <a href="https://openai.com/codex/"><img alt="OpenAI Codex: adversarial checker" src="https://img.shields.io/badge/OpenAI_Codex-adversarial%20checker-10a37f?style=flat-square"></a>
 </p>
 
-<p align="center"><a href="#the-14-universal-rules">The 14 rules</a> · <a href="#workflow">Workflow</a> · <a href="#execution-layers-and-governance-planes">The layers</a> · <a href="#install">Install</a> · <a href="#first-run">First run</a> · <a href="#settings-you-choose-once">Settings</a> · <a href="#read-more">Read more</a></p>
+<p align="center"><a href="#a-production-grade-agentic-workflow">The layers</a> · <a href="#the-fourteen-rules">The fourteen rules</a> · <a href="#what-is-in-the-box">What is in the box</a> · <a href="#install">Install</a> · <a href="#first-run">First run</a> · <a href="#build-your-own-workflow">Build your own workflow</a> · <a href="#license">License</a></p>
 
 <p align="center">
 <a href="docs/PLAN.md"><img alt="docs: the plan" src="https://img.shields.io/badge/docs-the%20plan-30363d?style=flat-square"></a>
 <a href="docs/QUICKSTART.md"><img alt="docs: quick start" src="https://img.shields.io/badge/docs-quick%20start-30363d?style=flat-square"></a>
 <a href="docs/HACKATHON-30MIN.md"><img alt="docs: hackathon in 30 min" src="https://img.shields.io/badge/docs-hackathon%20in%2030%20min-30363d?style=flat-square"></a>
-<a href="docs/ADD-A-RECIPE.md"><img alt="docs: add a recipe" src="https://img.shields.io/badge/docs-add%20a%20recipe-30363d?style=flat-square"></a>
-<a href="docs/DASHBOARD-DESIGN.md"><img alt="docs: dashboard design" src="https://img.shields.io/badge/docs-dashboard%20design-30363d?style=flat-square"></a>
+<a href="docs/ADD-A-RECIPE.md"><img alt="docs: add a workflow" src="https://img.shields.io/badge/docs-add%20a%20workflow-30363d?style=flat-square"></a>
+<a href="docs/DASHBOARD-DESIGN.md"><img alt="docs: the page's design" src="https://img.shields.io/badge/docs-the%20page%27s%20design-30363d?style=flat-square"></a>
+<a href="docs/BUG-LEDGER.md"><img alt="docs: the bug ledger" src="https://img.shields.io/badge/docs-the%20bug%20ledger-30363d?style=flat-square"></a>
 </p>
 
 <p align="center"><i>Independent open-source project. Not affiliated with or endorsed by Anthropic or OpenAI.<br>Claude and Claude Code are trademarks of Anthropic; Codex and GPT are trademarks of OpenAI. Prefect, MLflow, Reflex, PydanticAI, pydantic, Guardrails AI, Cedar, Docker, Colima, obstore, Typer, Jinja2, SQLite, OpenTelemetry, the Model Context Protocol, ruff, pyright and pytest belong to their owners.</i></p>
 
-## The 14 universal rules
+## A production-grade agentic workflow
 
-1. **Code controls the workflow end to end.** Sequencing, the next step, whether a step counts,
-   every file write, every check run. Models only fill schemas.
-2. **Agents read markdown rendered by code from JSON, and write only schema-constrained JSON.**
-   No tools, files or shell unless the task needs them, and then only inside the folder the
-   agent writes its output to (that folder is the sandbox root).
-3. **No agent grades its own work.** The checker gets a frozen copy, and a different vendor
-   where possible.
-4. **One owner per fact, everything else derives.** The pydantic class owns the shape; JSON
-   owns the content and markdown is a view; one gate record feeds every renderer.
-5. **Every element has a code-assigned id, never renumbered.** Findings cite ids, so coverage
-   is a set difference, not a judgment.
-6. **Nothing is recorded from a refused answer.** Stage → check → atomic replace. A refusal is
-   re-asked with the exact problems and the refused answer, bounded, stopping when the problem
-   set repeats.
-7. **The verification ladder.** Code checks first, an AI judge only where no field can answer,
-   a human only for a value only they have or a judgment only they can make. Verdicts are
-   graded severities, never booleans.
-8. **Every loop is bounded by code and carries its full trajectory verbatim.** Convergence is
-   computed, not asked. The unresolved is carried into the report, never hidden. The last
-   revision always gets a closing read.
-9. **No step is issued with nothing to do.** Zero findings → no arbitration; zero questions →
-   no gate.
-10. **One append-only event log, written as a side effect of the work.** Two signals side by
-    side: did the process run, is the product right. Halts are reports, resume comes from disk,
-    exit codes are honest (0 done, 1 record, 2 refusal).
-11. **Human attention is the scarcest resource.** Batch questions, confirm by exception,
-    pre-fill defaults, a mode dial whose auto-answers are flagged, never let waiting look like
-    silence.
-12. **Prove it offline first.** Fake models walk every branch with zero tokens before any live
-    run. A check that never runs is not a check.
-13. **Prompts are code-filled templates, not skills.** A missing key refuses before a token is
-    spent. Tool denial is stated as fact in the prompt and enforced by the runtime.
-14. **Cost is a design axis.** No unused tools, thinking off where a check catches every
-    mistake, calls batched, tokens as the honest measure.
+<p><i>Execution layers and governance planes</i></p>
 
-## This is a template, not a project
-
-Do not build a specific workflow inside this repository. It holds the runtime, the recipes and
-the rules; a project is a **separate repo** scaffolded from it:
-
-```bash
-copier copy gh:<you>/code_steer_model_write ../my-workflow    # a new repo outside this one
-cd ../my-workflow && csmw doctor
-```
-
-Your workflow's brief, task specs, prompts, fixtures and runs live there. Changes that belong
-to everyone -- a new recipe, a fixed check, a better renderer -- come back here as a commit;
-`copier update` carries them into every project.
-
-## What it is
-
-A Python package (`code_steer_model_write`, CLI `csmw`) plus workflows. A **workflow** declares
-itself as data: stages, who authors and who checks each one, the pydantic schema every model
-answer must fit, the code checks, the human gates, the evaluations. A coded driver derives the
-next step from disk and runs it, resumable, with one append-only event log; ten layers sit
-around that loop, each behind a seam with one tool chosen for it (the table below). One `ask()`
-fronts every model call; behind it PydanticAI (Anthropic and OpenAI through it), the `claude`
-and `codex` CLIs on their logins, and a fake backend that walks the whole pipeline offline with
-zero tokens.
-
-Workflows in the box: **code-builder** (plan → contract → freeze → tests by one model, source by
-the other, side by side → null run → verify → triage; walked offline on 10 legs, proven live on
-`claude -p` + `codex exec` through every layer) and **debate** (hypotheses → support vs challenge
-→ rebuttal by id → a fresh judge on a rubric; walked offline, unproven live). The architecture
-these layers implement is the parent repository, `production_agentic_workflow`.
-
-The workflow diagram is generated from the code so it cannot drift from it (`just figure`):
-
-## Workflow
-
-The block diagram of the workflow itself, generated from the recipe (`csmw figure code_builder`):
-what each stage does, who writes and who attacks, where code freezes, merges and runs.
-
-<p align="center"><picture>
-<source media="(prefers-color-scheme: dark)" srcset="docs/media/workflow-dark.svg">
-<img src="docs/media/workflow.svg" alt="How the code-builder workflow operates" width="820">
-</picture></p>
-
-## Execution layers and governance planes
-
-Any workflow the runtime runs sits on seven execution layers and three cross-cutting planes,
-each behind a seam with one production tool chosen for it. Every choice is free, self-hosted and
-a Python SDK; the offline walk proves every layer with fake models before any live run.
+Any workflow this runtime runs sits on seven execution layers and three cross-cutting planes,
+each behind a seam with one production-grade package chosen for it: free, self-hosted, a Python
+SDK, the same tool the platforms ship. The ten came out of reading what Anthropic, OpenAI,
+Google, Microsoft, AWS, Palantir and IBM publish about their agent platforms, and the papers and
+standards behind them; the second table says what each layer rests on, with the sources.
 
 <p align="center"><picture>
 <source media="(prefers-color-scheme: dark)" srcset="docs/media/layers-dark.svg">
@@ -200,45 +144,111 @@ Industry platforms and guides
 
 </details>
 
-Every subsystem receives the same run id, and the page joins on it:
 
-```text
-run id
-   |
-   +-- Prefect ------> what is executing?
-   +-- MLflow -------> what did the models do, at what cost, how well?
-   +-- the registry -> which runs exist, where, in what state?
-   +-- the run folder -> the record: state, events, artifacts, evals
-```
+## The fourteen rules
+
+The charter every workflow on this runtime obeys. They are what "code steers, models write"
+means in practice, and every one of them is enforced by code, never by a prompt alone.
+
+1. **Code controls the workflow end to end.** Sequencing, the next step, whether a step counts,
+   every file write, every check run. Models only fill schemas.
+2. **Agents read markdown rendered by code from JSON, and write only schema-constrained JSON.**
+   No tools, files or shell unless the task needs them, and then only inside the folder the
+   agent writes its output to (that folder is the sandbox root).
+3. **No agent grades its own work.** The checker gets a frozen copy, and a different vendor
+   where possible.
+4. **One owner per fact, everything else derives.** The pydantic class owns the shape; JSON
+   owns the content and markdown is a view; one gate record feeds every renderer.
+5. **Every element has a code-assigned id, never renumbered.** Findings cite ids, so coverage
+   is a set difference, not a judgment.
+6. **Nothing is recorded from a refused answer.** Stage → check → atomic replace. A refusal is
+   re-asked with the exact problems and the refused answer, bounded, stopping when the problem
+   set repeats.
+7. **The verification ladder.** Code checks first, an AI judge only where no field can answer,
+   a human only for a value only they have or a judgment only they can make. Verdicts are
+   graded severities, never booleans.
+8. **Every loop is bounded by code and carries its full trajectory verbatim.** Convergence is
+   computed, not asked. The unresolved is carried into the report, never hidden. The last
+   revision always gets a closing read.
+9. **No step is issued with nothing to do.** Zero findings → no arbitration; zero questions →
+   no gate.
+10. **One append-only event log, written as a side effect of the work.** Two signals side by
+    side: did the process run, is the product right. Halts are reports, resume comes from disk,
+    exit codes are honest (0 done, 1 record, 2 refusal).
+11. **Human attention is the scarcest resource.** Batch questions, confirm by exception,
+    pre-fill defaults, a mode dial whose auto-answers are flagged, never let waiting look like
+    silence.
+12. **Prove it offline first.** Fake models walk every branch with zero tokens before any live
+    run. A check that never runs is not a check.
+13. **Prompts are code-filled templates, not skills.** A missing key refuses before a token is
+    spent. Tool denial is stated as fact in the prompt and enforced by the runtime.
+14. **Cost is a design axis.** No unused tools, thinking off where a check catches every
+    mistake, calls batched, tokens as the honest measure.
+
+## What is in the box
+
+A Python package, `code_steer_model_write`, with the CLI `csmw`. It holds the runtime and two
+workflows, and never a project of its own.
+
+- **The runtime.** A coded driver that derives the next step from disk and runs it, resumable
+  from any halt, with one append-only event log; one `ask()` in front of every model call,
+  behind it PydanticAI for the API path (Anthropic and OpenAI through it), the Claude Code and
+  Codex CLIs on their own logins, and a fake backend that walks a whole workflow offline with
+  zero tokens; the ten layers of the table above, each behind its seam; the MCP server every
+  entry point calls (twelve tools); the page, with a home of every run, the run page, and the
+  start page; and the offline walk that proves every branch before a live run.
+- **The code-builder workflow.** Plan, contract, freeze, verification design, tests by one
+  model and source by the other side by side in containers, the null run, the verification run,
+  triage, the report. Walked offline on ten legs, proven live through every layer. The
+  [csmw coder](https://github.com/msoliman6/csmw_coder) is this workflow as a Claude Code plugin.
+- **The debate workflow.** Hypotheses, support against challenge, rebuttal by id, a fresh judge
+  on a rubric. Walked offline; not yet proven live.
+
+The architecture the layers implement is written down as its own document, one section per
+layer, seam and rule; this repository is its runtime.
 
 ## Install
 
 ```bash
+git clone https://github.com/msoliman6/code_steer_model_write && cd code_steer_model_write
 python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
-cp .env.example .env          # one API key is enough to start; FAKE_MODELS=1 needs none
-just doctor                   # exit 0 = ready; every line it checked is printed (or: .venv/bin/csmw doctor)
+.venv/bin/csmw doctor          # exit 0 ready; every line it checked is printed
 ```
+
+The doctor names the tool behind every seam and what is missing. Two of the layers run on
+packaged services you start with one command each, and both are optional:
+
+- **The container tier** (L5), for every check in its own container: `brew install colima docker
+  && colima start` on macOS, Docker on Linux, then `csmw sandbox build` once for the image.
+  Without an engine the subprocess tier runs the checks and the record says so.
+- **The Prefect runner** (L3), for runs that detach, cancel, pause and resume through a
+  server: `prefect server start`, then `csmw gateway prefect serve`. Without it the local
+  runner does the same from a process of its own.
+
+Live runs use the Claude Code and Codex logins (`CSMW_CLI_USE_LOGIN=1`), never an API key in
+the shell; the API path through PydanticAI exists for deployments that have keys.
 
 ## First run
 
 ```bash
-just walk code_builder        # the whole recipe on fake models: 10 legs, zero tokens, ~20 s
-just dash                     # the dashboard on 127.0.0.1:3000
+just walk                      # every workflow on fake models, 18 legs, zero tokens, about a minute
+just dash                      # the page: the home, a run, the start page
 just run examples/code_builder/task.json
 ```
 
 `docs/QUICKSTART.md` lists every command; `docs/HACKATHON-30MIN.md` is the first half hour.
+The MCP server for any host is `csmw gateway serve`; the same verbs are on the CLI under
+`csmw gateway`.
 
 ## Settings you choose once
 
-The run's start page is one form: the brief, then one card per setting — the running mode,
-the rounds cap, the checker's model, effort and speed, then a model and an effort per stage
-for the author side, then the verification-run overrides — each a row of chips with the default
-pre-selected and a one-line reason for that default. The pre-selected setup is a one-round
-average task: the checker at high effort (a lazy review looks identical to a clean pass), the
-contract and verification rows carrying the judgment, the build on the cheapest model. Adjust
-per task; your picks are remembered for the next run. The form derives from one settings
-schema, which the CLI reads too. The layout is `docs/DASHBOARD-DESIGN.md` → *The start page*.
+The start page is one form: the brief, then the run's mode and rounds, then the ceilings
+(tokens per side, tokens in all, model calls, minutes; over any of them the run halts and
+waits, and the page lifts the ceiling and resumes), then backend, model, effort and thinking
+for each side, then the same per stage where a stage should differ. Every dropdown is named
+above it, every default carries a one-line reason, and your picks are remembered for the next
+run. The form derives from one settings schema, which the CLI, the MCP server and the plugin's
+skill read too, so a task a session composes and a task a person fills in are the same object.
 
 **Estimated cost.** The dashboard prices a run's tokens on read (rule 14: tokens are the fact, dollars
 are a lookup). Prices come from a vendored copy of LiteLLM's model price map (`data/model_prices.json`,
@@ -257,18 +267,33 @@ The figure is always the API price of the tokens. A side that ran on `claude -p`
 under a subscription login is not billed per token, and the page marks the estimate "at API rates"
 for such runs: a comparison, not a bill.
 
+## Build your own workflow
+
+Do not build a workflow inside this repository. A workflow is a package that declares its
+stages, roles, schemas, checks, gates and evaluations, and registers itself by entry point; the
+runtime discovers it and runs it with every layer in place. Scaffold one outside this repo:
+
+```bash
+just new-recipe my_workflow    # the skeleton, with a walk leg and a fake for every schema
+copier copy gh:msoliman6/code_steer_model_write ../my-workflow   # or a whole project from the template
+```
+
+`docs/ADD-A-RECIPE.md` is the guide. A change that belongs to every workflow, a fixed check, a
+better renderer, a new layer behind a seam, comes back here as a commit.
+
 ## Read more
 
-- [docs/PLAN.md](docs/PLAN.md) — the full design: backbone, schemas, verification, recipes, dashboard, figure, build order
-- [docs/RELIABILITY.md](docs/RELIABILITY.md) — the doctrine the rules come from
-- [docs/BUG-LEDGER.md](docs/BUG-LEDGER.md) — the bug classes; classify before fixing, fix the class
+- [docs/PLAN.md](docs/PLAN.md) — the design and its record: version 3, one entry per phase and per live pass
+- [docs/RELIABILITY.md](docs/RELIABILITY.md) — the doctrine the fourteen rules come from
+- [docs/BUG-LEDGER.md](docs/BUG-LEDGER.md) — every bug at its class; classify before fixing, fix the class
+- [docs/DASHBOARD-DESIGN.md](docs/DASHBOARD-DESIGN.md) — the page's design language, every rule it obeys
 - [docs/HACKATHON-30MIN.md](docs/HACKATHON-30MIN.md) — the first thirty minutes
-- [docs/ADD-A-RECIPE.md](docs/ADD-A-RECIPE.md) — extend it
+- [docs/ADD-A-RECIPE.md](docs/ADD-A-RECIPE.md) — a workflow of your own
 
 ## Prior art
 
 [claudex-loop](https://github.com/chaseai-yt/claudex-loop) showed Claude Code paired with OpenAI Codex as an
-adversarial reviewer inside a Claude Code plugin; the coder project built on this template follows that pairing.
+adversarial reviewer inside a Claude Code plugin; the coder built on this runtime follows that pairing.
 
 ## License
 
