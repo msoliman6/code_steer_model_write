@@ -17,8 +17,12 @@
 <a href="https://docs.astral.sh/ruff/"><img alt="code check: ruff" src="https://img.shields.io/badge/code%20check-ruff-D7FF64?style=flat-square&logo=ruff&logoColor=black"></a>
 <a href="https://github.com/microsoft/pyright"><img alt="code check: pyright" src="https://img.shields.io/badge/code%20check-pyright-9a6ee0?style=flat-square&logoSize=auto&logo=data%3Aimage%2Fpng%3Bbase64%2CiVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAEZUlEQVR42q2XS2hdVRSGv3XOyW2vTWpbbWOTRokPqC1ixIkPKDhRcVwHgg6dOXCgA0eOFHGiE4VOFEEF8UHxBYoDwYkdWRVDhQ7EmrSxJjfXJjfNfZzloP%2BWlePNzU1ww%2BHec%2FZj%2Fetf%2F1p7b9hGc%2FdMv%2BPu%2FpW7v%2BjuE6E%2Fd3fbzpq2HeNmVrr7IeBl4A5gP3AZ%2BBJ438wuJiBAaWb%2BvwAIxseAN4ASGAGmgavADUAT%2BAx4z8zmhwViQxg3M3N33w28CtwILAAHgKPAlQBon96HBmJbGdeYEeAVYBK4COzS97vEQGpdoFBo%2FgY%2BrwCxKgjbyriofwm4E7gg4wA94LjW6FbW6gZGmsCnwNtm1qiCyAbpQ8ZfAI4BvwE54AHAmjyuUpu%2BXdbvk8BH7j4Ts2lTAEF0zwP3AedF66EKe62wRj82E5BLwEHgpLy3TQG4ewGYuz8BnADmxcBhYByoBY9bComLdt8EyG6gAdzr7nuumblWL7LotTzvmlkPeFQTpyWoc8AiUAc6AnJcnk2JoSIAia1UuA4DM2ZWJqBFUGep%2F9PAyZBuDQ2O8c%2BBBxSSrsRWB67TewNoa14RsqYAnnL3eWAOaFvI82PA48DdWmQhTErK3q8wTKoOLAHLEtufMvSQAF5RXxtY0f9VMXcbcMrM3ilk%2FBngYU2aF2W1FJ2glxZwvUT1g8avB8Gtab7LgWS0G1hsAPendE7ejStfF9WR94ljyvczSsFcoGqhvycAKwJQ6Ht61rWHTAr8vwC%2BV1VrDLE1FGGeB6AuUEvAPcAton9dv2sac1TvGwD8LPTZMHvTgL5MlDfFZKlMSozulVjbAkqmfJwD%2FtJgZ2ct0ewq2VnwfFWp3AlOlAlxprw%2FD4yKiZ0Y7oruutJzNK2vJ9eTxq7EEAD8BDwYqpkPcY4o5VWmFJ0CJoA98n5E%2FRbqRyZWlhOAUp0%2FalI%2BwLiFjainOE8AN6twpUp4VcbHFNpMc7MAvARIdcCUNgtCv1YRZGIkxXAMOKJnb9gL2sFQqb7lSi0xrd%2BKIcjMrOfus6pkq2IielsAN8nbcXmfjEYtJJFl4VsZ3lOV3KCBhPAs8EjwqBQjk4rvPi3SkeCsz%2B6X6kEH%2BEPgLTCzQWNVAL%2BKGlNMp7SD1bVQp4%2B3%2FYy3ZbwbwpGM7gJ%2BEeN5oaOPaytecvcm8JgWqoX02uoMmYyvB8%2BzSvwLOfhampP1OQeeUkHKtJgP8Di2XOL6PaSeV84EB3R%2FmHX33MzKLBwAS4nxLPBsUPewxagl47l0k9K5p5AU2uxel6P%2BnyOZ4lKY2YfAm9JBZ4DhUiFC3s0obBfERl2XloPA7cBbZjYnR8u%2BMRW6lDKfqDouVwSbRFXX09SO%2BjHwjZktuvtoMD4B3Aq8KxZIR3Pb4lR8BPhaZXZN42uiuAfMAl8Ap83s3E53sM0uJrlCcgL4IBSRS8C3wGngOzNrV5grQ3W1Str2hrmwVo%2FouPtz7n7G3Z%2BO1%2FE0Jl40ttv%2BAbe8BGG9m5lPAAAAAElFTkSuQmCC"></a>
 <a href="https://docs.pytest.org/"><img alt="verification: pytest" src="https://img.shields.io/badge/verification-pytest-0A9EDC?style=flat-square&logo=pytest&logoColor=white"></a>
-<a href="https://www.sqlite.org/"><img alt="ui state: sqlite" src="https://img.shields.io/badge/ui%20state-sqlite-003B57?style=flat-square&logo=sqlite&logoColor=white"></a>
-<a href="https://docs.litellm.ai/"><img alt="any provider: litellm" src="https://img.shields.io/badge/any%20provider-litellm-f59e0b?style=flat-square&logo=data%3Aimage%2Fpng%3Bbase64%2CiVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAHzUlEQVR42uWXXYydRRnHf8%2FMvOc95%2Bw5%2B93t0gL1g1JIDAZL7AViKH4EbwQuSpSEC6NckKgXRBIvwNMaY8SISY0xMcQYIzSxJSAmaEFwwRiFpALyJZgWdVvabXfb7fnYc96PmXm8OLul0SIE5cI4ydzMO%2B%2F8Z%2F7P1%2F%2BB%2F6ehqqKq0mq1jGrLqKp5F8FaZm5uzqnOOdW9VkTOuU%2FeBWwB9Fwfdu%2FenU5PTzfTNB2ZmRlLG43U%2Fdcu0Gq1DFdfbXZt3%2B4BXn31hUuThCu8j5ephouKIr%2BwKIvJxJmxGLUGJN6XKv%2BpTfftw9y4g4iIAnzrSzecf8G2T93fGKlvHZ8Yc2maYp1ldmYdU9OzDPIcAUSELCtK906Bd%2B58woqIBwLAfffdt%2FlwnLzm%2BOmVHX95Pd%2B2vNzBx06wIuoVGR85KLdd%2F0Hes3FWBnmBtYYsG%2BDeyYtFJAB%2B8Xc%2Fb95%2FvHnDYqY3P5PFq0LSSP3oGCONGKYuSEzFOesSh7OOfhF5%2BKUFbqwa6rU6ee7JsuztX2Dv3r12FTj84aE965%2FqT3%2FhuwfNLaWtbcJY6k1hslkLE406aSWxYChLT3%2BQ0ev18dmAhbaw98l5rtu2DmMtRVG8dRSoqhFQRFSf%2BunoPcc2fnG%2Bo1%2FOksZ6Zw1TjWqYbNaoiDFFnku312PQbVMOOlBmOAmkLqGaVqjXEmpphUve22S0USXL8jf3AVWVJ54Y2tkCDz76%2BM1fP8idy1rfXMbAqIgfs2qTrG1X%2BifwxlNPlM2jFdZdOMJEc5pGvUZarZI4i3MOYywglF5ReHMTnEW3f%2B65ly5%2FfqH77UcP5x8%2FueKZqnb9hWPWbmwWbqZpmBmrMj46PgRLU6x1IJaoBlVBEUQMWZHjfQ4iqEZG6g0q6ci%2FmmBubs5t377d79%2F%2F%2B8nZWb3jVLtz6ytLUj2dETavr8r7Zmpm3VidkVoVm6QYk4BYxFisdVhrETEkzgLmTG7qdo5SrdYBIQSPMYKzlVLOplx27hR27YoHnnryk7jy%2B9bq5jzPWTcxFer1uk2SKsZVEVvBugqJS7DWYq1ZO4MQIs5FXni1w9%2BPZqAlZVlAOMV5s%2BvQGAhR6XRzOu2VoQ%2B0Wi0jItFa0Ucf%2F9XOaPotAyRJ009MnGcrac1W0hpJkpIkCc5aAGIMlGXGYOAJweO9p5Iohw4PuGP3UfqZJ%2Fo%2BvughYYnR8Qk0elAoipKlxUVcq9Uyu3btirr87Phnbv%2FNj0%2B18%2Bs3bJiMaTpOo9F0aTpCpZIiIsQYKYuMgS%2FxviQET4wBVUVRNEIMcO9DCxRFwdhIpCwChQQolcQKEYOIYoBGGoc%2B8OsHfjL1o%2F3tRw4ec1vvvHWL337lZhd1%2BNoQPGVZUJY53pfEGIgxAorqkHZQfIg0aobfHjjND%2FacoFYFXxYEn%2BGLAZSnaIyvIwSPxpLoPcunlkp34Bc%2FrN%2B5Z%2BGBvrlg6%2FjUaDk1NZNY6%2Bi2O%2FhygPcFIQRiVCAS4zCEVHV1DteMKN1O5P5fHoFQkPcDMXiizymLAaE4jUsswZeggahKWazgvnbviXsGdtNHR5sNPxj0k8XF1zl8eJleL0NdZRizOqQ5qiIoJgyIMZ4BjzFSTYWfPXyKl%2F58knpVKAtPVI8GT1n0ieVJQgCNkRgLEEunfRp3apDcVB0ZxNOLS67b7bGwsJ7p0Qa9geKPPs%2Bo6aOuBjGClmRe6I9fjDGsXkIRgSz3LBxbZvP5gkhA8KhGVAPRB7odz0ijJOrwqCSxTI85XGf5CL32gloj5IVn8XjkaKNCb6Ak7ZOYSoHYAWhAtKBfwlLZXPWBISuJE5790zE6y%2BCsIcQARNChLgnBE%2FKTlHawGvOREEcoByu4fOXEg0We3%2BCLXkQqcX6%2Bb1KXii%2BjqGtwaIXhYcMqjhGwnSVCiMQYz7Aw2oh84GJB1Q8Fkb4huKI6VnpNqtUKa8rMuYQ8r%2BM%2B8ulbb%2FrjY3u%2B1%2B8lt2T9tul1uywuDijLoALRWqPWWgFsiBHvAzGyCv6GQxpZS2hDXFkNzbU1gWFCWt0%2FGGSEEPyZTHjNjXdt7y4f%2Fdy2S8urNs6aWYSqcwZjDCEEVnodskFOCBGEIbies4ihKiCGYT0RFcGIiNGzfhARvPervA5nBLj77rtr9XqxPsva58Wos1idbC91Lnnltey2vBSxiZGgQvQRCBhZe6kiRFBIrKfm%2BgoqPgSyLCfPC40xioio90GMke6WLZt2n2Fgx44ddh%2FAvn3hn1%2B19crPP7ic1a8T66JYTPAlMXhgGIrEMLyADIvddPo3P1HPKu3e4LEiKx7JB9lnrbUfKr0vUZWy9JIX5cLrCyfOP5cgkVarJS%2B%2FjNu7F3%2Flx458pecn7yqDV1epiBEwRMwZ5a1DVxPBiCPVvzLTPM7xxfaJF158bUu73T69acOGyycnxw5MT06YGAKl9yycWPrON%2B768Ffl32h71q%2B%2FrD668YqnXdp8v7FRrXHGGkMlcSSJxVqLEQMaVYyVImv3sqW5hUoS548vnr7j0KH5Z6699qJ0%2F%2F6D%2BXkzM5%2BYHB%2B73Tkz1e2tPPTa%2FJFvAuGtJJnZcMn1E41KGBUpFKpUq1CtVs9syABTlBqcNXF5vv%2Fii08vrvnTWU3KmzYr70pj1Gq1zFlqZG3Y1bLPDrBrLMvba7Vab7OB2fWGY%2FyvjH8AcURzkt6vUdYAAAAASUVORK5CYII%3D"></a>
+<a href="https://www.sqlite.org/"><img alt="run registry: sqlite" src="https://img.shields.io/badge/run%20registry-sqlite-003B57?style=flat-square&logo=sqlite&logoColor=white"></a>
+<a href="https://ai.pydantic.dev/"><img alt="any provider: pydanticai" src="https://img.shields.io/badge/any%20provider-pydanticai-E92063?style=flat-square&logo=pydantic&logoColor=white"></a>
+<a href="https://www.cedarpolicy.com/"><img alt="authorization: cedar" src="https://img.shields.io/badge/authorization-cedar-5a4fcf?style=flat-square"></a>
+<a href="https://www.guardrailsai.com/"><img alt="guardrails: guardrails ai" src="https://img.shields.io/badge/guardrails-guardrails%20ai-1f6feb?style=flat-square"></a>
+<a href="https://docs.docker.com/engine/api/sdk/"><img alt="sandbox: docker" src="https://img.shields.io/badge/sandbox-docker-2496ED?style=flat-square&logo=docker&logoColor=white"></a>
+<a href="https://modelcontextprotocol.io/"><img alt="gateway: mcp" src="https://img.shields.io/badge/gateway-mcp-30363d?style=flat-square"></a>
 </p>
 <p align="center">
 <a href="https://docs.anthropic.com/en/docs/claude-code"><img alt="Claude Code: author" src="https://img.shields.io/badge/Claude_Code-author-d97757?style=flat-square"></a>
@@ -140,60 +144,71 @@ seam; the offline walk proves every layer with fake models before any live run.
 | L9 authorization | may this principal do this action on this resource, every decision an event | Cedar (`cedarpy`), one policy file |
 | L10 guardrails | is this interaction safe: before the prompt, after the answer, before a tool call | the schema and the checks; Guardrails AI validators by profile; the ToolSpec's schema |
 
-The layering is not a vendor's diagram. Seven execution layers with governance and observability
-cross-cutting is the shape the reference architectures converge on [1, 2, 3]; the separation of
-the planes from the model is the reference-monitor principle [4, 5] as the agent-security papers
-apply it [6, 7, 8]. Per layer, what the design rests on:
+The layering is the shape the production platforms have converged on. AWS Bedrock AgentCore
+names thirteen services [1], Google Vertex Agent Engine eleven [2], Palantir AIP twelve [3],
+Microsoft Foundry seven plus four [4], IBM watsonx Orchestrate about eleven [5]; strip each to
+what a single-machine runtime needs and the same ten remain: a core of interface, control,
+orchestration, model runtime, execution, tools and state, with authorization, guardrails and
+observability cut across all of them. The academic reference architectures draw the same
+picture [6, 7, 8], and the separation of the planes from the model is the reference-monitor
+principle [9, 10] as the agent-security work applies it [11, 12, 13]. Per layer:
 
 | layer | grounded in |
 |---|---|
-| L1 UI | agents must have well-defined human controllers, and their actions must be observable to them [9]; the human-in-the-loop gates of the practitioner guides [10, 11] |
-| L2 control plane | the task, budget and run record as the control plane of the agent OS [12]; the pattern catalogue's "limited budget for model calling" [2] |
-| L3 orchestration | the decision procedure of a cognitive architecture: a fixed loop that derives the next step, the model never sequencing [13]; the kernel and scheduler of AIOS [12] |
-| L4 agent runtime | one model call under a schema as the cognitive architecture's action space [13]; the pattern catalogue's output-schema patterns [2] |
-| L5 sandbox | security function isolation [14]; capabilities and isolation against the "lethal trifecta" of private data, untrusted content and exfiltration [15, 6]; the agent-sandbox designs of the CLIs [16, 17] |
-| L6 tools | privilege control per tool with a closed declared list [7]; the Model Context Protocol's tool contract [18] |
-| L7 state | the three-way split of run state, versioned artifacts and memory [19]; memory as a tier apart from working state [20, 21, 22]; provenance of every artifact [23, 24] |
-| L8 observability | provenance graphs of agent runs as the basis of accountability [23, 24]; repudiation and untraceability as a named agent threat [25]; observability as a governance principle [9, 3] |
-| L9 authorization | the reference monitor [4]; attribute-based access control and the policy-decision / policy-enforcement split [26, 27]; context-derived security policies for agents [8]; least privilege for agent powers [9, 5] |
-| L10 guardrails | prompt injection as the top LLM threat [28]; capability-based defence [6]; the injection benchmark the rails are measured against [29]; a formal frame for agent security [30] |
+| L1 UI | agents must have well-defined human controllers [14]; the human-in-the-loop patterns of the vendor guides [15, 16, 17] |
+| L2 control plane | AgentCore's Gateway, Registry and Policy [1]; Vertex's Agent Gateway and Sessions [2]; the budget as a first-class control [7]; the control plane of the agent OS [18] |
+| L3 orchestration | Microsoft's orchestration patterns and durable task ledger [17]; Prefect's flow-run model as the runner; the decision procedure of a cognitive architecture, code sequencing and the model never [19] |
+| L4 agent runtime | AgentCore Runtime [1], Vertex Agent Runtime [2], Foundry Agent Runtime [4]; the model's action space as one structured answer [19]; the vendor CLIs' own runtimes [20, 21] |
+| L5 sandbox | AgentCore Code Interpreter and Vertex Code Execution as separate services [1, 2]; the sandboxing designs of Claude Code and Codex [20, 21]; security function isolation [22]; the "lethal trifecta" [23]; capability-based isolation [11] |
+| L6 tools | AgentCore Gateway's tool contract and Vertex's tool services [1, 2]; the Model Context Protocol [24]; privilege control per tool with a closed declared list [12] |
+| L7 state | Google ADK's split of session state, memory and versioned artifacts [25]; AgentCore Memory's short-term events and long-term store [1]; memory as its own tier [26, 27, 28]; provenance of every artifact [29, 30] |
+| L8 observability | AgentCore Observability and Evaluations [1]; Vertex Evaluation Service [2]; Databricks Mosaic AI on MLflow tracing and agent evaluation [31]; OpenAI's trace and span model [16]; provenance graphs of agent runs [29, 30]; repudiation as a named agent threat [32] |
+| L9 authorization | AgentCore Identity and Policy, Cedar at the gateway [1]; Vertex Agent Identity [2]; Foundry's identity and RBAC [4]; the reference monitor [9]; attribute-based access control and the policy-decision / policy-enforcement split [33, 34]; least privilege for agent powers [14, 10]; context-derived policies for agents [13] |
+| L10 guardrails | OpenAI's input, output and tool guardrails [16]; Salesforce's Einstein Trust Layer [35]; NVIDIA's rail types [36]; prompt injection as the top LLM threat [37]; defence by design [11]; the injection benchmark rails are measured against [38] |
 
 <details>
 <summary><b>References</b></summary>
 
-1. A reference architecture for LLM-based agentic systems: Interface, Core, Control, Memory, Tooling, Governance and Observability cross-cutting. arXiv 2026. https://arxiv.org/abs/2602.10479
-2. Liu et al., "Agent Design Pattern Catalogue" (CSIRO). arXiv 2024. https://arxiv.org/abs/2405.10467
-3. Lu et al., "A Reference Architecture for Designing Foundation Model based Agents" (CSIRO). arXiv 2023. https://arxiv.org/abs/2311.13148
-4. Anderson, "Computer Security Technology Planning Study" (the reference monitor). 1972. https://csrc.nist.gov/files/pubs/conference/1998/10/08/proceedings-of-the-21st-nissc-1998/final/docs/early-cs-papers/ande72a.pdf
-5. Saltzer and Schroeder, "The Protection of Information in Computer Systems". 1975. https://www.cs.virginia.edu/~evans/cs551/saltzer/
-6. Debenedetti et al., "CaMeL: Defeating Prompt Injections by Design" (Google DeepMind, ETH). arXiv 2025. https://arxiv.org/abs/2503.18813
-7. Shi et al., "Progent: Programmable Privilege Control for LLM Agents". arXiv 2025. https://arxiv.org/abs/2504.11703
-8. Tsai and Bagdasarian, "Conseca: Context-derived Security Policies for LLM Agents". arXiv 2025. https://arxiv.org/abs/2501.17070
-9. Google, "An Introduction to Google's Approach for Secure AI Agents". 2025. https://research.google/pubs/an-introduction-to-googles-approach-for-secure-ai-agents/
-10. Anthropic, "Building Effective Agents". 2024. https://www.anthropic.com/research/building-effective-agents
-11. OpenAI, "A Practical Guide to Building Agents". 2025. https://cdn.openai.com/business-guides-and-resources/a-practical-guide-to-building-agents.pdf
-12. Mei et al., "AIOS: LLM Agent Operating System". arXiv 2024, COLM 2025. https://arxiv.org/abs/2403.16971
-13. Sumers, Yao, Narasimhan and Griffiths, "Cognitive Architectures for Language Agents" (CoALA). TMLR 2024. https://arxiv.org/abs/2309.02427
-14. NIST SP 800-53 rev. 5, control SC-3, security function isolation. https://csrc.nist.gov/pubs/sp/800/53/r5/upd1/final
-15. Willison, "The Lethal Trifecta for AI Agents". 2025. https://simonwillison.net/2025/Jun/16/the-lethal-trifecta/
-16. Anthropic, Claude Code sandboxing. https://code.claude.com/docs/en/sandboxing
-17. OpenAI, Codex agent approvals and security. https://learn.chatgpt.com/codex/agent-approvals-security
-18. Model Context Protocol, specification, architecture. https://modelcontextprotocol.io/specification/2025-06-18/architecture
-19. Google, Agent Development Kit: state, memory and artifacts. https://google.github.io/adk-docs/agents/
-20. Packer et al., "MemGPT: Towards LLMs as Operating Systems". arXiv 2023. https://arxiv.org/abs/2310.08560
-21. Park et al., "Generative Agents: Interactive Simulacra of Human Behavior". UIST 2023. https://arxiv.org/abs/2304.03442
-22. Zhang et al., "A Survey on the Memory Mechanism of Large Language Model based Agents". arXiv 2024. https://arxiv.org/abs/2404.13501
-23. Souza et al., "PROV-AGENT". IEEE e-Science 2025. https://arxiv.org/abs/2508.02866
-24. Wu, Castelo, Liu, Silva and Freire, "AgentTrails". VLDB 2026 DASHSys workshop. https://arxiv.org/abs/2607.18816
-25. OWASP, "Agentic AI Threats and Mitigations" (T8, repudiation and untraceability). 2025. https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/
-26. NIST SP 800-162, "Guide to Attribute Based Access Control". https://nvlpubs.nist.gov/nistpubs/specialpublications/NIST.sp.800-162.pdf
-27. OASIS, XACML 3.0 core specification (PDP, PEP, PIP, PAP). https://docs.oasis-open.org/xacml/3.0/xacml-3.0-core-spec-os-en.html
-28. OWASP, "Top 10 for LLM Applications" 2025 (LLM01 prompt injection, LLM06 excessive agency). https://genai.owasp.org/llm-top-10/
-29. Debenedetti et al., "AgentDojo". NeurIPS 2024 Datasets and Benchmarks. https://arxiv.org/abs/2406.13352
-30. Siu et al., "A Framework for Formalizing LLM Agent Security". arXiv 2026. https://arxiv.org/abs/2603.19469
+Industry platforms and guides
 
-The reading behind these, dated and with what each source says verbatim, is in the architecture
-repository, `production_agentic_workflow/docs/research/`.
+1. AWS, Amazon Bedrock AgentCore developer guide: Harness, Runtime, Memory, Gateway, Identity, Code Interpreter, Browser, Observability, Payments, Evaluations, Optimization, Policy, Registry. https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/what-is-bedrock-agentcore.html
+2. Google Cloud, Vertex AI Agent Engine overview: Agent Runtime, Sessions, Memory Bank, Code Execution, Evaluation Service, Agent Identity, Agent Gateway, Observability and others. https://docs.cloud.google.com/vertex-ai/generative-ai/docs/agent-engine/overview
+3. Palantir, AIP architecture. https://www.palantir.com/docs/foundry/architecture-center/aip-architecture
+4. Microsoft, Azure AI Foundry Agent Service overview. https://learn.microsoft.com/en-us/azure/ai-foundry/agents/overview
+5. IBM, watsonx Orchestrate overview. https://www.ibm.com/docs/en/watsonx/watson-orchestrate/base?topic=overview
+6. A reference architecture for LLM-based agentic systems: Interface, Core, Control, Memory, Tooling, with Governance and Observability cross-cutting. arXiv 2026. https://arxiv.org/abs/2602.10479
+7. Liu et al., "Agent Design Pattern Catalogue" (CSIRO). arXiv 2024. https://arxiv.org/abs/2405.10467
+8. Lu et al., "A Reference Architecture for Designing Foundation Model based Agents" (CSIRO). arXiv 2023. https://arxiv.org/abs/2311.13148
+9. Anderson, "Computer Security Technology Planning Study" (the reference monitor). 1972. https://csrc.nist.gov/files/pubs/conference/1998/10/08/proceedings-of-the-21st-nissc-1998/final/docs/early-cs-papers/ande72a.pdf
+10. Saltzer and Schroeder, "The Protection of Information in Computer Systems". 1975. https://www.cs.virginia.edu/~evans/cs551/saltzer/
+11. Debenedetti et al., "CaMeL: Defeating Prompt Injections by Design" (Google DeepMind, ETH). arXiv 2025. https://arxiv.org/abs/2503.18813
+12. Shi et al., "Progent: Programmable Privilege Control for LLM Agents". arXiv 2025. https://arxiv.org/abs/2504.11703
+13. Tsai and Bagdasarian, "Conseca: Context-derived Security Policies for LLM Agents". arXiv 2025. https://arxiv.org/abs/2501.17070
+14. Google, "An Introduction to Google's Approach for Secure AI Agents". 2025. https://research.google/pubs/an-introduction-to-googles-approach-for-secure-ai-agents/
+15. Anthropic, "Building Effective Agents". 2024. https://www.anthropic.com/research/building-effective-agents
+16. OpenAI, "A Practical Guide to Building Agents" and the Agents SDK guardrails and tracing documentation. 2025. https://cdn.openai.com/business-guides-and-resources/a-practical-guide-to-building-agents.pdf
+17. Microsoft, Azure Architecture Center, "AI agent orchestration patterns". 2026. https://learn.microsoft.com/en-us/azure/architecture/ai-ml/guide/ai-agent-design-patterns
+18. Mei et al., "AIOS: LLM Agent Operating System". arXiv 2024, COLM 2025. https://arxiv.org/abs/2403.16971
+19. Sumers, Yao, Narasimhan and Griffiths, "Cognitive Architectures for Language Agents" (CoALA). TMLR 2024. https://arxiv.org/abs/2309.02427
+20. Anthropic, Claude Code security and sandboxing. https://code.claude.com/docs/en/sandboxing
+21. OpenAI, Codex agent approvals and security. https://learn.chatgpt.com/codex/agent-approvals-security
+22. NIST SP 800-53 rev. 5, control SC-3, security function isolation. https://csrc.nist.gov/pubs/sp/800/53/r5/upd1/final
+23. Willison, "The Lethal Trifecta for AI Agents". 2025. https://simonwillison.net/2025/Jun/16/the-lethal-trifecta/
+24. Model Context Protocol, specification, architecture. https://modelcontextprotocol.io/specification/2025-06-18/architecture
+25. Google, Agent Development Kit: sessions, state, memory and artifacts. https://google.github.io/adk-docs/agents/
+26. Packer et al., "MemGPT: Towards LLMs as Operating Systems". arXiv 2023. https://arxiv.org/abs/2310.08560
+27. Park et al., "Generative Agents: Interactive Simulacra of Human Behavior". UIST 2023. https://arxiv.org/abs/2304.03442
+28. Zhang et al., "A Survey on the Memory Mechanism of Large Language Model based Agents". arXiv 2024. https://arxiv.org/abs/2404.13501
+29. Souza et al., "PROV-AGENT". IEEE e-Science 2025. https://arxiv.org/abs/2508.02866
+30. Wu, Castelo, Liu, Silva and Freire, "AgentTrails". VLDB 2026 DASHSys workshop. https://arxiv.org/abs/2607.18816
+31. Databricks, Mosaic AI agent framework: MLflow tracing and agent evaluation. https://docs.databricks.com/aws/en/generative-ai/agent-framework/build-genai-apps
+32. OWASP, "Agentic AI Threats and Mitigations" (T8, repudiation and untraceability). 2025. https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/
+33. NIST SP 800-162, "Guide to Attribute Based Access Control". https://nvlpubs.nist.gov/nistpubs/specialpublications/NIST.sp.800-162.pdf
+34. OASIS, XACML 3.0 core specification (PDP, PEP, PIP, PAP). https://docs.oasis-open.org/xacml/3.0/xacml-3.0-core-spec-os-en.html
+35. Salesforce, the Einstein Trust Layer. https://trailhead.salesforce.com/content/learn/modules/the-einstein-trust-layer/meet-the-einstein-trust-layer
+36. NVIDIA, NeMo Guardrails: input, dialog, retrieval, execution and output rails. https://docs.nvidia.com/nemo/guardrails/
+37. OWASP, "Top 10 for LLM Applications" 2025 (LLM01 prompt injection, LLM06 excessive agency). https://genai.owasp.org/llm-top-10/
+38. Debenedetti et al., "AgentDojo". NeurIPS 2024 Datasets and Benchmarks. https://arxiv.org/abs/2406.13352
 
 </details>
 
