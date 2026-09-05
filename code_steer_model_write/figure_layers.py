@@ -363,9 +363,13 @@ def render(theme: Theme = "dark") -> str:
 
     for b in top + bottom:
         glass(b.x, b.y, b.w, b.h, b.hue, strong=True)
-        L.append(icon_svg(b.icon, b.x + 16, b.y + 14, ICON, label_color(b.hue)))
+        # the icon and the title as one group, centred on the card (a 700-weight 18px capital is
+        # about 11.6px wide; the group is the icon, a gap, the text)
+        tw = len(b.title.upper()) * 11.6
+        gx = b.cx - (ICON + 12 + tw) / 2
+        L.append(icon_svg(b.icon, gx, b.y + 14, ICON, label_color(b.hue)))
         L.append(
-            f'<text x="{b.x + 16 + ICON + 12:g}" y="{b.y + 14 + ICON / 2:g}" dominant-baseline="central" font-size="18" font-weight="700" letter-spacing="0.5" fill="{label_color(b.hue)}">{_esc(b.title.upper())}</text>'
+            f'<text x="{gx + ICON + 12:g}" y="{b.y + 14 + ICON / 2:g}" dominant-baseline="central" font-size="18" font-weight="700" letter-spacing="0.5" fill="{label_color(b.hue)}">{_esc(b.title.upper())}</text>'
         )
         tl = _wrap(b.tools, 30, sep=" · ")
         y0 = b.y + 14 + ICON + 20
@@ -410,14 +414,20 @@ def render(theme: Theme = "dark") -> str:
         )
         dashed(b.cx + 8, band_top, b.cx + 8, b.y + b.h + 2, dur="0.6s", opacity=0.6)
     # the person reads the record: from the floor's left edge, up the margin, round the corner
-    # and into L1 -- one path, one arrowhead, never across a card
+    # and into L1 -- two paths with a gap in the middle of the climb, where the label sits
     xm = 7.0
     r = 6.0
+    mid = (l1.cy + floor.cy) / 2
+    gap = 62.0
+    dash = f'fill="none" stroke="{arrow}" stroke-width="{aw}" stroke-linecap="round" stroke-dasharray="4 8" opacity="0.55"'
     L.append(
-        f'<path d="M{M - 1:g},{floor.cy:g} H{xm + r:g} A{r:g},{r:g} 0 0 1 {xm:g},{floor.cy - r:g} V{l1.cy + r:g} A{r:g},{r:g} 0 0 1 {xm + r:g},{l1.cy:g} H{l1.x - 2:g}" fill="none" stroke="{arrow}" stroke-width="{aw}" stroke-linecap="round" stroke-dasharray="4 8" opacity="0.5" marker-end="url(#ah)"><animate attributeName="stroke-dashoffset" from="24" to="0" dur="1.2s" repeatCount="indefinite"/></path>'
+        f'<path d="M{M - 1:g},{floor.cy:g} H{xm + r:g} A{r:g},{r:g} 0 0 1 {xm:g},{floor.cy - r:g} V{mid + gap / 2:g}" {dash}><animate attributeName="stroke-dashoffset" from="24" to="0" dur="1.2s" repeatCount="indefinite"/></path>'
     )
     L.append(
-        f'<text x="{xm + 5:g}" y="{l1.y + l1.h + 30:g}" font-size="11.5" fill="{muted}" transform="rotate(-90 {xm + 5:g},{l1.y + l1.h + 30:g})" text-anchor="end">reads the record</text>'
+        f'<path d="M{xm:g},{mid - gap / 2:g} V{l1.cy + r:g} A{r:g},{r:g} 0 0 1 {xm + r:g},{l1.cy:g} H{l1.x - 2:g}" {dash} marker-end="url(#ah)"><animate attributeName="stroke-dashoffset" from="24" to="0" dur="1.2s" repeatCount="indefinite"/></path>'
+    )
+    L.append(
+        f'<text x="{xm + 5:g}" y="{mid:g}" font-size="13" font-weight="600" fill="{muted}" transform="rotate(-90 {xm + 5:g},{mid:g})" text-anchor="middle">reads the record</text>'
     )
     # the planes: thin bands across the width that breathe, each with its icon
     for p in planes:
