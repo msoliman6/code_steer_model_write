@@ -115,8 +115,8 @@ def run(*, deep: bool = False) -> int:
                     d.note(f"{b:15s} `codex` {ver}")
                 else:
                     d.halt(f"{b:15s} `codex` missing")
-            if b == "litellm":
-                d.note(f"{b:15s} provider key is the model's; not probed")
+            if b == "pydantic_ai":
+                d.note(f"{b:15s} the provider's key is the model's; not probed")
     if deep:
         from . import walk
 

@@ -119,9 +119,29 @@ class Runner:
         rec.ended_at = now()
         rec.write(self.paths)
 
+    def _evaluate(self) -> None:
+        """L8 (ARCHITECTURE.md 7.9): the recipe's eval specs scored over the record into
+        `evals.json`, by code, before the run is marked complete; a scorer failing is a note on
+        the record, never a halt of a run that finished."""
+        specs = getattr(getattr(self.program, "spec", None), "evals", None)
+        if not specs:
+            return
+        try:
+            from ..observability.evals import Evaluator
+
+            rep = Evaluator().score(self.paths, list(specs))
+            self.events.append(
+                "run.progress",
+                evals={r.metric: r.value for r in rep.results},
+                evals_passed=rep.passed,
+            )
+        except Exception as e:  # noqa: BLE001 -- the product is what it is; the score is a view of it
+            self.events.append("run.progress", evals_error=f"{type(e).__name__}: {str(e)[:200]}")
+
     def finish(self) -> Outcome:
         """Nothing is ready: complete, or report a blocked program."""
         if self.driver.is_complete():
+            self._evaluate()
             self._set(RunStatus.COMPLETED, Outcome.COMPLETED)
             return Outcome.COMPLETED
         pend = [s.key for s in self.driver.all_pending()]

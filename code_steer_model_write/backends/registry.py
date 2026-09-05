@@ -20,10 +20,6 @@ def make(name: str | BackendName) -> Backend:
         from .agent_sdk import AgentSdkBackend
 
         return AgentSdkBackend()
-    if n is BackendName.LITELLM:
-        from .litellm_backend import LiteLLMBackend
-
-        return LiteLLMBackend()
     if n is BackendName.CLAUDE_CLI:
         from .cli import ClaudeCliBackend
 

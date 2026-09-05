@@ -510,7 +510,7 @@ class Debate(Recipe):
             "conceded_ratio": round(conceded / max(len(reb.items), 1), 3),
             "carried_findings": len(carried),
         }
-        atomic_write_text(run / "evals.json", json.dumps(metrics, indent=2))
+        atomic_write_text(run / "evals.recipe.json", json.dumps(metrics, indent=2))
         rep = Report(
             run_id=st.run_id,
             recipe=self.name,

@@ -110,7 +110,7 @@ class Gateway:
         *,
         runs_dir: str | None = None,
         run_dir: str | None = None,
-        mlflow: bool = False,
+        mlflow: bool = True,
     ) -> RunHandle:
         """Validate through the recipe, create the run, register it, submit it detached. The
         caller gets the run id at once and never waits (7.10)."""
@@ -190,7 +190,7 @@ class Gateway:
     def pause(self, run: str) -> RunHandle:
         return self.runner.pause(self._paths(run))
 
-    def resume(self, run: str, *, mlflow: bool = False) -> RunHandle:
+    def resume(self, run: str, *, mlflow: bool = True) -> RunHandle:
         return self.runner.resume(self._paths(run), mlflow=mlflow)
 
     # ---- views of the record -------------------------------------------------------------------

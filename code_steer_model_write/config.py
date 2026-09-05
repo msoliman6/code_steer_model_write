@@ -11,7 +11,7 @@ from pathlib import Path
 import json
 
 from enum import StrEnum
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -40,7 +40,6 @@ class Mode(StrEnum):
 class BackendName(StrEnum):
     ANTHROPIC = "anthropic"
     AGENT_SDK = "agent_sdk"
-    LITELLM = "litellm"
     CLAUDE_CLI = "claude_cli"
     CODEX_CLI = "codex_cli"
     PYDANTIC_AI = (
@@ -54,7 +53,6 @@ VENDOR_OF: dict[BackendName, str] = {
     BackendName.AGENT_SDK: "anthropic",
     BackendName.CLAUDE_CLI: "anthropic",
     BackendName.CODEX_CLI: "openai",
-    BackendName.LITELLM: "litellm",  # vendor is the model's; resolved by model name
     BackendName.PYDANTIC_AI: "pydantic_ai",  # the vendor is the model's `provider:` prefix; resolved by model name
     BackendName.FAKE: "fake",
 }
@@ -65,9 +63,6 @@ def vendor_of(backend: BackendName, model: str) -> str:
         # `provider:model`; the provider is the vendor (rule 3 compares vendors, not backends)
         head = model.split(":", 1)[0].lower() if ":" in model else "anthropic"
         return head.split("-", 1)[0]  # openai-chat, openai-responses -> openai
-    if backend is BackendName.LITELLM:
-        head = model.split("/", 1)[0].lower()
-        return head if "/" in model else ("openai" if model.startswith(("gpt", "o")) else head)
     return VENDOR_OF[backend]
 
 
@@ -100,7 +95,7 @@ class Settings(BaseSettings):
     mode: Mode = Mode.LIGHT
     rounds: int = Field(default=ROUNDS_DEFAULT, ge=1, le=6)
     runs_dir: str = "runs"
-    mlflow_tracking_uri: str = "sqlite:///mlflow.db"
+    mlflow_tracking_uri: str = f"sqlite:///{Path.home() / '.csmw' / 'mlflow.db'}"  # the SQLite backend (7.9): spans need it; beside the registry, one store for every project
     stall_seconds: int = STALL_SECONDS
 
     def role_a(self) -> RoleSpec:
@@ -153,19 +148,31 @@ def price_table() -> dict[str, tuple[float, float]]:
     return price_overrides()
 
 
-def _litellm_price(model: str) -> tuple[float, float, float] | None:
-    """(input, output, cached input) in USD per million tokens from LiteLLM's map, or None. The
-    model id is tried as given, then with a provider prefix stripped, then by the longest map key
-    the id extends (a dated id finds its family)."""
-    try:
-        import litellm  # noqa: PLC0415 - imported late: a heavy module, only needed on read
+_PRICES: dict[str, dict[str, Any]] | None = None
 
-        mc = litellm.model_cost
-    except Exception:  # noqa: BLE001 - no litellm, no map; the overrides still apply
-        return None
+
+def _price_map() -> dict[str, dict[str, Any]]:
+    """The vendored price map (ARCHITECTURE.md 7.9: LiteLLM's JSON as a file, not the package),
+    read once: `data/model_prices.json`, USD per token, the providers this runtime names."""
+    global _PRICES
+    if _PRICES is None:
+        p = Path(__file__).parent / "data" / "model_prices.json"
+        try:
+            _PRICES = json.loads(p.read_text(encoding="utf-8")).get("models", {})
+        except Exception:  # noqa: BLE001 - no map, no estimate; the overrides still apply, $? otherwise
+            _PRICES = {}
+    return _PRICES or {}
+
+
+def _map_price(model: str) -> tuple[float, float, float] | None:
+    """(input, output, cached input) in USD per million tokens from the vendored map, or None.
+    The model id is tried as given, then with a provider prefix stripped (`openai:x`, `a/x`),
+    then by the longest map key the id extends (a dated id finds its family)."""
+    mc = _price_map()
     names = [model]
-    if "/" in model:
-        names.append(model.split("/", 1)[1])
+    for sep in (":", "/"):
+        if sep in model:
+            names.append(model.split(sep, 1)[1])
     for n in names:
         e = mc.get(n)
         if not e:
@@ -184,12 +191,12 @@ def _litellm_price(model: str) -> tuple[float, float, float] | None:
 
 def price_of(model: str) -> tuple[float, float] | None:
     """(input, output) USD per million tokens: the override file first (longest matching key,
-    whole dash-separated parts only), then LiteLLM's map."""
+    whole dash-separated parts only), then the vendored map."""
     table = price_overrides()
     best = max((k for k in table if model == k or model.startswith(k + "-")), key=len, default=None)
     if best:
         return table[best]
-    p = _litellm_price(model)
+    p = _map_price(model)
     return (p[0], p[1]) if p else None
 
 
@@ -201,7 +208,7 @@ def cost_usd(model: str, input_tokens: int, output_tokens: int, cache_read_token
         pin, pout = table[best]
         pcache = pin
     else:
-        p = _litellm_price(model)
+        p = _map_price(model)
         if p is None:
             return None
         pin, pout, pcache = p

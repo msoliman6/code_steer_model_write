@@ -71,19 +71,27 @@ def runner_for(run_dir: Path, *, gate_timeout: float | None = None):
     )
 
 
+def attach_mlflow(runner) -> bool:
+    """The L8 mirror on the runner's log (7.9): a sink (rule 4), so failing to attach is a warning,
+    never a halt. One owner for every path that drives a run: `csmw resume`, the LocalRunner's
+    child, the Prefect flow."""
+    try:
+        from .observability.mlflow_bridge import MlflowMirror
+
+        st = runner.driver.state
+        MlflowMirror(Settings().mlflow_tracking_uri, st.run_id, st.recipe, runner.paths.run_dir).attach(
+            runner.events
+        )
+        return True
+    except Exception as e:  # noqa: BLE001
+        print(f"warn: mlflow mirror not attached: {e}")
+        return False
+
+
 def _attach_mirrors(runner, a: argparse.Namespace) -> None:
     """MLflow and monitor.db are sinks (rule 4); either failing to attach is a warning, never a halt."""
-    s = Settings()
     if not getattr(a, "no_mlflow", False):
-        try:
-            from .observability.mlflow_bridge import MlflowMirror
-
-            st = runner.driver.state
-            MlflowMirror(s.mlflow_tracking_uri, st.run_id, st.recipe, runner.paths.run_dir).attach(
-                runner.events
-            )
-        except Exception as e:  # noqa: BLE001
-            print(f"warn: mlflow mirror not attached: {e}")
+        attach_mlflow(runner)
     try:
         from .observability.monitor_db import MonitorDb
 

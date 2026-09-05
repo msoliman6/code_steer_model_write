@@ -29,10 +29,10 @@ class RunHandle(BaseModel):
 class Runner(Protocol):
     name: str
 
-    def submit(self, paths: RunPaths, *, mlflow: bool = False) -> RunHandle: ...
+    def submit(self, paths: RunPaths, *, mlflow: bool = True) -> RunHandle: ...
     def cancel(self, paths: RunPaths, *, reason: str = "cancelled") -> RunHandle: ...
     def pause(self, paths: RunPaths) -> RunHandle: ...
-    def resume(self, paths: RunPaths, *, mlflow: bool = False) -> RunHandle: ...
+    def resume(self, paths: RunPaths, *, mlflow: bool = True) -> RunHandle: ...
     def status(self, paths: RunPaths) -> RunHandle: ...
 
 
@@ -71,7 +71,7 @@ class LocalRunner:
             run_id=RunState.load(paths).run_id, run_dir=str(paths.run_dir), status="RUNNING", pid=proc.pid
         )
 
-    def submit(self, paths: RunPaths, *, mlflow: bool = False) -> RunHandle:
+    def submit(self, paths: RunPaths, *, mlflow: bool = True) -> RunHandle:
         if runner_alive(paths):
             return _handle(paths)
         return self._spawn(paths, mlflow=mlflow)
@@ -83,7 +83,7 @@ class LocalRunner:
     def pause(self, paths: RunPaths) -> RunHandle:
         return self.cancel(paths, reason="paused from the gateway")  # a halt is a report; resume continues
 
-    def resume(self, paths: RunPaths, *, mlflow: bool = False) -> RunHandle:
+    def resume(self, paths: RunPaths, *, mlflow: bool = True) -> RunHandle:
         return self.submit(paths, mlflow=mlflow)
 
     def status(self, paths: RunPaths) -> RunHandle:

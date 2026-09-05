@@ -124,6 +124,39 @@ def _runs() -> list[dict[str, str]]:
     return out
 
 
+def _eval_rows(run_dir: str) -> tuple[list[EvalRow], str]:
+    """The Evals tab's rows from `evals.json` (ARCHITECTURE.md 7.9): the record the runtime's
+    Evaluator wrote at completion. Absent until then."""
+    p = Path(run_dir) / "evals.json"
+    if not p.exists():
+        return [], ""
+    try:
+        d = json.loads(p.read_text())
+    except ValueError:
+        return [], "evals.json is not JSON"
+    rows: list[EvalRow] = []
+    for r in d.get("results", []):
+        v = r.get("value")
+        t = r.get("target")
+        rows.append(
+            EvalRow(
+                metric=r.get("metric", ""),
+                value="—"
+                if v is None
+                else (f"{v:.2f}" if isinstance(v, float) and not float(v).is_integer() else str(int(v))),
+                target=""
+                if t is None
+                else (f"{t:.2f}" if isinstance(t, float) and not float(t).is_integer() else str(int(t))),
+                passed="" if r.get("passed") is None else ("pass" if r.get("passed") else "fail"),
+                tier=r.get("tier", ""),
+                note=r.get("note", ""),
+            )
+        )
+    n_t = sum(1 for r in rows if r.passed)
+    n_ok = sum(1 for r in rows if r.passed == "pass")
+    return rows, (f"{n_ok}/{n_t} targets met" if n_t else f"{len(rows)} metrics, no targets")
+
+
 # ---- typed rows (Reflex iterates typed lists only) ----------------------------------------
 
 
@@ -141,6 +174,16 @@ class ArtRow:
     label: str = ""
     path: str = ""
     kind: str = ""
+
+
+@dataclasses.dataclass
+class EvalRow:
+    metric: str = ""
+    value: str = ""
+    target: str = ""
+    passed: str = ""  # "pass" | "fail" | "" (no target)
+    tier: str = ""
+    note: str = ""
 
 
 @dataclasses.dataclass
@@ -355,6 +398,8 @@ class S(rx.State):
     filter_phase: str = "all"
     view_tab: str = rx.SessionStorage("run", name="csmw_view")
     artifacts: list[ArtRow] = []
+    evals: list[EvalRow] = []  # L8: the run's evals.json, the record; MLflow mirrors it
+    evals_summary: str = ""
     open_paths: list[str] = []
     artifact_md: dict[str, str] = {}
     run_id: str = ""
@@ -466,6 +511,7 @@ class S(rx.State):
         self.cost_total = d.get("cost_total", "")
         self.cost_note = d.get("cost_note", "")
         self.artifacts = [ArtRow(**a) for a in d["artifacts"]]
+        self.evals, self.evals_summary = _eval_rows(self.run_dir)
         self.runs = self._visible_runs()
         self.artifact_md = {k: render_artifact(self.run_dir, k) for k in self.open_paths}
         self.flagged = d["flagged"]
@@ -1715,6 +1761,7 @@ def runs_tabs(active: bool = True) -> rx.Component:
 NAV = [
     ("run", "Run"),
     ("outputs", "Outputs"),
+    ("evals", "Evals"),
     ("evidence", "Evidence"),
     ("settings", "Settings"),
     ("providers", "Providers"),
@@ -1849,6 +1896,37 @@ def bottom_bar() -> rx.Component:
     )
 
 
+def eval_row(r: EvalRow) -> rx.Component:
+    color = rx.match(r.passed, ("pass", T.PILL["ok"][0]), ("fail", T.PILL["bad"][0]), T.MUTED)
+    return rx.grid(
+        rx.text(r.metric, **MONO, font_size=BODY, color=T.TEXT),
+        rx.text(r.value, **MONO, font_size=BODY, font_weight="700", text_align="right"),
+        rx.text(rx.cond(r.target != "", "target " + r.target, ""), **MONO, font_size=SMALL, color=T.MUTED),
+        rx.text(r.passed, **MONO, font_size=SMALL, color=color, font_weight="700"),
+        rx.text(r.tier, **MONO, font_size=SMALL, color=T.DIM),
+        rx.text(r.note, font_size=SMALL, color=T.MUTED),
+        grid_template_columns="180px 70px 110px 60px 60px 1fr",
+        column_gap="14px",
+        align_items="center",
+        width="100%",
+    )
+
+
+def evals_panel() -> rx.Component:
+    """L8's view (ARCHITECTURE.md 7.9): the recipe's eval specs scored over the record."""
+    return rx.box(
+        eyebrow("EVALS", summary_text(S.evals_summary)),
+        rx.cond(
+            S.evals.length() > 0,
+            rx.vstack(rx.foreach(S.evals, eval_row), spacing="1", width="100%", margin_top=T.SPACE["sm"]),
+            rx.text(
+                "scored when the run completes", color=T.MUTED, font_size=SMALL, margin_top=T.SPACE["sm"]
+            ),
+        ),
+        **CARD,
+    )
+
+
 def body() -> rx.Component:
     return rx.cond(
         S.selected == "start",
@@ -1856,6 +1934,7 @@ def body() -> rx.Component:
         rx.match(
             S.view_tab,
             ("outputs", artifacts_panel()),
+            ("evals", evals_panel()),
             ("evidence", evidence()),
             ("settings", start_panel()),
             ("providers", providers_panel()),

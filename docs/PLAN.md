@@ -132,6 +132,21 @@ Agreed with the user on 2026-09-04. Nothing below is code; it is what the code w
   refused by the schema), 16 min; the first verify failed one property, triage q1 ruled it a
   test bug, the checker fixed the tests, the second verify: 4/4 pass, 4/4 fail on the null;
   two minor findings carried. Phase 4's live pass.**
+- **Phase 6 — L8 with its tool: built 2026-09-04.** LiteLLM left: its price table is vendored
+  as `data/model_prices.json` (420 entries, read once by `config.py`), the backend and the
+  provider deleted, PydanticAI in their place. The mirror (`observability/mlflow_bridge.py`)
+  names every span with the OpenTelemetry GenAI attributes (`gen_ai.operation.name`,
+  `gen_ai.request.model`, `gen_ai.agent.name`, `gen_ai.usage.*`, `gen_ai.tool.*`), so any
+  OTLP backend reads what MLflow reads. `observability/evals.py`: the Evaluator runs the
+  recipe's `EvalSpec`s as scorers over the finished run's artifacts (pass rate, null-fail
+  rate, carried findings, rounds to converge, refused answers, rubric score), writes
+  `evals.json` beside the record, and the mirror logs each as a metric; the Runner evaluates
+  once before COMPLETED. The page reads `evals.json` back in an Evals tab. Tracing is on in
+  every path that drives a run: `csmw resume`, the LocalRunner's child and the Prefect flow
+  share one `attach_mlflow()`; `--no-mlflow` and `CSMW_NO_MLFLOW=1` turn it off. The tracking
+  store is `~/.csmw/mlflow.db`, beside the run registry, one store for every project (MLflow's
+  span store needs the SQLite backend, not a file store). Walk 16/16, tests 104 + 1 skipped,
+  ruff clean, pyright clean on every file the phase touched.
 
 ## The rule for every phase
 

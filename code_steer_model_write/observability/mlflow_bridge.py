@@ -58,14 +58,27 @@ class MlflowMirror:
                 self._spans[key] = m.start_span_no_context(
                     name=f"{e.step} call {e.attempt}",
                     parent_span=self._spans.get(e.step),
-                    attributes={
-                        "role": e.role or "",
-                        "model": e.data.get("model", ""),
-                        "schema": e.data.get("schema", ""),
+                    attributes={  # str values only: the span API's contract
+                        # the OpenTelemetry GenAI names (ARCHITECTURE.md 7.9), so any OTLP backend
+                        # reads these spans the same way MLflow does
+                        "gen_ai.operation.name": "chat",
+                        "gen_ai.request.model": str(e.data.get("model", "")),
+                        "gen_ai.agent.name": e.role or "",
+                        "csmw.schema": str(e.data.get("schema", "")),
+                        "csmw.attempt": str(e.attempt or 1),
                     },
                 )
                 self._calls += 1
             elif e.kind == "call.usage" and e.role:
+                sp = self._spans.get(f"{e.step}:call:{e.attempt}")
+                if sp is not None:
+                    sp.set_attributes(
+                        {
+                            "gen_ai.usage.input_tokens": int(e.data.get("input_tokens", 0)),
+                            "gen_ai.usage.output_tokens": int(e.data.get("output_tokens", 0)),
+                            "gen_ai.usage.cache_read_tokens": int(e.data.get("cache_read_tokens", 0)),
+                        }
+                    )
                 self._tokens[e.role] = (
                     self._tokens.get(e.role, 0)
                     + int(e.data.get("input_tokens", 0))
@@ -112,6 +125,23 @@ class MlflowMirror:
             self._client.log_metric(self._rid, "calls", self._calls)
             for role, n in self._tokens.items():
                 self._client.log_metric(self._rid, f"tokens_{role}_total", n)
+            # the evals (7.9): the record is evals.json; MLflow holds its metrics as a mirror
+            ev = self.run_dir / "evals.json"
+            if ev.exists():
+                try:
+                    import json as _json
+
+                    for r in _json.loads(ev.read_text()).get("results", []):
+                        if r.get("value") is not None:
+                            self._client.log_metric(self._rid, f"eval_{r['metric']}", float(r["value"]))
+                        if r.get("passed") is not None:
+                            self._client.set_tag(
+                                self._rid, f"eval_{r['metric']}_passed", str(r["passed"]).lower()
+                            )
+                except Exception as ex:  # noqa: BLE001
+                    print(f"[mlflow] evals not mirrored: {ex}")
+            if (self.run_dir / "evals.json").exists():
+                self._client.log_artifact(self._rid, str(self.run_dir / "evals.json"))
             for name in ("report.json", "REPORT.md", "events.jsonl", "state.json"):
                 p = (
                     self.run_dir / name

@@ -34,7 +34,7 @@ def list_workflows() -> None:
 
 
 @app.command()
-def run(task: Path, runs_dir: str | None = None, run_dir: str | None = None, mlflow: bool = False) -> None:
+def run(task: Path, runs_dir: str | None = None, run_dir: str | None = None, mlflow: bool = True) -> None:
     """Validate, register, launch detached; print the run handle at once."""
     _out(_gw().run(json.loads(task.read_text()), runs_dir=runs_dir, run_dir=run_dir, mlflow=mlflow))
 
@@ -58,7 +58,7 @@ def pause(run: str) -> None:
 
 
 @app.command()
-def resume(run: str, mlflow: bool = False) -> None:
+def resume(run: str, mlflow: bool = True) -> None:
     """Continue at the first undone step."""
     _out(_gw().resume(run, mlflow=mlflow))
 

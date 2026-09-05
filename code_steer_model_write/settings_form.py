@@ -162,8 +162,8 @@ UNIVERSAL_FIELDS: list[FormField] = [
     FormField(
         key="author_backend",
         name="author backend",
-        description="the claude CLI by default (its own login); the Anthropic SDK or the Agent SDK with a key; litellm for any provider; fake offline",
-        options=["claude_cli", "anthropic", "agent_sdk", "litellm", "fake"],
+        description="the claude CLI by default (its own login); the Anthropic SDK or the Agent SDK with a key; pydantic_ai for any provider through its API; fake offline",
+        options=["claude_cli", "anthropic", "agent_sdk", "pydantic_ai", "fake"],
         default="claude_cli",
     ),
     FormField(
@@ -183,8 +183,8 @@ UNIVERSAL_FIELDS: list[FormField] = [
     FormField(
         key="checker_backend",
         name="checker backend",
-        description="the other vendor (rule 3): codex exec by default; litellm for any provider; fake for the offline walk",
-        options=["codex_cli", "litellm", "fake"],
+        description="the other vendor (rule 3): codex exec by default; pydantic_ai for any provider through its API; fake for the offline walk",
+        options=["codex_cli", "pydantic_ai", "fake"],
         default="codex_cli",
     ),
     FormField(

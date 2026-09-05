@@ -79,9 +79,14 @@ def csmw_run(run_dir: str) -> str:
     """The deployment's flow: the run at `run_dir`, driven by its own loop (parallel steps
     inside), reporting the outcome. A module-level flow, because Prefect's serve executes a
     flow run in a fresh process by loading this file and looking the flow up by name."""
-    from ..cli import runner_for
+    import os
 
-    return runner_for(Path(run_dir)).drive().value
+    from ..cli import attach_mlflow, runner_for
+
+    runner = runner_for(Path(run_dir))
+    if os.environ.get("CSMW_NO_MLFLOW", "") != "1":  # the flag the served process reads (no argv here)
+        attach_mlflow(runner)
+    return runner.drive().value
 
 
 def flow_for():

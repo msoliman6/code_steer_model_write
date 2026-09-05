@@ -11,7 +11,6 @@ from pathlib import Path
 from code_steer_model_write.backends.anthropic_api import AnthropicBackend
 from code_steer_model_write.backends.base import CallSpec, Fact
 from code_steer_model_write.backends.cli import ClaudeCliBackend, CodexCliBackend
-from code_steer_model_write.backends.litellm_backend import LiteLLMBackend
 from code_steer_model_write.backends.streams import run_jsonl
 
 SCHEMA = {
@@ -213,42 +212,11 @@ def test_anthropic_backend_with_a_fake_client():
     assert r2.status == "no_output" and "refusal: cyber" in r2.reason
 
 
-def test_litellm_backend_with_a_fake_completion():
-    def completion(**kw):
-        assert (
-            kw["response_format"]["json_schema"]["strict"] is True and kw["messages"][0]["role"] == "system"
-        )
-        return types.SimpleNamespace(
-            choices=[
-                types.SimpleNamespace(message=types.SimpleNamespace(content='```json\n{"ok": true}\n```'))
-            ],
-            usage=types.SimpleNamespace(prompt_tokens=7, completion_tokens=3),
-            model="gpt-x",
-        )
-
-    r = LiteLLMBackend(completion=completion).complete(_call(), lambda f: None)
-    assert (
-        r.status == "final"
-        and r.parsed == {"ok": True}
-        and r.usage.input_tokens == 7
-        and r.model_used == "gpt-x"
-    )
-
-    def bad(**kw):
-        return types.SimpleNamespace(
-            choices=[types.SimpleNamespace(message=types.SimpleNamespace(content="not json"))],
-            usage=None,
-            model="m",
-        )
-
-    assert LiteLLMBackend(completion=bad).complete(_call(), lambda f: None).status == "no_output"
-
-
 def test_every_backend_refuses_tools_in_v1():
     from code_steer_model_write.backends.base import ToolDef
 
     t = ToolDef(name="x", description="d", input_schema={}, fn=lambda: None)
-    for b in (AnthropicBackend(client=object()), LiteLLMBackend(completion=lambda **k: None)):
+    for b in (AnthropicBackend(client=object()),):
         r = b.complete(_call(tools=[t]), lambda f: None)
         assert r.status == "error" and "tool-less" in r.reason
 

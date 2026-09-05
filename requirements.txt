@@ -8,7 +8,6 @@ prefect>=3.0
 mlflow>=2.16
 reflex>=0.6
 anthropic>=0.40
-litellm>=1.50
 cedarpy>=4.8
 guardrails-ai>=0.11
 pydantic-ai-slim[anthropic,openai]>=2.39

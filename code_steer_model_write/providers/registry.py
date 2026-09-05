@@ -7,35 +7,35 @@ from .claude import ClaudeApiProvider, ClaudeProvider
 from .codex import CodexProvider
 
 
-class LiteLLMProvider:
-    name = "litellm"
+class PydanticAIProvider:
+    """Any provider through PydanticAI (ARCHITECTURE.md 7.5), `provider:model`; the API path,
+    for deployments that have keys."""
+
+    name = "pydantic_ai"
     model_discovery = "configured"
     effort_discovery = "configured"
 
     def list_models(self) -> list[ModelInfo]:
         return [
             ModelInfo(
-                id="gpt-5.4-mini",
-                name="gpt-5.4-mini (openai)",
+                id="anthropic:claude-sonnet-5",
+                name="Claude Sonnet 5 (Anthropic API)",
                 efforts=["low", "medium", "high"],
                 default_effort="medium",
             ),
             ModelInfo(
-                id="gemini/gemini-2.5-pro",
-                name="Gemini 2.5 Pro",
+                id="anthropic:claude-haiku-4-5",
+                name="Claude Haiku 4.5 (Anthropic API)",
                 efforts=["low", "medium", "high"],
-                default_effort="medium",
+                default_effort="low",
             ),
             ModelInfo(
-                id="anthropic/claude-sonnet-5",
-                name="Claude Sonnet 5 (via litellm)",
+                id="openai:gpt-5.4-mini",
+                name="gpt-5.4-mini (OpenAI API)",
                 efforts=["low", "medium", "high"],
                 default_effort="medium",
             ),
         ]
-
-    def default_model(self) -> str:
-        return "gpt-5.4-mini"
 
 
 class FakeProvider:
@@ -57,7 +57,7 @@ _PROVIDERS: dict[str, Provider] = {
     "codex": CodexProvider(),
     "claude": ClaudeProvider(),
     "claude_api": ClaudeApiProvider(),
-    "litellm": LiteLLMProvider(),
+    "pydantic_ai": PydanticAIProvider(),
     "fake": FakeProvider(),
 }
 BACKEND_PROVIDER = {
@@ -65,7 +65,7 @@ BACKEND_PROVIDER = {
     "claude_cli": "claude",
     "anthropic": "claude_api",
     "agent_sdk": "claude_api",
-    "litellm": "litellm",
+    "pydantic_ai": "pydantic_ai",
     "fake": "fake",
 }
 

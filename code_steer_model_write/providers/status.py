@@ -61,8 +61,8 @@ def status_for(backend: str) -> BackendStatus:
             discovery=disc,
             models=n,
         )
-    if backend == "litellm":
-        keys = [k for k in ("OPENAI_API_KEY", "GEMINI_API_KEY", "ANTHROPIC_API_KEY") if os.environ.get(k)]
+    if backend == "pydantic_ai":
+        keys = [k for k in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GEMINI_API_KEY") if os.environ.get(k)]
         return BackendStatus(
             backend=backend,
             provider=prov.name,
@@ -84,7 +84,9 @@ def status_for(backend: str) -> BackendStatus:
 
 
 def all_statuses() -> list[BackendStatus]:
-    return [status_for(b) for b in ("claude_cli", "codex_cli", "anthropic", "agent_sdk", "litellm", "fake")]
+    return [
+        status_for(b) for b in ("claude_cli", "codex_cli", "anthropic", "agent_sdk", "pydantic_ai", "fake")
+    ]
 
 
 def refresh_catalogues() -> None:
