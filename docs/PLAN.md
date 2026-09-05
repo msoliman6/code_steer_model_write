@@ -160,6 +160,26 @@ Agreed with the user on 2026-09-04. Nothing below is code; it is what the code w
   own loop beside `drive_with_prefect`'s (ledger: a second owner). One loop now, in the Runner,
   with a `round_executor` Prefect fills; a fake-model run through the served deployment shows
   its 19 steps as task runs, tests ‖ source side by side on the timeline.
+- **Phase 7 — L1, the pages: built 2026-09-04.** `dashboard/home.py` (the rows from the
+  registry and each run's files, cached on mtimes; the filters, the sort, the counters and the
+  trends as pure functions), `dashboard/timeline.py` (`events -> rows`, one per step, the model
+  call inside, `overlaps()` for the parallel build), the home at `/` (counters, trends of the
+  last twenty runs with evals, the table with every column sortable, search, status and
+  workflow filters, row actions stop / pause / resume / again / remove through the Gateway),
+  the run page at `/run` with the step timeline under the swimlanes and **run again** beside
+  the control; `workflow_run_again` and `run_forget` on the MCP server and the CLI; the
+  registry keyed by folder (a run id is a label; two projects may each have a `live-1`), with a
+  `hidden` flag `forget` sets and `scan` respects. The self-check proves the home row and the
+  timeline against the record, the parallel round's overlap included; the walk's gateway leg
+  runs again, forgets, and lists the run on the home. Two ledger rows (the key, the path
+  convention) and one after the live run (the Prefect probe under a running loop). Walk 16/16,
+  tests 106 + 1 skipped, ruff clean, pyright clean on the new files.
+  **`live-8-2` (2026-09-04, phase 7): started from the home page's "again" on live-8, the task
+  carried unchanged, the CLI logins, the LocalRunner (the Prefect probe's bug, found here and
+  fixed): COMPLETED, 25 steps, 0 halts, 0 resumes, 2 refusals recovered, 16 min, 258K tokens;
+  verdict 5/5 pass, 5/5 fail on the null, 4 minor findings carried; tests ‖ source as one
+  round; evals: pass 1.0, null-fail 1.0, carried 4, rounds 1.75, refused 2. Shown on the home
+  with its trend point; the self-check passes on it. Phase 7's live pass.**
 
 ## The rule for every phase
 
