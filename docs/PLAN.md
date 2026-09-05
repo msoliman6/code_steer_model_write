@@ -199,6 +199,13 @@ Agreed with the user on 2026-09-04. Nothing below is code; it is what the code w
   pytest in a container in 0.2s; the leg says "skipped" and passes without an engine, since the
   fallback is itself a recorded fact), tests 108 + 1 skipped, ruff clean, pyright clean on the
   new files.
+  Then L7's artifact bytes: `artifacts/store.py` writes every version through `obstore`
+  (`obstore>=0.5`, the Rust object-store bindings, no Python dependencies) with
+  `mode="create"`, so a version that exists is refused by the store's own rule and the
+  never-overwrite invariant is no longer this module's discipline; the local store writes a
+  temp file and renames; the layout on disk is unchanged, every reader keeps working, and the
+  same class reaches S3, GCS or Azure when a second machine needs the artifacts (the trigger
+  in section 7 of the architecture). Walk 17/17, tests 109 + 1 skipped.
 
 ## The rule for every phase
 

@@ -21,6 +21,7 @@ dependencies = [
     "jinja2>=3.1",
     "prefect>=3.0",
     "docker>=7.1",  # L5's container tier (ARCHITECTURE.md 7.6): the Docker SDK over Colima or Docker
+    "obstore>=0.5",  # L7's artifact bytes (ARCHITECTURE.md 7.7): create-only puts, local now, object storage later
     "mlflow>=2.16",
     "reflex>=0.6",
     "anthropic>=0.40",

@@ -2,6 +2,12 @@
 
 `runs/<id>/artifacts/<key>/vNNN.json` -- every version kept (an exact diff is impossible
 otherwise), written atomically, never overwritten. `latest(key)` is the highest version.
+
+The bytes go through `obstore` (ARCHITECTURE.md 7.7): its local store writes a temp file and
+renames, and `mode="create"` refuses to overwrite a version that exists, so the never-overwrite
+rule is the store's own and not this module's discipline. The same class reaches S3, GCS or
+Azure when the day comes; the layout on disk is unchanged, so every reader of a version file
+keeps working (phase 8).
 """
 
 from __future__ import annotations
@@ -14,7 +20,7 @@ from pathlib import Path
 from typing import TypeVar
 
 from ..spec.base import Artifact
-from ..state.lock import atomic_write_text, locked
+from ..state.lock import locked
 
 A = TypeVar("A", bound=Artifact)
 _V = re.compile(r"^v(\d{3})\.json$")
@@ -23,6 +29,15 @@ _V = re.compile(r"^v(\d{3})\.json$")
 class Store:
     def __init__(self, run_dir: Path | str) -> None:
         self.root = Path(run_dir) / "artifacts"
+        self._obs = None  # obstore's LocalStore, made on first write (the folder must exist by then)
+
+    def _store(self):
+        if self._obs is None:
+            from obstore.store import LocalStore
+
+            self.root.mkdir(parents=True, exist_ok=True)
+            self._obs = LocalStore(str(self.root))
+        return self._obs
 
     def _dir(self, key: str) -> Path:
         if not re.match(r"^[a-z0-9_\-]+$", key):
@@ -43,12 +58,16 @@ class Store:
         return self._dir(key) / f"v{version:03d}.json"
 
     def write(self, key: str, artifact: Artifact) -> int:
-        """Store the next version. Called only after every check accepted the answer (rule 6)."""
+        """Store the next version. Called only after every check accepted the answer (rule 6).
+        `mode="create"`: a version that exists is never overwritten, by the store's own rule."""
+        import obstore as obs
+
         d = self._dir(key)
+        d.mkdir(parents=True, exist_ok=True)
         with locked(d / "versions"):
             v = (self.latest_version(key) or 0) + 1
             text = artifact.model_dump_json(indent=2)
-            atomic_write_text(self.path(key, v), text)
+            obs.put(self._store(), f"{key}/v{v:03d}.json", text.encode("utf-8"), mode="create")
         return v
 
     def read(self, key: str, model: type[A], version: int | None = None) -> A:

@@ -60,3 +60,22 @@ def test_events_append_read_and_parallel_seq(tmp_path):
     (tmp_path / "events.jsonl").open("a").write("not json\n")
     with pytest.raises(ValidationError):
         log.all()
+
+
+def test_store_never_overwrites_a_version_by_its_own_rule(tmp_path):
+    """Phase 8: the bytes go through obstore with mode="create"; a second put of the same
+    version is refused by the store, not by this module's discipline."""
+    import obstore as obs
+
+    from code_steer_model_write.artifacts.store import Store
+
+    st = Store(tmp_path)
+    (tmp_path / "artifacts" / "k").mkdir(parents=True)
+    obs.put(st._store(), "k/v001.json", b"{}", mode="create")
+    try:
+        obs.put(st._store(), "k/v001.json", b"{}", mode="create")
+    except Exception as e:  # noqa: BLE001
+        assert "AlreadyExists" in type(e).__name__
+    else:
+        raise AssertionError("a version was overwritten")
+    assert st.versions("k") == [1] and st.path("k", 1).read_text() == "{}"
