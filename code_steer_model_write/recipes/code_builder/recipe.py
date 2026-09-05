@@ -58,7 +58,7 @@ SPEC = RecipeSpec(
     assumes=[
         "the deliverable is one importable Python module per block, tested by pytest",
         "a block's contract fits one model call; the source of a block fits one file",
-        "ruff, pyright and pytest are on PATH (each SKIPPED and recorded when not)",
+        "ruff, pyright and pytest are installed beside the interpreter or on PATH (ruff and pyright are SKIPPED and recorded when not; a pytest that cannot run halts)",
     ],
     if_wrong=[
         "a multi-file block needs one implementer call per file and an ownership check per file",

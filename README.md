@@ -213,7 +213,7 @@ layer, seam and rule; this repository is its runtime.
 git clone https://github.com/msoliman6/code_steer_model_write && cd code_steer_model_write
 python3.13 -m venv .venv && .venv/bin/pip install -e ".[dev]"   # 3.11, 3.12 or 3.13
 .venv/bin/pip install "openai>=3.8" tiktoken   # a second step on purpose: see below
-.venv/bin/csmw doctor          # exit 0 ready; every line it checked is printed
+.venv/bin/csmw doctor          # exit 0 ready, 1 ready with warnings, 2 halt; every line it checked is printed
 ```
 
 The second `pip` line is deliberate. Guardrails AI pins `openai<3` for model calls this runtime

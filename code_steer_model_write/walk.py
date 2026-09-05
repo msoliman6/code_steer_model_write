@@ -803,6 +803,20 @@ LEGS: dict[str, dict[str, Leg]] = {
 }
 
 
+def _leaf_error(e: BaseException) -> str:
+    """The exception that actually happened. An ExceptionGroup from a task group says only "1
+    sub-exception" (ledger: a message that hides the reason -- a gateway leg once failed after
+    two minutes and the line said nothing more); the leaves are named, innermost first."""
+    if isinstance(e, BaseExceptionGroup):
+        leaves = [_leaf_error(x) for x in e.exceptions]
+        return f"{type(e).__name__}: " + " | ".join(leaves)
+    cause = e.__cause__ or e.__context__
+    text = f"{type(e).__name__}: {e}"
+    if cause is not None and cause is not e:
+        text += f" (from {type(cause).__name__}: {cause})"
+    return text
+
+
 def run(recipe: str = "all", *, only: str | None = None, keep: bool = False) -> list[LegResult]:
     legs = {**LEGS, **registry.walk_legs()}  # bundled legs, then the installed recipes' own
     names = list(legs) if recipe == "all" else [recipe]
@@ -850,7 +864,7 @@ def run(recipe: str = "all", *, only: str | None = None, keep: bool = False) -> 
                             ok=False,
                             outcome="broke",
                             seconds=round(time.time() - t0, 2),
-                            detail=f"{type(e).__name__}: {e}"[:600],
+                            detail=_leaf_error(e)[:600],
                             run_dir=str(tmp),
                         )
                     )
