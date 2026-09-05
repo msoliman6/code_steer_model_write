@@ -13,8 +13,11 @@ dependencies = [
     "pydantic>=2.5",
     "cedarpy>=4.8",
     "guardrails-ai>=0.11",
-    "pydantic-ai-slim[anthropic,openai]>=2.39",
-    "openai>=3.8",  # PydanticAI's OpenAI path needs it; Guardrails pins <3 for model calls we never make (decided 2026-09-04)
+    "pydantic-ai-slim[anthropic]>=2.39",
+    # openai is NOT pinned here: Guardrails AI pins openai<3 for model calls this runtime never
+    # makes, and PydanticAI's OpenAI path needs openai>=3.8; no single resolution exists, so the
+    # install is two steps -- this package, then `pip install "openai>=3.8"` (the `openai-api`
+    # extra), which pip applies with a warning about Guardrails' pin (decided 2026-09-04).
     "mcp>=2.1",  # L2 gateway (ARCHITECTURE.md 7.10): the official MCP SDK, stdio and in-memory
     "typer>=0.19,<0.28",  # the control-plane verbs; pinned below the release that makes pydantic a hard dependency
     "pydantic-settings>=2.2",
@@ -29,6 +32,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+openai-api = ["openai>=3.8", "tiktoken>=0.12"]  # PydanticAI's OpenAI path; install as a second step, see above
 agent-sdk = ["claude-agent-sdk>=0.1"]
 checks = ["ruff>=0.5", "pyright>=1.1", "pytest>=8", "pytest-json-report>=1.5", "jsonschema>=4"]
 dev = [

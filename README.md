@@ -212,8 +212,14 @@ layer, seam and rule; this repository is its runtime.
 ```bash
 git clone https://github.com/msoliman6/code_steer_model_write && cd code_steer_model_write
 python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
+.venv/bin/pip install "openai>=3.8" tiktoken   # a second step on purpose: see below
 .venv/bin/csmw doctor          # exit 0 ready; every line it checked is printed
 ```
+
+The second `pip` line is deliberate. Guardrails AI pins `openai<3` for model calls this runtime
+never makes, and PydanticAI's OpenAI path needs `openai>=3.8`; no single resolution satisfies
+both, so `openai` is upgraded on its own and pip says so in a warning. Nothing in the runtime
+calls the part of Guardrails that would mind.
 
 The doctor names the tool behind every seam and what is missing. Two of the layers run on
 packaged services you start with one command each, and both are optional:
