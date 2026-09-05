@@ -780,7 +780,13 @@ def run(recipe: str = "all", *, only: str | None = None, keep: bool = False) -> 
         for leg_name, fn in legs[rn].items():
             if only and leg_name != only:
                 continue
-            tmp = Path(tempfile.mkdtemp(prefix=f"csmw-walk-{rn}-{leg_name}-"))
+            # the container tier can only see what the engine shares (Colima: the home
+            # directory), so a walk under it keeps its run folders under ~/.csmw/walk
+            base = None
+            if os.environ.get("CSMW_SANDBOX") == "container":
+                base = Path.home() / ".csmw" / "walk"
+                base.mkdir(parents=True, exist_ok=True)
+            tmp = Path(tempfile.mkdtemp(prefix=f"csmw-walk-{rn}-{leg_name}-", dir=base))
             t0 = time.time()
             with env(FAKE_MODELS="1"):
                 try:

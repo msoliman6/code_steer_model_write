@@ -69,7 +69,7 @@ def default_layers(
     if tier == "container":
         from . import container_sandbox
 
-        ok, why = container_sandbox.available()
+        ok, why = container_sandbox.available(root=paths.run_dir if paths else None)
         if ok:
             sandbox = container_sandbox.ContainerSandbox(
                 events=events, mount_root=paths.run_dir if paths else None

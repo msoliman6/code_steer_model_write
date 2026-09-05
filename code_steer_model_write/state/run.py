@@ -6,10 +6,11 @@ exist; a missing deliverable reopens the step on the next `next()` (resume from 
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 from datetime import datetime
 from enum import StrEnum
 from pathlib import Path
-from typing import Any, Callable, TypeVar
+from typing import Any, Callable, Iterator, TypeVar
 
 from pydantic import BaseModel, Field
 
@@ -73,6 +74,24 @@ class RunPaths(BaseModel):
     @property
     def task(self) -> Path:
         return self.run_dir / "task.json"
+
+    @contextmanager
+    def staging(self, label: str = "stage") -> Iterator[Path]:
+        """A scratch folder inside the run for a check that stages an answer before accepting
+        it (ledger: an effect before the acceptance). Inside the run, never the system temp:
+        the run folder is the one place every sandbox tier can reach (a container mounts the
+        run folder and nothing else; Colima shares the home directory and nothing else), so a
+        staged file the host could check but the container could not read as "no such file"
+        (live-10). Removed on exit, whatever happened."""
+        import shutil
+        import uuid
+
+        d = self.run_dir / ".stage" / f"{label}-{uuid.uuid4().hex[:8]}"
+        d.mkdir(parents=True, exist_ok=True)
+        try:
+            yield d
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
 
     @property
     def decisions(self) -> Path:

@@ -31,14 +31,29 @@ def _client() -> Any:
     return docker.from_env()
 
 
-def available(*, image: str = IMAGE) -> tuple[bool, str]:
-    """Is an engine answering, and is the image there? Said in words, never assumed."""
+def shared(root: Path, engine_name: str) -> tuple[bool, str]:
+    """Can the engine see `root`? Colima shares the home directory only, so a run folder in
+    the system temp mounts empty inside a container and every check there reads "no such
+    file" (live-10). Said before any run, not discovered by a halt."""
+    root = Path(root).resolve()
+    if engine_name == "colima" and not root.is_relative_to(Path.home().resolve()):
+        return False, f"{root} is outside the home directory, the only tree Colima shares"
+    return True, ""
+
+
+def available(*, image: str = IMAGE, root: Path | None = None) -> tuple[bool, str]:
+    """Is an engine answering, is the image there, and can the engine see `root`? Said in
+    words, never assumed."""
     try:
         c = _client()
         c.ping()
         info = c.info()
         runtimes = sorted((info.get("Runtimes") or {}).keys())
         name = info.get("Name", "")
+        if root is not None:
+            ok, why = shared(root, name)
+            if not ok:
+                return False, f"engine {name} up, but {why}"
         try:
             c.images.get(image)
         except Exception:  # noqa: BLE001 -- the SDK's ImageNotFound and friends

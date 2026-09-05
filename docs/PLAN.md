@@ -223,6 +223,14 @@ Agreed with the user on 2026-09-04. Nothing below is code; it is what the code w
   18/18 (`gateway/tool-using-step`: the order L9 · L10 · L6 · L5 · result asserted from the
   record, the answer landed under its schema, the P8 refusal), tests 110 + 1 skipped. The
   coder does not use the kind; any second workflow may.
+  **`live-10` (2026-09-04, phase 8, the container tier under Prefect): halted at
+  p3-implement after 21 clean steps -- the coder's checks staged the answer in the system temp
+  folder, which Colima does not share, so ruff in the container read "no such file" on every
+  attempt (ledger: a path the sandbox cannot reach, a new class). Fixed at the mechanism:
+  `RunPaths.staging()` inside the run, the tier's `available(root=)` refuses aloud when the
+  engine cannot see the run folder, and the walk under the container tier keeps its run folders
+  under home -- the coder's ten legs then run every check in containers (15 per happy leg).
+  A halted run restarts from scratch: live-11.**
 
 ## The rule for every phase
 
